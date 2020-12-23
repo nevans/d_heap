@@ -46,6 +46,7 @@ RSpec.describe DHeap do
       it "retains min peek for one element" do
         t = Time.now
         expect(heap.push(t)).to eq(0)
+        expect(heap).to_not be_empty
         expect(heap.peek).to eq(t)
         expect(heap.size).to eq(1)
       end
@@ -98,11 +99,18 @@ RSpec.describe DHeap do
         expect(heap.peek).to eq(-1)
       end
 
+      it "can push a score with a related value" do
+        expect(heap.push("score 0", obj0 = Object.new))
+        expect(heap.push("score 1", Object.new))
+        expect(heap.push("score 2", Object.new))
+        expect(heap.peek).to eq(obj0)
+      end
+
     end
 
-    context "popping" do
+    describe "#pop" do
       context "with elements inserted in order" do
-        include_examples "it pops all elements in order", 100, :sort
+        include_examples "it pops all elements in order", 10, :sort
       end
 
       context "with elements inserted in reverse" do
@@ -114,9 +122,35 @@ RSpec.describe DHeap do
       end
     end
 
+    describe "#pop_lte(n)" do
+      it "pops only the elements that are compare as <= n" do
+        (0..20).to_a.shuffle.each do |i| heap.push i, {i: i} end
+        expect(heap.pop_lte(-1)).to eq(nil)
+        expect(heap.pop_lte(4)).to eq({i: 0})
+        expect(heap.pop_lte(4)).to eq({i: 1})
+        expect(heap.pop_lte(4)).to eq({i: 2})
+        expect(heap.pop_lte(4)).to eq({i: 3})
+        expect(heap.pop_lte(4)).to eq({i: 4})
+        expect(heap.pop_lte(4)).to eq(nil)
+      end
+    end
+
+    describe "#pop_lt(n)" do
+      it "pops only the elements that are compare as < n" do
+        (0..20).to_a.shuffle.each do |i| heap.push i, {i: i} end
+        expect(heap.pop_lt(-1)).to eq(nil)
+        expect(heap.pop_lt(5)).to eq({i: 0})
+        expect(heap.pop_lt(5)).to eq({i: 1})
+        expect(heap.pop_lt(5)).to eq({i: 2})
+        expect(heap.pop_lt(5)).to eq({i: 3})
+        expect(heap.pop_lt(5)).to eq({i: 4})
+        expect(heap.pop_lt(5)).to eq(nil)
+      end
+    end
+
   end
 
-  [2, 3, 4, 5, 6, 7, 8].each do |d|
+  [2, 3, 4, 5, 6].each do |d|
     context "heap with d=#{d}" do
       include_examples "any-size heap", d
     end
@@ -146,14 +180,14 @@ RSpec.describe DHeap do
             2, 3,
             4, 5, 6, 7,
             8, 9, 10, 11, 12, 13, 14, 15
-          ]
+          ].flat_map {|v| [v, v] }
           expect(DHeap.heap_sift_down(ary, d, 0)).to eq(7)
           expect(ary).to eq([
             2,
             4, 3,
             8, 5, 6, 7,
             42, 9, 10, 11, 12, 13, 14, 15
-          ])
+          ].flat_map {|v| [v, v] })
         end
       end
     end
@@ -172,7 +206,7 @@ RSpec.describe DHeap do
             10, 11, 12, 13,
             14, 15, 16, 17,
             18, 19, 20, 21,
-          ]
+          ].flat_map {|v| [v, v] }
           expect(DHeap.heap_sift_down(ary, d, 0)).to eq(5)
           expect(ary).to eq([
             2,
@@ -183,7 +217,7 @@ RSpec.describe DHeap do
             10, 11, 12, 13,
             14, 15, 16, 17,
             18, 19, 20, 21,
-          ])
+          ].flat_map {|v| [v, v] })
         end
       end
     end

@@ -94,10 +94,69 @@ Read the `rdoc` for more detailed documentation and examples.
 
 _TODO: put benchmarks here._
 
+## Analysis
+
+### Time complexity
+
+Both sift operations can perform (log[d] n = log n / log d) swaps.
+Swap up performs only a single comparison per swap: O(1).
+Swap down performs as many as d comparions per swap: O(d).
+
+Inserting an item is O(log n / log d).
+Deleting the root is O(d log n / log d).
+
+Assuming every inserted item is eventually deleted from the root, d=4 requires
+the fewest comparisons for combined insert and delete:
+ * (1 + 2) lg 2 = 4.328085
+ * (1 + 3) lg 3 = 3.640957
+ * (1 + 4) lg 4 = 3.606738
+ * (1 + 5) lg 5 = 3.728010
+ * (1 + 6) lg 6 = 3.906774
+ * etc...
+
+Leaf nodes require no comparisons to shift down, and higher values for d have
+higher percentage of leaf nodes:
+ * d=2 has ~50% leaves,
+ * d=3 has ~67% leaves,
+ * d=4 has ~75% leaves,
+ * and so on...
+
+See https://en.wikipedia.org/wiki/D-ary_heap#Analysis for deeper analysis.
+
+### Space complexity
+
+Because the heap is a complete binary tree, space usage is linear, regardless
+of d.  However higher d values may provide better cache locality.
+
+We can run comparisons much much faster for Numeric or String objects than for
+ruby objects which delegate comparison to internal Numeric or String objects.
+And it is often advantageous to use extrinsic scores for uncomparable items.
+For this, our internal array uses twice as many entries (one for score and one
+for value) as it would if it only supported intrinsic comparison or used an
+un-memoized "sort_by" proc.
+
+### Timers
+
+Additionally, when used to sort timers, we can reasonably assume that:
+ * New timers usually sort after most existing timers.
+ * Most timers will be canceled before executing.
+ * Canceled timers usually sort after most existing timers.
+
+So, if we are able to delete an item without searching for it, by keeping a map
+of positions within the heap, most timers can be inserted and deleted in O(1)
+time.  Canceling a non-leaf timer can be further optimized by marking it as
+canceled without immediately removing it from the heap.  If the timer is
+rescheduled before we garbage collect, adjusting its position will usually be
+faster than a delete and re-insert.
+
 ## Alternative data structures
 
 Depending on what you're doing, maintaining a sorted `Array` using
-`#bsearch_index` and `#insert` might be faster!
+`#bsearch_index` and `#insert` might be faster!  Although it is technically
+O(n) for insertions, the implementations for `memcpy` or `memmove` can be *very*
+fast on modern architectures.  Also, it can be faster O(n) on average, if
+insertions are usually near the end of the array.  You should run benchmarks
+with your expected scenarios to determine which is right.
 
 If it is important to be able to quickly enumerate the set or find the ranking
 of values in it, then you probably want to use a self-balancing binary search
@@ -105,9 +164,9 @@ tree (e.g. a red-black tree) or a skip-list.
 
 A Hashed Timing Wheel or Heirarchical Timing Wheels (or some variant in that
 family of data structures) can be constructed to have effectively O(1) running
-time in most cases.  However, the implementation for that data structure is much
-more complex than a heap.  If a 4-ary heap is good enough for go's timers,
-it should be suitable for many use cases.
+time in most cases.  However, the implementation for that data structure is more
+complex than a heap.  If a 4-ary heap is good enough for go's timers, it should
+be suitable for many use cases.
 
 ## Development
 
