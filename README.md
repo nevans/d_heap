@@ -8,46 +8,46 @@ the nodes have _d_ children instead of 2.  This allows for "decrease priority"
 operations to be performed more quickly with the tradeoff of slower delete
 minimum.  Additionally, _d_-ary heaps can have better memory cache behavior than
 binary heaps, allowing them to run more quickly in practice despite slower
-worst-case time complexity.
+worst-case time complexity. In the worst case, a _d_-ary heap requires only
+`O(log n / log d)` to push, with the tradeoff that pop is `O(d log n / log d)`.
 
-_TODO:_ In addition to a basic _d_-ary heap class (`DHeap`), this library
-~~includes~~ _will include_ extensions to `Array`, allowing an Array to be
-directly handled as a priority queue.  These extension methods are meant to be
-used similarly to how `#bsearch` and `#bsearch_index` might be used.
-
-_TODO:_ Also included is `DHeap::Set`, which augments the basic heap with an
-internal `Hash`, which maps a set of values to scores.
-loosely inspired by go's timers.  e.g: It lazily sifts its heap after deletion
-and adjustments, to achieve faster average runtime for *add* and *cancel*
-operations.
-
-_TODO:_ Also included is `DHeap::Timers`, which contains some features that are
-loosely inspired by go's timers.  e.g: It lazily sifts its heap after deletion
-and adjustments, to achieve faster average runtime for *add* and *cancel*
-operations.
+Although, you should probably just stick with the default _d_ value  of `4`, it
+may be worthwhile to benchmark your specific scenario.
 
 ## Motivation
 
-Ruby's Array class comes with some helpful methods for maintaining a sorted
-array, by combining `#bsearch_index` with `#insert`.  With certain insert/remove
-workloads that can perform very well, but in the worst-case an insert or delete
-can result in O(n), since it may need to memcopy a significant portion of the
-array.  Knowing that priority queues are usually implemented with a heap, and
-that the heap is a relatively simple data structure, I set out to replace my
-`#bsearch_index` and `#insert` code with a one.  I was surprised to find that,
-at least under certain benchmarks, my ruby Heap implementation was tied with or
-slower than inserting into a fully sorted array.  On the one hand, this is a
-testament to ruby's fine-tuned Array implementation.  On the other hand, it
-seemed like a heap implementated in C should easily match the speed of ruby's
-bsearch + insert.
+Sometimes you just need a priority queue, right?  With a regular queue, you
+expect "FIFO" behavior: first in, first out.  With a priority queue, you push
+with a score (or your elements are comparable), and you want to be able to
+efficiently pop off the minimum (or maximum) element.
 
-Additionally, I was inspired by reading go's "timer.go" implementation to
-experiment with a 4-ary heap, instead of the traditional binary heap.  In the
-case of timers, new timers are usually scheduled to run after most of the
-existing timers and timers are usually canceled before they have a chance to
-run. While a binary heap holds 50% of its elements in its last layer, 75% of a
-4-ary heap will have no children.  That diminishes the extra comparison
-overhead during sift-down.
+One obvious approach is to simply maintain an array in sorted order.  And
+ruby's Array class makes it simple to maintain a sorted array by combining
+`#bsearch_index` with `#insert`.  With certain insert/remove workloads that can
+perform very well, but in the worst-case an insert or delete can result in O(n),
+since `#insert` may need to `memcpy` or `memmove` a significant portion of the
+array.
+
+But the standard way to efficiently and simply solve this problem is using a
+binary heap.  Although it increases the time for `pop`, it converts the
+amortized time per push + pop from `O(n)` to `O(d log n / log d)`.
+
+I was surprised to find that, at least under certain benchmarks, my pure ruby
+heap implementation was usually slower than inserting into a fully sorted
+array.  While this is a testament to ruby's fine-tuned Array implementationw, a
+heap implementated in C should easily peform faster than `Array#insert`.
+
+The biggest issue is that it just takes far too much time to call `<=>` from
+ruby code: A sorted array only requires `log n / log 2` comparisons to insert
+and no comparisons to pop.  However a _d_-ary heap requires `log n / log d` to
+insert plus an additional `d log n / log d` to pop.  If your queue contains only
+a few hundred items at once, the overhead of those extra calls to `<=>` is far
+more than occasionally calling `memcpy`.
+
+It's likely that MJIT will eventually make the C-extension completely
+unnecessary.  This is definitely hotspot code, and the basic ruby implementation
+would work fine, if not for that `<=>` overhead.  Until then... this gem gets
+the job done.
 
 ## Installation
 
@@ -89,6 +89,32 @@ heap.pop.last # => Task[1]
 ```
 
 Read the `rdoc` for more detailed documentation and examples.
+
+## TODOs...
+
+_TODO:_ In addition to a basic _d_-ary heap class (`DHeap`), this library
+~~includes~~ _will include_ extensions to `Array`, allowing an Array to be
+directly handled as a priority queue.  These extension methods are meant to be
+used similarly to how `#bsearch` and `#bsearch_index` might be used.
+
+_TODO:_ Also ~~included is~~ _will include_ `DHeap::Set`, which augments the
+basic heap with an internal `Hash`, which maps a set of values to scores.
+loosely inspired by go's timers.  e.g: It lazily sifts its heap after deletion
+and adjustments, to achieve faster average runtime for *add* and *cancel*
+operations.
+
+_TODO:_ Also ~~included is~~ _will include_ `DHeap::Timers`, which contains some
+features that are loosely inspired by go's timers.  e.g: It lazily sifts its
+heap after deletion and adjustments, to achieve faster average runtime for *add*
+and *cancel* operations.
+
+Additionally, I was inspired by reading go's "timer.go" implementation to
+experiment with a 4-ary heap instead of the traditional binary heap.  In the
+case of timers, new timers are usually scheduled to run after most of the
+existing timers.  And timers are usually canceled before they have a chance to
+run. While a binary heap holds 50% of its elements in its last layer, 75% of a
+4-ary heap will have no children.  That diminishes the extra comparison overhead
+during sift-down.
 
 ## Benchmarks
 
