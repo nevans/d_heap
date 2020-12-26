@@ -1,0 +1,160 @@
+inherit_mode:
+  merge:
+    - Exclude
+
+AllCops:
+  TargetRubyVersion: 2.5
+  NewCops: disable
+  Exclude:
+    - bin/rake
+    - bin/rspec
+    - bin/rubocop
+
+###########################################################################
+# rubocop defaults are simply WRONG about many rules... Sorry. It's true.
+
+###########################################################################
+# Layout: Alignment.  I want these to work, I really do...
+
+# I wish this worked with "table". but that goes wrong sometimes.
+Layout/HashAlignment: { Enabled: false }
+
+# This needs to be configurable so parenthesis calls are aligned with first
+# parameter, and non-parenthesis calls are aligned with fixed indentation.
+Layout/ParameterAlignment: { Enabled: false }
+
+###########################################################################
+# Layout: Empty lines
+
+Layout/EmptyLineAfterGuardClause:                 { Enabled: false }
+Layout/EmptyLineAfterMagicComment:                { Enabled: true }
+Layout/EmptyLineAfterMultilineCondition:          { Enabled: false }
+Layout/EmptyLines:                                { Enabled: true }
+Layout/EmptyLinesAroundAccessModifier:            { Enabled: true }
+Layout/EmptyLinesAroundArguments:                 { Enabled: true }
+Layout/EmptyLinesAroundBeginBody:                 { Enabled: true }
+Layout/EmptyLinesAroundBlockBody:                 { Enabled: false }
+Layout/EmptyLinesAroundExceptionHandlingKeywords: { Enabled: true }
+Layout/EmptyLinesAroundMethodBody:                { Enabled: true }
+
+Layout/EmptyLineBetweenDefs:
+  Enabled: true
+  AllowAdjacentOneLineDefs: true
+
+Layout/EmptyLinesAroundAttributeAccessor:
+  inherit_mode:
+    merge:
+      - AllowedMethods
+  Enabled: true
+  AllowedMethods:
+    - delegate
+    - def_delegator
+    - def_delegators
+    - def_instance_delegators
+
+# "empty_lines_special" sometimes does the wrong thing and annoys me.
+# But I've mostly learned to live with it... mostly. 🙁
+
+Layout/EmptyLinesAroundClassBody:
+  Enabled: true
+  EnforcedStyle: empty_lines_special
+
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: true
+  EnforcedStyle: empty_lines_special
+
+###########################################################################
+# Layout: Space around, before, inside, etc
+
+Layout/SpaceAroundEqualsInParameterDefault: { Enabled: false }
+Layout/SpaceBeforeBlockBraces:              { Enabled: false }
+Layout/SpaceBeforeFirstArg:                 { Enabled: false }
+Layout/SpaceInLambdaLiteral:                { Enabled: false }
+Layout/SpaceInsideArrayLiteralBrackets:     { Enabled: false }
+Layout/SpaceInsideHashLiteralBraces:        { Enabled: false }
+
+Layout/SpaceInsideBlockBraces:
+  EnforcedStyle: space
+  EnforcedStyleForEmptyBraces: space
+  SpaceBeforeBlockParameters: false
+
+# I would enable this if it were a bit better at handling alignment.
+Layout/ExtraSpacing:
+  Enabled: false
+  AllowForAlignment: true
+  AllowBeforeTrailingComments: true
+
+###########################################################################
+# Layout: Misc
+
+Layout/LineLength:
+  Max: 90 # should stay under 80, but we'll allow a little wiggle-room
+
+Layout/MultilineOperationIndentation: { Enabled: false }
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+###########################################################################
+# Lint and Naming: rubocop defaults are mostly good, but...
+
+Lint/UnusedMethodArgument: { Enabled: false }
+Naming/BinaryOperatorParameterName: { Enabled: false } # def /(denominator)
+Naming/RescuedExceptionsVariableName: { Enabled: false }
+
+###########################################################################
+# Matrics:
+
+# Although it may be better to split specs into multiple files...?
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*_spec.rb"
+
+###########################################################################
+# Style...
+
+Style/AccessorGrouping:        { Enabled: false }
+Style/AsciiComments:           { Enabled: false } # 👮 can't stop our 🎉🥳🎊🥳!
+Style/EachWithObject:          { Enabled: false }
+Style/FormatStringToken:       { Enabled: false }
+Style/FloatDivision:           { Enabled: false }
+Style/Lambda:                  { Enabled: false }
+Style/LineEndConcatenation:    { Enabled: false }
+Style/MixinGrouping:           { Enabled: false }
+Style/PerlBackrefs:            { Enabled: false } # use occasionally/sparingly
+Style/RescueStandardError:     { Enabled: false }
+Style/SingleLineMethods:       { Enabled: false }
+Style/StabbyLambdaParentheses: { Enabled: false }
+
+# If rubocop had an option to only enforce this on constants and literals (e.g.
+# strings, regexp, range), I'd agree.
+#
+# But if you are using it e.g. on method arguments of unknown type, in the same
+# style that ruby uses it with grep, then you are doing exactly the right thing.
+Style/CaseEquality: { Enabled: false }
+
+# I'd enable if "require_parentheses_when_complex" considered unary '!' simple.
+Style/TernaryParentheses:
+  EnforcedStyle: require_parentheses_when_complex
+  Enabled: false
+
+Style/BlockDelimiters:
+  EnforcedStyle: semantic
+  AllowBracesOnProceduralOneLiners: true
+
+Style/FormatString:
+  EnforcedStyle: percent
+
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  Enabled: true
+  EnforcedStyle: double_quotes
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: consistent_comma

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe DHeap do
   it "has a version number" do
     expect(DHeap::VERSION).not_to be nil
@@ -179,14 +181,14 @@ RSpec.describe DHeap do
             42,
             2, 3,
             4, 5, 6, 7,
-            8, 9, 10, 11, 12, 13, 14, 15
+            8, 9, 10, 11, 12, 13, 14, 15,
           ].flat_map {|v| [v, v] }
           expect(DHeap.heap_sift_down(ary, d, 0)).to eq(7)
           expect(ary).to eq([
             2,
             4, 3,
             8, 5, 6, 7,
-            42, 9, 10, 11, 12, 13, 14, 15
+            42, 9, 10, 11, 12, 13, 14, 15,
           ].flat_map {|v| [v, v] })
         end
       end
