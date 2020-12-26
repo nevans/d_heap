@@ -11,7 +11,7 @@ binary heaps, allowing them to run more quickly in practice despite slower
 worst-case time complexity. In the worst case, a _d_-ary heap requires only
 `O(log n / log d)` to push, with the tradeoff that pop is `O(d log n / log d)`.
 
-Although, you should probably just stick with the default _d_ value  of `4`, it
+Although you should probably just stick with the default _d_ value  of `4`, it
 may be worthwhile to benchmark your specific scenario.
 
 ## Motivation

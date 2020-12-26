@@ -17,4 +17,4 @@ Rake::ExtensionTask.new("d_heap") do |ext|
   ext.lib_dir = "lib/d_heap"
 end
 
-task defaul: %i[clobber compile spec rubocop]
+task default: %i[clobber compile spec rubocop]
