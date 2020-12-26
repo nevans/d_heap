@@ -1,0 +1,22 @@
+name: Ruby
+
+on: [push,pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu, macos]
+        ruby: [2.5, 2.6, 2.7, 3.0]
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+    - name: Run the default task
+      run: |
+        gem install bundler -v 2.2.3
+        bundle install
+        bundle exec rake
