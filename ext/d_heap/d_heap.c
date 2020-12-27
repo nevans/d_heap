@@ -51,7 +51,6 @@ ID id_ivar_d;
 VALUE
 dheap_ary_sift_up(VALUE heap_array, int d, long sift_index) {
     DHEAP_Check_Sift_Args(heap_array, d, sift_index);
-    struct cmp_opt_data cmp_opt = { 0, 0 };
     // sift it up to where it belongs
     for (long parent_index; 0 < sift_index; sift_index = parent_index) {
         // puts(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
@@ -59,7 +58,7 @@ dheap_ary_sift_up(VALUE heap_array, int d, long sift_index) {
         VALUE parent_score = DHEAP_SCORE(heap_array, parent_index);
 
         // parent is smaller: heap is restored
-        if (CMP_LTE(parent_score, sift_score, cmp_opt)) break;
+        if (CMP_LTE(parent_score, sift_score)) break;
 
         // parent is larger: swap and continue sifting up
         VALUE parent_value = DHEAP_VALUE(heap_array, parent_index);
@@ -73,7 +72,6 @@ dheap_ary_sift_up(VALUE heap_array, int d, long sift_index) {
 VALUE
 dheap_ary_sift_down(VALUE heap_array, int d, long sift_index) {
     DHEAP_Check_Sift_Args(heap_array, d, sift_index);
-    struct cmp_opt_data cmp_opt = { 0, 0 };
 
      // iteratively sift it down to where it belongs
     for (long child_index; sift_index < last_index; sift_index = child_index) {
@@ -92,14 +90,14 @@ dheap_ary_sift_down(VALUE heap_array, int d, long sift_index) {
 
             VALUE sibling_score = DHEAP_SCORE(heap_array, sibling_index);
 
-            if (CMP_LT(sibling_score, child_score, cmp_opt)) {
+            if (CMP_LT(sibling_score, child_score)) {
                 child_score = sibling_score;
                 child_index = sibling_index;
             }
         }
 
         // child is larger: heap is restored
-        if (CMP_LTE(sift_score, child_score, cmp_opt)) break;
+        if (CMP_LTE(sift_score, child_score)) break;
 
         // child is smaller: swap and continue sifting down
         VALUE child_value = DHEAP_VALUE(heap_array, child_index);
@@ -323,8 +321,7 @@ dheap_pop_lte(VALUE self, VALUE max_score) {
     VALUE pop_value = DHEAP_VALUE(ary, 0);
 
     VALUE pop_score = DHEAP_SCORE(ary, 0);
-    struct cmp_opt_data cmp_opt = { 0, 0 };
-    if (max_score && !CMP_LTE(pop_score, max_score, cmp_opt)) return Qnil;
+    if (max_score && !CMP_LTE(pop_score, max_score)) return Qnil;
 
     DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
     return pop_value;
@@ -344,8 +341,7 @@ dheap_pop_lt(VALUE self, VALUE max_score) {
     VALUE pop_value = DHEAP_VALUE(ary, 0);
 
     VALUE pop_score = DHEAP_SCORE(ary, 0);
-    struct cmp_opt_data cmp_opt = { 0, 0 };
-    if (max_score && !CMP_LT(pop_score, max_score, cmp_opt)) return Qnil;
+    if (max_score && !CMP_LT(pop_score, max_score)) return Qnil;
 
     DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
     return pop_value;
