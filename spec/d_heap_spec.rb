@@ -55,7 +55,7 @@ RSpec.describe DHeap do
 
       it "retains min peek for two elements in-order" do
         t0 = Time.now
-        t1 = Time.now
+        t1 = Time.now + 0.001
         expect(heap.push(t0)).to eq(0)
         expect(heap.push(t1)).to eq(1)
         expect(heap.peek).to eq(t0)
@@ -64,7 +64,7 @@ RSpec.describe DHeap do
 
       it "retains min peek for two elements reversed" do
         t0 = Time.now
-        t1 = Time.now
+        t1 = Time.now + 0.001
         expect(heap.push(t1)).to eq(0)
         expect(heap.push(t0)).to eq(0)
         expect(heap.peek).to eq(t0)
@@ -73,8 +73,8 @@ RSpec.describe DHeap do
 
       it "retains min peek for three elements in-order" do
         t0 = Time.now
-        t1 = Time.now
-        t2 = Time.now
+        t1 = Time.now + 0.001
+        t2 = Time.now + 0.002
         expect(heap.push(t0)).to eq(0)
         expect(heap.push(t1)).to eq(1)
         expect(heap.push(t2)).to eq(2)
@@ -84,8 +84,8 @@ RSpec.describe DHeap do
 
       it "retains min peek for three elements reversed" do
         t0 = Time.now
-        t1 = Time.now
-        t2 = Time.now
+        t1 = Time.now + 0.001
+        t2 = Time.now + 0.002
         expect(heap.push(t2)).to eq(0)
         expect(heap.push(t1)).to eq(0)
         expect(heap.push(t0)).to eq(0)
