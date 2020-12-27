@@ -67,25 +67,26 @@ Or install it yourself as:
 
 ## Usage
 
-The simplest way to use it is simply with `#push` and `#pop`.  Push will 
+The simplest way to use it is simply with `#push` and `#pop`.  Push takes a
+score and a value, and pop returns the value with the current minimum score.
 
 ```ruby
 require "d_heap"
 
 heap = DHeap.new # defaults to a 4-ary heap
 
-# storing [time, task] tuples
-heap << [Time.now + 5*60, Task.new(1)]
-heap << [Time.now +   30, Task.new(2)]
-heap << [Time.now +   60, Task.new(3)]
-heap << [Time.now +    5, Task.new(4)]
+# storing [score, value] tuples
+heap.push Time.now + 5*60, Task.new(1)
+heap.push Time.now +   30, Task.new(2)
+heap.push Time.now +   60, Task.new(3)
+heap.push Time.now +    5, Task.new(4)
 
 # peeking and popping (using last to get the task and ignore the time)
-heap.pop.last # => Task[4]
-heap.pop.last # => Task[2]
-heap.peak.last # => Task[3]
-heap.pop.last # => Task[3]
-heap.pop.last # => Task[1]
+heap.pop.last  # => Task[4]
+heap.pop.last  # => Task[2]
+heap.peak.last # => Task[3], but don't pop it
+heap.pop.last  # => Task[3]
+heap.pop.last  # => Task[1]
 ```
 
 Read the `rdoc` for more detailed documentation and examples.
