@@ -14,6 +14,48 @@ worst-case time complexity. In the worst case, a _d_-ary heap requires only
 Although you should probably just stick with the default _d_ value  of `4`, it
 may be worthwhile to benchmark your specific scenario.
 
+## Usage
+
+The simplest way to use it is simply with `#push` and `#pop`.  Push takes a
+score and a value, and pop returns the value with the current minimum score.
+
+```ruby
+require "d_heap"
+
+heap = DHeap.new # defaults to a 4-ary heap
+
+# storing [score, value] tuples
+heap.push Time.now + 5*60, Task.new(1)
+heap.push Time.now +   30, Task.new(2)
+heap.push Time.now +   60, Task.new(3)
+heap.push Time.now +    5, Task.new(4)
+
+# peeking and popping (using last to get the task and ignore the time)
+heap.pop.last  # => Task[4]
+heap.pop.last  # => Task[2]
+heap.peak.last # => Task[3], but don't pop it
+heap.pop.last  # => Task[3]
+heap.pop.last  # => Task[1]
+```
+
+Read the `rdoc` for more detailed documentation and examples.
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'd_heap'
+```
+
+And then execute:
+
+    $ bundle install
+
+Or install it yourself as:
+
+    $ gem install d_heap
+
 ## Motivation
 
 Sometimes you just need a priority queue, right?  With a regular queue, you
@@ -48,48 +90,6 @@ It's likely that MJIT will eventually make the C-extension completely
 unnecessary.  This is definitely hotspot code, and the basic ruby implementation
 would work fine, if not for that `<=>` overhead.  Until then... this gem gets
 the job done.
-
-## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'd_heap'
-```
-
-And then execute:
-
-    $ bundle install
-
-Or install it yourself as:
-
-    $ gem install d_heap
-
-## Usage
-
-The simplest way to use it is simply with `#push` and `#pop`.  Push takes a
-score and a value, and pop returns the value with the current minimum score.
-
-```ruby
-require "d_heap"
-
-heap = DHeap.new # defaults to a 4-ary heap
-
-# storing [score, value] tuples
-heap.push Time.now + 5*60, Task.new(1)
-heap.push Time.now +   30, Task.new(2)
-heap.push Time.now +   60, Task.new(3)
-heap.push Time.now +    5, Task.new(4)
-
-# peeking and popping (using last to get the task and ignore the time)
-heap.pop.last  # => Task[4]
-heap.pop.last  # => Task[2]
-heap.peak.last # => Task[3], but don't pop it
-heap.pop.last  # => Task[3]
-heap.pop.last  # => Task[1]
-```
-
-Read the `rdoc` for more detailed documentation and examples.
 
 ## TODOs...
 
