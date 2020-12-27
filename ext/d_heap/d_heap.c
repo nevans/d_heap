@@ -25,10 +25,10 @@ ID id_ivar_d;
 
 #define DHEAP_Check_d_size(d) \
     if (d < 2) { \
-        rb_raise(rb_eIndexError, "DHeap d=%d is too small", d); \
+        rb_raise(rb_eArgError, "DHeap d=%d is too small", d); \
     } \
     if (d > DHEAP_MAX_D) { \
-        rb_raise(rb_eIndexError, "DHeap d=%d is too large", d); \
+        rb_raise(rb_eArgError, "DHeap d=%d is too large", d); \
     }
 
 #define DHEAP_Check_Sift_Idx(sift_index, last_index) \
@@ -359,6 +359,9 @@ Init_d_heap(void)
     id_ivar_d = rb_intern_const("d");
 
     rb_cDHeap = rb_define_class("DHeap", rb_cObject);
+    rb_define_const(rb_cDHeap, "MAX_D", INT2NUM(DHEAP_MAX_D));
+    rb_define_const(rb_cDHeap, "DEFAULT_D", INT2NUM(DHEAP_DEFAULT_D));
+
     rb_define_singleton_method(rb_cDHeap, "heap_sift_down", dheap_sift_down_s, 3);
     rb_define_singleton_method(rb_cDHeap, "heap_sift_up",   dheap_sift_up_s, 3);
 
