@@ -8,12 +8,8 @@ jobs:
       fail-fast: false
       matrix:
         ruby: [2.5, 2.6, 2.7, 3.0]
-        os: [ubuntu] # os: [ubuntu, macos]
+        os: [ubuntu, macos]
         experimental: [false]
-        include:
-          - os: macos
-            ruby: 2.7
-            experimental: true
     runs-on: ${{ matrix.os }}-latest
     continue-on-error: ${{ matrix.experimental }}
     steps:
@@ -22,6 +18,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
     - name: Run the default task
       run: |
         gem install bundler -v 2.2.3
