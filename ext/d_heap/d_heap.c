@@ -112,43 +112,61 @@ dheap_ary_sift_down(VALUE heap_array, int d, long sift_index) {
 
 #define DHEAP_Load_Sift_Vals(heap_array, dval, idxval) \
     Check_Type(dval, T_FIXNUM); \
-    int d = FIX2INT(dval); \
-    long sift_index = NUM2LONG(idxval);
+    int dint = FIX2INT(dval); \
+    long idx = NUM2LONG(idxval);
 
 /*
- * call-seq:
- *    DHeap.array_sift_up(heap_array, d, sift_index)
+ * Treats a +heap_array+ as a +d+-ary heap and sifts up from +sift_index+ to
+ * restore the heap property for all nodes between it and the root of the tree.
  *
- * Treats +heap_array+ as a +d+-ary heap and sifts up from +sift_index+ to restore
- * the heap property.
+ * The array is interpreted as holding two entries for each node, a score and a
+ * value.  The scores will held in every even-numbered array index and the
+ * values in every odd numbered index.  The array is flat, not an array of
+ * length=2 arrays.
  *
- * Time complexity: O(d log n / log d).  If the average up shifted element sorts
- * into the bottom layer (e.g. new timers), this can avg O(1).
+ * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
+ * @param heap_array [Array] the array which is treated a heap.
+ * @param d [Integer] the maximum number of children per parent
+ * @param sift_index [Integer] the index to start sifting from
+ * @return [Integer] the new index for the object that starts at +sift_index+.
  */
 static VALUE
-dheap_sift_up_s(VALUE unused, VALUE heap_array, VALUE dval, VALUE idxval) {
-    DHEAP_Load_Sift_Vals(heap_array, dval, idxval);
-    return dheap_ary_sift_up(heap_array, d, sift_index);
+dheap_sift_up_s(VALUE unused, VALUE heap_array, VALUE d, VALUE sift_index) {
+    DHEAP_Load_Sift_Vals(heap_array, d, sift_index);
+    return dheap_ary_sift_up(heap_array, dint, idx);
 }
 
 /*
- * call-seq:
- *    DHeap.array_sift_down(heap_array, d, sift_index)
- *
  * Treats +heap_array+ as a +d+-ary heap and sifts down from +sift_index+ to
- * restore the heap property.
+ * restore the heap property. If all _d_ subtrees below +sift_index+ are already
+ * heaps, this method ensures the entire subtree rooted at +sift_index+ will be
+ * a heap.
  *
- * Time complexity: O(d log n / log d).  If the average down shifted element
- * sorts into the bottom layer (e.g. canceled timers), this can avg O(1).
+ * The array is interpreted as holding two entries for each node, a score and a
+ * value.  The scores will held in every even-numbered array index and the
+ * values in every odd numbered index.  The array is flat, not an array of
+ * length=2 arrays.
  *
+ * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @param heap_array [Array] the array which is treated a heap.
+ * @param d [Integer] the maximum number of children per parent
+ * @param sift_index [Integer] the index to start sifting down from
+ * @return [Integer] the new index for the object that starts at +sift_index+.
  */
 static VALUE
-dheap_sift_down_s(VALUE unused, VALUE heap_array, VALUE dval, VALUE idxval) {
-    DHEAP_Load_Sift_Vals(heap_array, dval, idxval);
-    return dheap_ary_sift_down(heap_array, d, sift_index);
+dheap_sift_down_s(VALUE unused, VALUE heap_array, VALUE d, VALUE sift_index) {
+    DHEAP_Load_Sift_Vals(heap_array, d, sift_index);
+    return dheap_ary_sift_down(heap_array, dint, idx);
 }
 
+/*
+ * @overload initialize(d = DHeap::DEFAULT_D)
+ *   Initialize a _d_-ary min-heap.
+ *
+ *   @param d [Integer] maximum number of children per parent
+ */
 static VALUE
 dheap_initialize(int argc, VALUE *argv, VALUE self) {
     rb_check_arity(argc, 0, 1);
@@ -162,20 +180,35 @@ dheap_initialize(int argc, VALUE *argv, VALUE self) {
     return self;
 }
 
+/*
+ * @return [Integer] the number of elements in the heap
+ */
 static VALUE dheap_size(VALUE self) {
     VALUE ary = DHEAP_GET_A(self);
     long size = DHEAP_SIZE(ary);
     return LONG2NUM(size);
 }
 
+/*
+ * @return [Boolean] is the heap empty?
+ */
 static VALUE dheap_empty_p(VALUE self) {
     VALUE ary = DHEAP_GET_A(self);
     long size = DHEAP_SIZE(ary);
     return size == 0 ? Qtrue : Qfalse;
 }
 
+/*
+ * @return [Integer] the maximum number of children per parent
+ */
 static VALUE dheap_attr_d(VALUE self) { return DHEAP_GET_D(self); }
 
+/*
+ * Freezes the heap as well as its underlying array, but does <i>not</i>
+ * deep-freeze the elements in the heap.
+ *
+ * @return [self]
+ */
 static VALUE
 dheap_freeze(VALUE self) {
     VALUE ary = DHEAP_GET_A(self);
@@ -193,10 +226,19 @@ dheap_ary_push(VALUE ary, int d, VALUE val, VALUE scr)
 }
 
 /*
- * Push val onto the end of the heap, then sift up to maintain heap property.
+ * @overload push(score, value = score)
  *
- * Returns the index of the value's final position.
+ * Push a value onto heap, using a score to determine sort-order.
  *
+ * Ideally, the score should be a frozen value that can be efficiently compared
+ * to other scores, e.g. an Integer or Float or (maybe) a String
+ *
+ * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @param score [#<=>] a value that can be compared to other scores.
+ * @param value [Object] an object that is associated with the score.
+ *
+ * @return [Integer] the index of the value's final position.
  */
 static VALUE
 dheap_push(int argc, VALUE *argv, VALUE self) {
@@ -212,16 +254,18 @@ dheap_push(int argc, VALUE *argv, VALUE self) {
 }
 
 /*
- * Push val onto the end of the heap, then sift up to maintain heap property.
+ * Pushes a comparable value onto the heap.
  *
- * Time complexity: O(d log n / log d).
+ * The value will be its own score.
  *
- * Returns +self+.
+ * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
+ * @param value [#<=>] a value that can be compared to other heap members.
+ * @return [self]
  */
 static VALUE
-dheap_left_shift(VALUE self, VALUE val) {
-    dheap_push(1, &val, self);
+dheap_left_shift(VALUE self, VALUE value) {
+    dheap_push(1, &value, self);
     return self;
 }
 
@@ -238,6 +282,12 @@ dheap_left_shift(VALUE self, VALUE val) {
     DHEAP_DROP_LAST(ary); \
     dheap_ary_sift_down(ary, FIX2INT(dval), 0);
 
+/*
+ * Returns the next value on the heap to be popped without popping it.
+ *
+ * Time complexity: <b>O(1)</b> <i>(worst-case)</i>
+ * @return [Object] the next value to be popped without popping it.
+ */
 static VALUE
 dheap_peek(VALUE self) {
     VALUE ary = DHEAP_GET_A(self);
@@ -245,11 +295,9 @@ dheap_peek(VALUE self) {
 }
 
 /*
- * Pops the minimum value from the top of the heap, sifting down to maintain
- * heap property.
+ * Pops the minimum value from the top of the heap
  *
- * Time complexity: O(d log n / log d).
- *
+ * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
  */
 static VALUE
 dheap_pop(VALUE self) {
@@ -262,42 +310,42 @@ dheap_pop(VALUE self) {
 }
 
 /*
- * Pops the minimum value from the top of the heap, sifting down to maintain
- * heap property.
+ * Pops the minimum value only if it is less than or equal to a max score.
  *
- * Time complexity: O(d log n / log d).
+ * @param max_score [#<=>] the maximum score to be popped
  *
+ * @see #pop
  */
 static VALUE
-dheap_pop_lte(VALUE self, VALUE below_score) {
+dheap_pop_lte(VALUE self, VALUE max_score) {
     DHEAP_Pop_Init(self);
     if (last_index <  0) return Qnil;
     VALUE pop_value = DHEAP_VALUE(ary, 0);
 
     VALUE pop_score = DHEAP_SCORE(ary, 0);
     struct cmp_opt_data cmp_opt = { 0, 0 };
-    if (below_score && !CMP_LTE(pop_score, below_score, cmp_opt)) return Qnil;
+    if (max_score && !CMP_LTE(pop_score, max_score, cmp_opt)) return Qnil;
 
     DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
     return pop_value;
 }
 
 /*
- * Pops the minimum value from the top of the heap, sifting down to maintain
- * heap property.
+ * Pops the minimum value only if it is less than a max score.
  *
- * Time complexity: O(d log n / log d).
+ * @param max_score [#<=>] the maximum score to be popped
  *
+ * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
  */
 static VALUE
-dheap_pop_lt(VALUE self, VALUE below_score) {
+dheap_pop_lt(VALUE self, VALUE max_score) {
     DHEAP_Pop_Init(self);
     if (last_index <  0) return Qnil;
     VALUE pop_value = DHEAP_VALUE(ary, 0);
 
     VALUE pop_score = DHEAP_SCORE(ary, 0);
     struct cmp_opt_data cmp_opt = { 0, 0 };
-    if (below_score && !CMP_LT(pop_score, below_score, cmp_opt)) return Qnil;
+    if (max_score && !CMP_LT(pop_score, max_score, cmp_opt)) return Qnil;
 
     DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
     return pop_value;
