@@ -53,9 +53,13 @@ optimized_cmp(VALUE a, VALUE b) {
     return rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b);
 }
 
-#define puts(v) { \
+#ifdef __D_HEAP_DEBUG
+#define debug(v) { \
     ID sym_puts = rb_intern("puts"); \
     rb_funcall(rb_mKernel, sym_puts, 1, v); \
 }
+#else
+#define debug(v)
+#endif
 
 #endif /* D_HEAP_H */

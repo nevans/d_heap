@@ -53,7 +53,7 @@ dheap_ary_sift_up(VALUE heap_array, int d, long sift_index) {
     DHEAP_Check_Sift_Args(heap_array, d, sift_index);
     // sift it up to where it belongs
     for (long parent_index; 0 < sift_index; sift_index = parent_index) {
-        // puts(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
+        debug(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
         parent_index = IDX_PARENT(sift_index);
         VALUE parent_score = DHEAP_SCORE(heap_array, parent_index);
 
@@ -65,7 +65,7 @@ dheap_ary_sift_up(VALUE heap_array, int d, long sift_index) {
         DHEAP_ASSIGN(heap_array, sift_index, parent_score, parent_value);
         DHEAP_ASSIGN(heap_array, parent_index, sift_score, sift_value);
     }
-    // puts(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
+    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
     return LONG2NUM(sift_index);
 }
 
@@ -75,7 +75,7 @@ dheap_ary_sift_down(VALUE heap_array, int d, long sift_index) {
 
      // iteratively sift it down to where it belongs
     for (long child_index; sift_index < last_index; sift_index = child_index) {
-        // puts(rb_sprintf("sift dn(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
+        debug(rb_sprintf("sift dn(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
         // find first child index, and break if we've reached the last layer
         long child_idx0 = child_index = IDX_CHILD0(sift_index);
         if (last_index < child_idx0) break;
@@ -104,7 +104,7 @@ dheap_ary_sift_down(VALUE heap_array, int d, long sift_index) {
         DHEAP_ASSIGN(heap_array, sift_index, child_score, child_value);
         DHEAP_ASSIGN(heap_array, child_index, sift_score, sift_value);
     }
-    // puts(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
+    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
     return LONG2NUM(sift_index);
 }
 
