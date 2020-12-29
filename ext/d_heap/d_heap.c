@@ -1,27 +1,29 @@
 #include "d_heap.h"
 
-ID id_ivar_a;
+ID id_cmp; // <=>
+ID id_ivar_values;
+ID id_ivar_scores;
 ID id_ivar_d;
 
-#define DHEAP_GET_A(self) rb_ivar_get(self, id_ivar_a)
-#define DHEAP_GET_D(self) rb_ivar_get(self, id_ivar_d)
+#define Get_DHeap(hobj, hstruct) ((hstruct) = get_dheap_struct(hobj))
 
-#define DHEAP_SIZE(ary) (RARRAY_LEN(ary) / 2)
-#define DHEAP_LAST_IDX(ary) (DHEAP_SIZE(ary) - 1)
-#define DHEAP_VALUE(ary, idx) rb_ary_entry(ary, idx * 2 + 1)
-#define DHEAP_SCORE(ary, idx) rb_ary_entry(ary, idx * 2)
-#define DHEAP_ASSIGN(ary, idx, scr, val) \
-    rb_ary_store(ary, idx * 2,     scr); \
-    rb_ary_store(ary, idx * 2 + 1, val);
-#define DHEAP_APPEND(ary, scr, val) \
-    rb_ary_push(ary, scr); \
-    rb_ary_push(ary, val);
-#define DHEAP_DROP_LAST(ary) ( \
-        rb_ary_pop(ary), \
-        rb_ary_pop(ary) \
+#define DHEAP_IDX_LAST(heap) (DHEAP_SIZE(heap) - 1)
+#define DHEAP_IDX_PARENT(heap, idx) ((idx - 1) / heap->d)
+#define DHEAP_IDX_CHILD0(heap, idx) ((idx * heap->d) + 1)
+
+#define DHEAP_SIZE(heap) (RARRAY_LEN((heap)->scores))
+#define DHEAP_VALUE(heap, idx) RARRAY_AREF((heap)->values, idx)
+#define DHEAP_SCORE(heap, idx) RARRAY_AREF((heap)->scores, idx)
+#define DHEAP_ASSIGN(heap, idx, scr, val) \
+    rb_ary_store(heap->scores, idx, scr); \
+    rb_ary_store(heap->values, idx, val);
+#define DHEAP_APPEND(heap, scr, val) \
+    rb_ary_push((heap)->scores, scr); \
+    rb_ary_push((heap)->values, val);
+#define DHEAP_DROP_LAST(heap) ( \
+        rb_ary_pop(heap->scores), \
+        rb_ary_pop(heap->values) \
     ) // score, value
-#define IDX_PARENT(idx) ((idx - 1) / d)
-#define IDX_CHILD0(idx) ((idx * d) + 1)
 
 #define DHEAP_Check_d_size(d) \
     if (d < 2) { \
@@ -31,132 +33,78 @@ ID id_ivar_d;
         rb_raise(rb_eArgError, "DHeap d=%d is too large", d); \
     }
 
-#define DHEAP_Check_Sift_Idx(sift_index, last_index) \
-    if (sift_index < 0) { \
-        rb_raise(rb_eIndexError, "sift_index %ld too small", sift_index); \
+#define DHEAP_Check_Index(index, last_index) \
+    if (index < 0) { \
+        rb_raise(rb_eIndexError, "DHeap index %ld too small", index); \
     } \
-    else if (last_index < sift_index) { \
-        rb_raise(rb_eIndexError, "sift_index %ld too large", sift_index); \
+    else if (last_index < index) { \
+        rb_raise(rb_eIndexError, "DHeap index %ld too large", index); \
     }
 
-#define DHEAP_Check_Sift_Args(heap_array, d, sift_index) \
-    DHEAP_Check_d_size(d); \
-    Check_Type(heap_array, T_ARRAY); \
-    long last_index = DHEAP_LAST_IDX(heap_array); \
-    DHEAP_Check_Sift_Idx(sift_index, last_index); \
-    \
-    VALUE sift_value = DHEAP_VALUE(heap_array, sift_index); \
-    VALUE sift_score = DHEAP_SCORE(heap_array, sift_index);
+struct dheap_struct {
+    int d;
+    VALUE scores;
+    VALUE values;
+};
+typedef struct dheap_struct dheap_t;
 
-VALUE
-dheap_ary_sift_up(VALUE heap_array, int d, long sift_index) {
-    DHEAP_Check_Sift_Args(heap_array, d, sift_index);
-    // sift it up to where it belongs
-    for (long parent_index; 0 < sift_index; sift_index = parent_index) {
-        debug(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
-        parent_index = IDX_PARENT(sift_index);
-        VALUE parent_score = DHEAP_SCORE(heap_array, parent_index);
-
-        // parent is smaller: heap is restored
-        if (CMP_LTE(parent_score, sift_score)) break;
-
-        // parent is larger: swap and continue sifting up
-        VALUE parent_value = DHEAP_VALUE(heap_array, parent_index);
-        DHEAP_ASSIGN(heap_array, sift_index, parent_score, parent_value);
-        DHEAP_ASSIGN(heap_array, parent_index, sift_score, sift_value);
-    }
-    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
-    return LONG2NUM(sift_index);
+static void
+dheap_compact(void *ptr)
+{
+    dheap_t *heap = ptr;
+    if (heap->scores) heap->scores = rb_gc_location(heap->scores);
+    if (heap->values) heap->values = rb_gc_location(heap->values);
 }
 
-VALUE
-dheap_ary_sift_down(VALUE heap_array, int d, long sift_index) {
-    DHEAP_Check_Sift_Args(heap_array, d, sift_index);
-
-     // iteratively sift it down to where it belongs
-    for (long child_index; sift_index < last_index; sift_index = child_index) {
-        debug(rb_sprintf("sift dn(%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
-        // find first child index, and break if we've reached the last layer
-        long child_idx0 = child_index = IDX_CHILD0(sift_index);
-        if (last_index < child_idx0) break;
-
-        // find the min child (and its child_index)
-        // requires "d" comparisons to find min child and compare to sift_score
-        VALUE child_score = DHEAP_SCORE(heap_array, child_idx0);
-        child_index = child_idx0;
-        for (int i = 1; i < d; ++i) {
-            long sibling_index = child_idx0 + i;
-            if (last_index < sibling_index) break;
-
-            VALUE sibling_score = DHEAP_SCORE(heap_array, sibling_index);
-
-            if (CMP_LT(sibling_score, child_score)) {
-                child_score = sibling_score;
-                child_index = sibling_index;
-            }
-        }
-
-        // child is larger: heap is restored
-        if (CMP_LTE(sift_score, child_score)) break;
-
-        // child is smaller: swap and continue sifting down
-        VALUE child_value = DHEAP_VALUE(heap_array, child_index);
-        DHEAP_ASSIGN(heap_array, sift_index, child_score, child_value);
-        DHEAP_ASSIGN(heap_array, child_index, sift_score, sift_value);
-    }
-    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap_array, d, sift_index));
-    return LONG2NUM(sift_index);
+static void
+dheap_mark(void *ptr)
+{
+    dheap_t *heap = ptr;
+    if (heap->scores) rb_gc_mark_movable(heap->scores);
+    if (heap->values) rb_gc_mark_movable(heap->values);
 }
 
-#define DHEAP_Load_Sift_Vals(heap_array, dval, idxval) \
-    Check_Type(dval, T_FIXNUM); \
-    int dint = FIX2INT(dval); \
-    long idx = NUM2LONG(idxval);
+static size_t
+dheap_memsize(const void *ptr)
+{
+    const dheap_t *heap = ptr;
+    size_t size = sizeof(*heap);
+    return size;
+}
 
-/*
- * Treats a +heap_array+ as a +d+-ary heap and sifts up from +sift_index+ to
- * restore the heap property for all nodes between it and the root of the tree.
- *
- * The array is interpreted as holding two entries for each node, a score and a
- * value.  The scores will held in every even-numbered array index and the
- * values in every odd numbered index.  The array is flat, not an array of
- * length=2 arrays.
- *
- * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
- *
- * @param heap_array [Array] the array which is treated a heap.
- * @param d [Integer] the maximum number of children per parent
- * @param sift_index [Integer] the index to start sifting from
- * @return [Integer] the new index for the object that starts at +sift_index+.
- */
+static const rb_data_type_t dheap_data_type = {
+    .wrap_struct_name = "dheap_element",
+    .function = {
+        .dmark = dheap_mark,
+        .dfree = RUBY_DEFAULT_FREE,
+        .dsize = dheap_memsize,
+        .dcompact = dheap_compact,
+    },
+    .data = NULL,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE
-dheap_sift_up_s(VALUE unused, VALUE heap_array, VALUE d, VALUE sift_index) {
-    DHEAP_Load_Sift_Vals(heap_array, d, sift_index);
-    return dheap_ary_sift_up(heap_array, dint, idx);
+dheap_s_alloc(VALUE klass)
+{
+    VALUE obj;
+    dheap_t *heap;
+
+    obj = TypedData_Make_Struct(klass, dheap_t, &dheap_data_type, heap);
+    heap->d = DHEAP_DEFAULT_D;
+    heap->scores = Qnil;
+    heap->values = Qnil;
+
+    return obj;
 }
 
-/*
- * Treats +heap_array+ as a +d+-ary heap and sifts down from +sift_index+ to
- * restore the heap property. If all _d_ subtrees below +sift_index+ are already
- * heaps, this method ensures the entire subtree rooted at +sift_index+ will be
- * a heap.
- *
- * The array is interpreted as holding two entries for each node, a score and a
- * value.  The scores will held in every even-numbered array index and the
- * values in every odd numbered index.  The array is flat, not an array of
- * length=2 arrays.
- *
- * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
- *
- * @param heap_array [Array] the array which is treated a heap.
- * @param d [Integer] the maximum number of children per parent
- * @param sift_index [Integer] the index to start sifting down from
- * @return [Integer] the new index for the object that starts at +sift_index+.
- */
-static VALUE
-dheap_sift_down_s(VALUE unused, VALUE heap_array, VALUE d, VALUE sift_index) {
-    DHEAP_Load_Sift_Vals(heap_array, d, sift_index);
-    return dheap_ary_sift_down(heap_array, dint, idx);
+static inline dheap_t *
+get_dheap_struct(VALUE self)
+{
+    dheap_t *heap;
+    TypedData_Get_Struct(self, dheap_t, &dheap_data_type, heap);
+    Check_Type(heap->scores, T_ARRAY);
+    return heap;
 }
 
 /*
@@ -168,38 +116,186 @@ dheap_sift_down_s(VALUE unused, VALUE heap_array, VALUE d, VALUE sift_index) {
 static VALUE
 dheap_initialize(int argc, VALUE *argv, VALUE self) {
     rb_check_arity(argc, 0, 1);
+    dheap_t *heap;
+    TypedData_Get_Struct(self, dheap_t, &dheap_data_type, heap);
+
     int d = DHEAP_DEFAULT_D;
     if (argc) {
         d = NUM2INT(argv[0]);
     }
     DHEAP_Check_d_size(d);
-    rb_ivar_set(self, id_ivar_d, INT2FIX(d));
-    rb_ivar_set(self, id_ivar_a, rb_ary_new());
+    heap->d = d;
+
+    heap->scores = rb_ary_new_capa(10000);
+    heap->values = rb_ary_new_capa(10000);
+
     return self;
+}
+
+/*
+static inline VALUE
+make_dheap_element(VALUE score, VALUE value)
+{
+    elem_t *elem;
+    VALUE obj = TypedData_Make_Struct(
+            rb_cObject,
+            elem_t,
+            &dheap_elem_type,
+            elem);
+    elem->score = score;
+    elem->value = value;
+    return obj;
+}
+
+#define IsDHeapElem(value) rb_typeddata_is_kind_of((value), &dheap_elem_type)
+#define Get_DHeap_Elem(value) \
+    TypedData_Get_Struct((obj), elem_t, &dheap_elem_type, (elem))
+
+static inline elem_t *
+get_dheap_element(VALUE obj)
+{
+    elem_t *elem;
+    TypedData_Get_Struct((obj), elem_t, &dheap_elem_type, (elem));
+    return elem;
+}
+
+*/
+
+#define CMP_LT(a, b)  (optimized_cmp(a, b) <  0)
+#define CMP_LTE(a, b) (optimized_cmp(a, b) <= 0)
+#define CMP_GT(a, b)  (optimized_cmp(a, b) >  0)
+#define CMP_GTE(a, b) (optimized_cmp(a, b) >= 0)
+
+/*
+ * short-circuit evaluation for a few basic types.
+ *
+ * Only Integer, Float, and String are optimized,
+ * and only when both arguments are the same type.
+ */
+static inline int
+optimized_cmp(VALUE a, VALUE b) {
+    if (a == b) // Fixnum equality and object equality
+        return 0;
+    if (FIXNUM_P(a) && FIXNUM_P(b))
+        return (FIX2LONG(a) < FIX2LONG(b)) ? -1 : 1;
+    if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b))
+    {
+        double x, y;
+        x = RFLOAT_VALUE(a);
+        y = RFLOAT_VALUE(b);
+        if (isnan(x) || isnan(y)) rb_cmperr(a, b); // raise ArgumentError
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
+    if (RB_TYPE_P(a, T_BIGNUM) && RB_TYPE_P(b, T_BIGNUM))
+        return FIX2INT(rb_big_cmp(a, b));
+    if (STRING_P(a) && STRING_P(b))
+        return rb_str_cmp(a, b);
+
+    // give up on an optimized version and just call (a <=> b)
+    return rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b);
+}
+
+VALUE
+dheap_ary_sift_up(dheap_t *heap, long sift_index) {
+    long last_index = DHEAP_IDX_LAST(heap);
+    DHEAP_Check_Index(sift_index, last_index);
+
+    VALUE sift_value = DHEAP_VALUE(heap, sift_index);
+    VALUE sift_score = DHEAP_SCORE(heap, sift_index);
+
+    // sift it up to where it belongs
+    for (long parent_index; 0 < sift_index; sift_index = parent_index) {
+        debug(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
+        parent_index = DHEAP_IDX_PARENT(heap, sift_index);
+        VALUE parent_score = DHEAP_SCORE(heap, parent_index);
+
+        // parent is smaller: heap is restored
+        if (CMP_LTE(parent_score, sift_score)) break;
+
+        // parent is larger: swap and continue sifting up
+        VALUE parent_value = DHEAP_VALUE(heap, parent_index);
+        DHEAP_ASSIGN(heap, sift_index, parent_score, parent_value);
+        DHEAP_ASSIGN(heap, parent_index, sift_score, sift_value);
+    }
+    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
+    return LONG2NUM(sift_index);
+}
+
+VALUE
+dheap_ary_sift_down(dheap_t *heap, long sift_index) {
+    long last_index = DHEAP_IDX_LAST(heap);
+    DHEAP_Check_Index(sift_index, last_index);
+
+    VALUE sift_value = DHEAP_VALUE(heap, sift_index);
+    VALUE sift_score = DHEAP_SCORE(heap, sift_index);
+
+     // iteratively sift it down to where it belongs
+    for (long child_index; sift_index < last_index; sift_index = child_index) {
+        debug(rb_sprintf("sift dn(%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
+        // find first child index, and break if we've reached the last layer
+        long child_idx0 = child_index = DHEAP_IDX_CHILD0(heap, sift_index);
+        if (last_index < child_idx0) break;
+
+        // find the min child (and its child_index)
+        // requires "d" comparisons to find min child and compare to sift_score
+        long last_sibidx = child_idx0 + heap->d - 1;
+        if (last_index < last_sibidx) last_sibidx = last_index;
+        VALUE child_score = DHEAP_SCORE(heap, child_idx0);
+        child_index = child_idx0;
+        for (long sibling_index = child_idx0 + 1;
+                sibling_index <= last_sibidx;
+                ++sibling_index) {
+            VALUE sibling_score = DHEAP_SCORE(heap, sibling_index);
+
+            if (CMP_LT(sibling_score, child_score)) {
+                child_score = sibling_score;
+                child_index = sibling_index;
+            }
+        }
+
+        // child is larger: heap is restored
+        if (CMP_LTE(sift_score, child_score)) break;
+
+        // child is smaller: swap and continue sifting down
+        VALUE child_value = DHEAP_VALUE(heap, child_index);
+        DHEAP_ASSIGN(heap, sift_index, child_score, child_value);
+        DHEAP_ASSIGN(heap, child_index, sift_score, sift_value);
+    }
+    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
+    return LONG2NUM(sift_index);
 }
 
 /*
  * @return [Integer] the number of elements in the heap
  */
-static VALUE dheap_size(VALUE self) {
-    VALUE ary = DHEAP_GET_A(self);
-    long size = DHEAP_SIZE(ary);
+static VALUE
+dheap_size(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    long size = DHEAP_SIZE(heap);
     return LONG2NUM(size);
 }
 
 /*
  * @return [Boolean] is the heap empty?
  */
-static VALUE dheap_empty_p(VALUE self) {
-    VALUE ary = DHEAP_GET_A(self);
-    long size = DHEAP_SIZE(ary);
+static VALUE
+dheap_empty_p(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    long size = DHEAP_SIZE(heap);
     return size == 0 ? Qtrue : Qfalse;
 }
 
 /*
  * @return [Integer] the maximum number of children per parent
  */
-static VALUE dheap_attr_d(VALUE self) { return DHEAP_GET_D(self); }
+static VALUE
+dheap_attr_d(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    return INT2FIX(heap->d);
+}
 
 /*
  * Freezes the heap as well as its underlying array, but does <i>not</i>
@@ -209,18 +305,11 @@ static VALUE dheap_attr_d(VALUE self) { return DHEAP_GET_D(self); }
  */
 static VALUE
 dheap_freeze(VALUE self) {
-    VALUE ary = DHEAP_GET_A(self);
+    dheap_t *heap = get_dheap_struct(self);
     ID id_freeze = rb_intern("freeze");
-    rb_funcall(ary, id_freeze, 0);
+    rb_funcall(heap->scores, id_freeze, 0);
+    rb_funcall(heap->values, id_freeze, 0);
     return rb_call_super(0, NULL);
-}
-
-static VALUE
-dheap_ary_push(VALUE ary, int d, VALUE val, VALUE scr)
-{
-    DHEAP_APPEND(ary, scr, val);
-    long last_index = DHEAP_LAST_IDX(ary);
-    return dheap_ary_sift_up(ary, d, last_index);
 }
 
 /*
@@ -244,11 +333,11 @@ dheap_push(int argc, VALUE *argv, VALUE self) {
     VALUE scr  = argv[0];
     VALUE val  = argc < 2 ? scr : argv[1];
 
-    VALUE ary  = DHEAP_GET_A(self);
-    VALUE dval = DHEAP_GET_D(self);
-    int d = FIX2INT(dval);
+    dheap_t *heap = get_dheap_struct(self);
 
-    return dheap_ary_push(ary, d, val, scr);
+    DHEAP_APPEND(heap, scr, val);
+    long last_index = DHEAP_IDX_LAST(heap);
+    return dheap_ary_sift_up(heap, last_index);
 }
 
 /*
@@ -267,18 +356,29 @@ dheap_left_shift(VALUE self, VALUE value) {
     return self;
 }
 
-#define DHEAP_Pop_Init(self) \
-    VALUE ary  = DHEAP_GET_A(self); \
-    VALUE dval = DHEAP_GET_D(self); \
-    long last_index = DHEAP_LAST_IDX(ary); \
+/*
+    dheap_t hstruct; \
+    Get_DHeap(self, hstruct); \
+    VALUE values = hstruct.values; \
+    VALUE scores = hstruct.scores; \
+    VALUE dval = INT2FIX(hstruct.d); \
+*/
 
-#define DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value) \
-    if (last_index == 0) { DHEAP_DROP_LAST(ary); return pop_value; } \
-    VALUE sift_value = DHEAP_VALUE(ary, last_index); \
-    VALUE sift_score = DHEAP_SCORE(ary, last_index); \
-    DHEAP_ASSIGN(ary, 0, sift_score, sift_value); \
-    DHEAP_DROP_LAST(ary); \
-    dheap_ary_sift_down(ary, FIX2INT(dval), 0);
+static inline void
+dheap_pop_swap_last_and_sift_down(dheap_t *heap, long last_index)
+{
+    if (last_index == 0) {
+        DHEAP_DROP_LAST(heap);
+    }
+    else
+    {
+        VALUE sift_value = DHEAP_VALUE(heap, last_index);
+        VALUE sift_score = DHEAP_SCORE(heap, last_index);
+        DHEAP_ASSIGN(heap, 0, sift_score, sift_value);
+        DHEAP_DROP_LAST(heap);
+        dheap_ary_sift_down(heap, 0);
+    }
+}
 
 /*
  * Returns the next value on the heap to be popped without popping it.
@@ -288,8 +388,9 @@ dheap_left_shift(VALUE self, VALUE value) {
  */
 static VALUE
 dheap_peek(VALUE self) {
-    VALUE ary = DHEAP_GET_A(self);
-    return DHEAP_VALUE(ary, 0);
+    dheap_t *heap = get_dheap_struct(self);
+    if (DHEAP_IDX_LAST(heap) < 0) return Qnil;
+    return DHEAP_VALUE(heap, 0);
 }
 
 /*
@@ -299,11 +400,13 @@ dheap_peek(VALUE self) {
  */
 static VALUE
 dheap_pop(VALUE self) {
-    DHEAP_Pop_Init(self);
-    if (last_index <  0) return Qnil;
-    VALUE pop_value = DHEAP_VALUE(ary, 0);
+    dheap_t *heap = get_dheap_struct(self);
+    long last_index = DHEAP_IDX_LAST(heap);
 
-    DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
+    if (last_index < 0) return Qnil;
+    VALUE pop_value = DHEAP_VALUE(heap, 0);
+
+    dheap_pop_swap_last_and_sift_down(heap, last_index);
     return pop_value;
 }
 
@@ -316,14 +419,16 @@ dheap_pop(VALUE self) {
  */
 static VALUE
 dheap_pop_lte(VALUE self, VALUE max_score) {
-    DHEAP_Pop_Init(self);
-    if (last_index <  0) return Qnil;
-    VALUE pop_value = DHEAP_VALUE(ary, 0);
+    dheap_t *heap = get_dheap_struct(self);
+    long last_index = DHEAP_IDX_LAST(heap);
 
-    VALUE pop_score = DHEAP_SCORE(ary, 0);
+    if (last_index <  0) return Qnil;
+    VALUE pop_value = DHEAP_VALUE(heap, 0);
+
+    VALUE pop_score = DHEAP_SCORE(heap, 0);
     if (max_score && !CMP_LTE(pop_score, max_score)) return Qnil;
 
-    DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
+    dheap_pop_swap_last_and_sift_down(heap, last_index);
     return pop_value;
 }
 
@@ -336,14 +441,16 @@ dheap_pop_lte(VALUE self, VALUE max_score) {
  */
 static VALUE
 dheap_pop_lt(VALUE self, VALUE max_score) {
-    DHEAP_Pop_Init(self);
-    if (last_index <  0) return Qnil;
-    VALUE pop_value = DHEAP_VALUE(ary, 0);
+    dheap_t *heap = get_dheap_struct(self);
+    long last_index = DHEAP_IDX_LAST(heap);
 
-    VALUE pop_score = DHEAP_SCORE(ary, 0);
+    if (last_index <  0) return Qnil;
+    VALUE pop_value = DHEAP_VALUE(heap, 0);
+
+    VALUE pop_score = DHEAP_SCORE(heap, 0);
     if (max_score && !CMP_LT(pop_score, max_score)) return Qnil;
 
-    DHEAP_Pop_SwapLastAndSiftDown(ary, dval, last_index, sift_value);
+    dheap_pop_swap_last_and_sift_down(heap, last_index);
     return pop_value;
 }
 
@@ -351,15 +458,15 @@ void
 Init_d_heap(void)
 {
     id_cmp = rb_intern_const("<=>");
-    id_ivar_a = rb_intern_const("ary");
+    id_ivar_values = rb_intern_const("values");
+    id_ivar_scores = rb_intern_const("scores");
     id_ivar_d = rb_intern_const("d");
 
     rb_cDHeap = rb_define_class("DHeap", rb_cObject);
+    rb_define_alloc_func(rb_cDHeap, dheap_s_alloc);
+
     rb_define_const(rb_cDHeap, "MAX_D", INT2NUM(DHEAP_MAX_D));
     rb_define_const(rb_cDHeap, "DEFAULT_D", INT2NUM(DHEAP_DEFAULT_D));
-
-    rb_define_singleton_method(rb_cDHeap, "heap_sift_down", dheap_sift_down_s, 3);
-    rb_define_singleton_method(rb_cDHeap, "heap_sift_up",   dheap_sift_up_s, 3);
 
     rb_define_method(rb_cDHeap, "initialize", dheap_initialize, -1);
     rb_define_method(rb_cDHeap, "d", dheap_attr_d, 0);

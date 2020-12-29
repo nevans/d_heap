@@ -44,6 +44,7 @@ Layout/EmptyLineBetweenDefs:
 Layout/EmptyLinesAroundAttributeAccessor:
   inherit_mode:
     merge:
+      - Exclude
       - AllowedMethods
   Enabled: true
   AllowedMethods:
@@ -139,8 +140,17 @@ Style/TernaryParentheses:
   Enabled: false
 
 Style/BlockDelimiters:
+  inherit_mode:
+    merge:
+      - Exclude
+      - ProceduralMethods
+      - IgnoredMethods
+      - FunctionalMethods
   EnforcedStyle: semantic
   AllowBracesOnProceduralOneLiners: true
+  IgnoredMethods:
+    - expect
+
 
 Style/FormatString:
   EnforcedStyle: percent
