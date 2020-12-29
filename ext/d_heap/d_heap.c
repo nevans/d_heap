@@ -52,8 +52,8 @@ static void
 dheap_compact(void *ptr)
 {
     dheap_t *heap = ptr;
-    if (heap->scores) heap->scores = rb_gc_location(heap->scores);
-    if (heap->values) heap->values = rb_gc_location(heap->values);
+    if (heap->scores) dheap_gc_location( heap->scores );
+    if (heap->values) dheap_gc_location( heap->values );
 }
 
 static void
@@ -73,15 +73,15 @@ dheap_memsize(const void *ptr)
 }
 
 static const rb_data_type_t dheap_data_type = {
-    .wrap_struct_name = "dheap_element",
-    .function = {
-        .dmark = dheap_mark,
-        .dfree = RUBY_DEFAULT_FREE,
-        .dsize = dheap_memsize,
-        .dcompact = dheap_compact,
+    "DHeap",
+    {
+        (void (*)(void*))dheap_mark,
+        (void (*)(void*))RUBY_DEFAULT_FREE,
+        (size_t (*)(const void *))dheap_memsize,
+        dheap_compact_callback(dheap_compact),
     },
-    .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 static VALUE

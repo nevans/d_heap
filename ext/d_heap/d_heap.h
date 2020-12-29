@@ -13,6 +13,17 @@
 
 VALUE rb_cDHeap;
 
+// copied from pg gem
+
+#ifdef HAVE_RB_GC_MARK_MOVABLE
+#define dheap_compact_callback(x) ((void (*)(void*))(x))
+#define dheap_gc_location(x) x = rb_gc_location(x)
+#else
+#define rb_gc_mark_movable(x) rb_gc_mark(x)
+#define dheap_compact_callback(x) {(x)}
+#define dheap_gc_location(x) UNUSED(x)
+#endif
+
 // from internal/compar.h
 #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
 
