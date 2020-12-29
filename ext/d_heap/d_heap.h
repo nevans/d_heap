@@ -15,6 +15,8 @@ VALUE rb_cDHeap;
 
 // copied from pg gem
 
+#define UNUSED(x) ((void)(x))
+
 #ifdef HAVE_RB_GC_MARK_MOVABLE
 #define dheap_compact_callback(x) ((void (*)(void*))(x))
 #define dheap_gc_location(x) x = rb_gc_location(x)
