@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    d_heap (0.2.2)
+    d_heap (0.3.0)
 
 GEM
   remote: https://rubygems.org/
