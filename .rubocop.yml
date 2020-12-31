@@ -149,7 +149,8 @@ Style/BlockDelimiters:
   EnforcedStyle: semantic
   AllowBracesOnProceduralOneLiners: true
   IgnoredMethods:
-    - expect
+    - expect  # rspec
+    - profile # ruby-prof
 
 
 Style/FormatString:
@@ -168,3 +169,6 @@ Style/TrailingCommaInHashLiteral:
 
 Style/TrailingCommaInArrayLiteral:
   EnforcedStyleForMultiline: consistent_comma
+
+Style/YodaCondition:
+  EnforcedStyle: forbid_for_equality_operators_only

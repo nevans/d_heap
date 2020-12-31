@@ -1,0 +1,402 @@
+Benchmark run at 2020-12-31 14:51:33 -0500
+ruby v2.7.2, DHeap v0.3.0
+~~~~~~ refilling $random_vals with 180.0M ~~~~~~
+Testing alternate implementations. . .
+Tests OK (count=100, size=100)
+~~~~~~ refilling $random_vals with 0.04M ~~~~~~
+Profile w/ N=50000 (n.b. RubyProf & tracepoint decrease performance.)
+Profiling bsearch + insert ---------------------------
+Measure Mode: wall_time
+Thread ID: 1280
+Fiber ID: 1260
+Total: 3.652382
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 45.32      1.655     1.655     0.000     0.000    50000   Array#bsearch_index
+ 17.57      2.564     0.642     0.000     1.922    50000   BinarySearchAndInsert#<<       bin/benchmark_implementations.rb:55
+ 14.90      3.652     0.544     0.000     3.108        1   Object#run_in_and_out          bin/benchmarks:38
+  8.92      0.436     0.326     0.000     0.110    50001   BinarySearchAndInsert#pop      bin/benchmark_implementations.rb:64
+  7.30      0.267     0.267     0.000     0.000    50000   Array#insert
+  5.99      0.219     0.219     0.000     0.000   100001   Array#pop
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+Profiling ruby binary heap ---------------------------
+Measure Mode: wall_time
+Thread ID: 1280
+Fiber ID: 1260
+Total: 13.162433
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 79.13     10.739    10.415     0.000     0.324    50001   NaiveBinaryHeap#pop            bin/benchmark_implementations.rb:90
+ 12.53      1.760     1.649     0.000     0.110    50000   NaiveBinaryHeap#<<             bin/benchmark_implementations.rb:74
+  4.20     13.162     0.553     0.000    12.609        1   Object#run_in_and_out          bin/benchmarks:38
+  1.67      0.219     0.219     0.000     0.000   100000   Array#pop
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+Profiling quaternary DHeap ---------------------------
+Measure Mode: wall_time
+Thread ID: 1280
+Fiber ID: 1260
+Total: 0.867516
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 59.76      0.868     0.518     0.000     0.349        1   Object#run_in_and_out          bin/benchmarks:38
+ 14.26      0.124     0.124     0.000     0.000    50001   DHeap#pop
+ 13.49      0.117     0.117     0.000     0.000    50000   DHeap#<<
+ 12.49      0.108     0.108     0.000     0.000    50000   Array#pop
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+Running benchmarks . . .
+============================ Push/pop 10000 with pre-filled queue (size=N) ============================
+~~~~~~ refilling $random_vals with 0.15M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=3]
+                        204.164  (± 9.8%) i/s -      3.022k in  14.994311s
+bsearch + insert [n=3]
+                        244.308  (±15.6%) i/s -      3.531k in  14.992718s
+ruby binary heap [n=3]
+                        127.498  (±15.7%) i/s -      1.841k in  14.997684s
+quaternary DHeap [n=3]
+                        351.122  (±17.7%) i/s -      5.017k in  14.987132s
+
+Comparison:
+quaternary DHeap [n=3]:      351.1 i/s
+bsearch + insert [n=3]:      244.3 i/s - 1.44x  (± 0.00) slower
+ push and resort [n=3]:      204.2 i/s - 1.72x  (± 0.00) slower
+ruby binary heap [n=3]:      127.5 i/s - 2.75x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 134.11M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=7]
+                        167.059  (±11.4%) i/s -      2.461k in  14.993343s
+bsearch + insert [n=7]
+                        223.199  (±15.7%) i/s -      3.219k in  14.992492s
+ruby binary heap [n=7]
+                        106.833  (±13.1%) i/s -      1.562k in  15.001602s
+quaternary DHeap [n=7]
+                        297.363  (±12.4%) i/s -      4.360k in  14.987598s
+
+Comparison:
+quaternary DHeap [n=7]:      297.4 i/s
+bsearch + insert [n=7]:      223.2 i/s - 1.33x  (± 0.00) slower
+ push and resort [n=7]:      167.1 i/s - 1.78x  (± 0.00) slower
+ruby binary heap [n=7]:      106.8 i/s - 2.78x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 116.02M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=15]
+                        111.789  (±10.7%) i/s -      1.648k in  15.000323s
+bsearch + insert [n=15]
+                        209.763  (± 8.6%) i/s -      3.112k in  14.994030s
+ruby binary heap [n=15]
+                         96.066  (±11.5%) i/s -      1.416k in  15.004468s
+quaternary DHeap [n=15]
+                        307.257  (± 9.4%) i/s -      4.550k in  14.988813s
+
+Comparison:
+quaternary DHeap [n=15]:      307.3 i/s
+bsearch + insert [n=15]:      209.8 i/s - 1.46x  (± 0.00) slower
+ push and resort [n=15]:      111.8 i/s - 2.75x  (± 0.00) slower
+ruby binary heap [n=15]:       96.1 i/s - 3.20x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 107.26M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=31]
+                         76.294  (± 7.9%) i/s -      1.136k in  15.005925s
+bsearch + insert [n=31]
+                        177.879  (±14.1%) i/s -      2.588k in  14.995946s
+ruby binary heap [n=31]
+                         82.032  (±12.2%) i/s -      1.202k in  15.001092s
+quaternary DHeap [n=31]
+                        242.997  (±14.4%) i/s -      3.537k in  14.989181s
+
+Comparison:
+quaternary DHeap [n=31]:      243.0 i/s
+bsearch + insert [n=31]:      177.9 i/s - 1.37x  (± 0.00) slower
+ruby binary heap [n=31]:       82.0 i/s - 2.96x  (± 0.00) slower
+ push and resort [n=31]:       76.3 i/s - 3.19x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 84.63M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=100]
+                         27.020  (±14.8%) i/s -    392.000  in  14.998002s
+bsearch + insert [n=100]
+                        152.196  (±16.4%) i/s -      2.190k in  14.992522s
+ruby binary heap [n=100]
+                         76.178  (±13.1%) i/s -      1.113k in  14.996572s
+quaternary DHeap [n=100]
+                        223.026  (± 8.5%) i/s -      3.311k in  14.992798s
+
+Comparison:
+quaternary DHeap [n=100]:      223.0 i/s
+bsearch + insert [n=100]:      152.2 i/s - 1.47x  (± 0.00) slower
+ruby binary heap [n=100]:       76.2 i/s - 2.93x  (± 0.00) slower
+ push and resort [n=100]:       27.0 i/s - 8.25x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 70.06M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=1000]
+                          2.426  (± 0.0%) i/s -     37.000  in  15.279944s
+bsearch + insert [n=1000]
+                        118.186  (±16.1%) i/s -      1.710k in  14.998910s
+ruby binary heap [n=1000]
+                         46.479  (±28.0%) i/s -    637.000  in  15.011982s
+quaternary DHeap [n=1000]
+                        189.133  (±13.2%) i/s -      2.767k in  14.993788s
+
+Comparison:
+quaternary DHeap [n=1000]:      189.1 i/s
+bsearch + insert [n=1000]:      118.2 i/s - 1.60x  (± 0.00) slower
+ruby binary heap [n=1000]:       46.5 i/s - 4.07x  (± 0.00) slower
+ push and resort [n=1000]:        2.4 i/s - 77.97x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 51.514M ~~~~~~
+Pre-filling  push and resort priority queue ---------------------------
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+ push and resort [n=10000]
+                          0.198  (± 0.0%) i/s -      3.000  in  15.127535s
+bsearch + insert [n=10000]
+                        101.177  (± 8.9%) i/s -      1.502k in  14.999659s
+ruby binary heap [n=10000]
+                         41.104  (±17.0%) i/s -    596.000  in  15.002643s
+quaternary DHeap [n=10000]
+                        153.100  (±11.8%) i/s -      2.255k in  15.000612s
+
+Comparison:
+quaternary DHeap [n=10000]:      153.1 i/s
+bsearch + insert [n=10000]:      101.2 i/s - 1.51x  (± 0.00) slower
+ruby binary heap [n=10000]:       41.1 i/s - 3.72x  (± 0.00) slower
+ push and resort [n=10000]:        0.2 i/s - 772.00x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 43.6M ~~~~~~
+Pre-filling bsearch + insert priority queue ---------------------------
+Pre-filling ruby binary heap priority queue ---------------------------
+Pre-filling quaternary DHeap priority queue ---------------------------
+Calculating -------------------------------------
+bsearch + insert [n=100000]
+                         64.508  (±26.4%) i/s -    829.000  in  15.005824s
+ruby binary heap [n=100000]
+                         28.554  (±14.0%) i/s -    421.000  in  15.020969s
+quaternary DHeap [n=100000]
+                        123.118  (± 9.7%) i/s -      1.821k in  14.996729s
+
+Comparison:
+quaternary DHeap [n=100000]:      123.1 i/s
+bsearch + insert [n=100000]:       64.5 i/s - 1.91x  (± 0.00) slower
+ruby binary heap [n=100000]:       28.6 i/s - 4.31x  (± 0.00) slower
+
+============================ Insert N then delete N ============================
+~~~~~~ refilling $random_vals with 31.01M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=3]
+                        326.233k (±18.0%) i/s -      2.968M in   9.937289s
+bsearch + insert [n=3]
+                        317.906k (±16.8%) i/s -      2.948M in   9.981010s
+ruby binary heap [n=3]
+                        277.482k (±17.5%) i/s -      2.676M in  10.418030s
+quaternary DHeap [n=3]
+                        304.221k (±19.2%) i/s -      2.766M in  10.264199s
+
+Comparison:
+ push and resort [n=3]:   326233.0 i/s
+bsearch + insert [n=3]:   317906.4 i/s - same-ish: difference falls within error
+quaternary DHeap [n=3]:   304221.0 i/s - same-ish: difference falls within error
+ruby binary heap [n=3]:   277481.7 i/s - same-ish: difference falls within error
+
+~~~~~~ refilling $random_vals with 34.075M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=7]
+                        199.765k (±20.0%) i/s -      2.089M in  11.380122s
+bsearch + insert [n=7]
+                        207.990k (±17.1%) i/s -      2.205M in  11.186994s
+ruby binary heap [n=7]
+                        144.909k (±16.2%) i/s -      1.676M in  12.089467s
+quaternary DHeap [n=7]
+                        214.698k (±19.6%) i/s -      2.188M in  11.173278s
+
+Comparison:
+quaternary DHeap [n=7]:   214698.4 i/s
+bsearch + insert [n=7]:   207989.9 i/s - same-ish: difference falls within error
+ push and resort [n=7]:   199764.9 i/s - same-ish: difference falls within error
+ruby binary heap [n=7]:   144909.0 i/s - 1.48x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 57.105M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=15]
+                        102.812k (±19.2%) i/s -      1.226M in  12.820851s
+bsearch + insert [n=15]
+                        114.372k (±19.3%) i/s -      1.355M
+ruby binary heap [n=15]
+                         64.919k (±17.1%) i/s -    838.596k in  13.499699s
+quaternary DHeap [n=15]
+                        126.468k (±20.2%) i/s -      1.457M in  12.412461s
+
+Comparison:
+quaternary DHeap [n=15]:   126468.0 i/s
+bsearch + insert [n=15]:   114371.7 i/s - same-ish: difference falls within error
+ push and resort [n=15]:   102811.8 i/s - same-ish: difference falls within error
+ruby binary heap [n=15]:    64918.7 i/s - 1.95x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 73.154M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=31]
+                         40.658k (±18.1%) i/s -    538.404k
+bsearch + insert [n=31]
+                         58.413k (±17.3%) i/s -    759.905k
+ruby binary heap [n=31]
+                         28.126k (±14.8%) i/s -    390.126k in  14.295977s
+quaternary DHeap [n=31]
+                         71.185k (±18.3%) i/s -    901.707k in  13.392560s
+
+Comparison:
+quaternary DHeap [n=31]:    71185.3 i/s
+bsearch + insert [n=31]:    58412.6 i/s - same-ish: difference falls within error
+ push and resort [n=31]:    40658.1 i/s - 1.75x  (± 0.00) slower
+ruby binary heap [n=31]:    28126.0 i/s - 2.53x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 80.294M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=100]
+                          5.695k (±15.8%) i/s -     81.466k
+bsearch + insert [n=100]
+                         16.510k (±16.1%) i/s -    231.584k in  14.575085s
+ruby binary heap [n=100]
+                          6.878k (±13.5%) i/s -     99.449k in  14.809126s
+quaternary DHeap [n=100]
+                         23.355k (±15.6%) i/s -    324.839k in  14.408732s
+
+Comparison:
+quaternary DHeap [n=100]:    23354.8 i/s
+bsearch + insert [n=100]:    16509.5 i/s - 1.41x  (± 0.00) slower
+ruby binary heap [n=100]:     6877.6 i/s - 3.40x  (± 0.00) slower
+ push and resort [n=100]:     5695.1 i/s - 4.10x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 73.734M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=1000]
+                         55.815  (± 9.0%) i/s -    829.000  in  14.997390s
+bsearch + insert [n=1000]
+                          1.231k (±12.7%) i/s -     17.996k in  14.959875s
+ruby binary heap [n=1000]
+                        475.302  (± 8.4%) i/s -      7.060k in  14.983165s
+quaternary DHeap [n=1000]
+                          1.882k (±15.1%) i/s -     27.279k in  14.941263s
+
+Comparison:
+quaternary DHeap [n=1000]:     1882.0 i/s
+bsearch + insert [n=1000]:     1230.7 i/s - 1.53x  (± 0.00) slower
+ruby binary heap [n=1000]:      475.3 i/s - 3.96x  (± 0.00) slower
+ push and resort [n=1000]:       55.8 i/s - 33.72x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 53.164M ~~~~~~
+Calculating -------------------------------------
+ push and resort [n=10000]
+                          0.448  (± 0.0%) i/s -      7.000  in  15.629138s
+bsearch + insert [n=10000]
+                         75.382  (± 8.0%) i/s -      1.120k in  14.999744s
+ruby binary heap [n=10000]
+                         35.294  (± 8.5%) i/s -    525.000  in  15.024182s
+quaternary DHeap [n=10000]
+                        159.300  (± 8.8%) i/s -      2.366k in  14.994983s
+
+Comparison:
+quaternary DHeap [n=10000]:      159.3 i/s
+bsearch + insert [n=10000]:       75.4 i/s - 2.11x  (± 0.00) slower
+ruby binary heap [n=10000]:       35.3 i/s - 4.51x  (± 0.00) slower
+ push and resort [n=10000]:        0.4 i/s - 355.42x  (± 0.00) slower
+
+~~~~~~ refilling $random_vals with 40.18M ~~~~~~
+Calculating -------------------------------------
+bsearch + insert [n=100000]
+                          1.502  (± 0.0%) i/s -     23.000  in  15.341688s
+ruby binary heap [n=100000]
+                          2.880  (± 0.0%) i/s -     44.000  in  15.312419s
+quaternary DHeap [n=100000]
+                         12.798  (± 7.8%) i/s -    191.000  in  15.002041s
+
+Comparison:
+quaternary DHeap [n=100000]:       12.8 i/s
+ruby binary heap [n=100000]:        2.9 i/s - 4.44x  (± 0.00) slower
+bsearch + insert [n=100000]:        1.5 i/s - 8.52x  (± 0.00) slower
+

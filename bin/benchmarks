@@ -1,0 +1,154 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "pathname"
+ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
+require "rubygems"
+require "bundler/setup"
+
+require "benchmark/ips"
+require "d_heap"
+
+require_relative "benchmark_implementations"
+
+BENCHMARK_TIME = Integer(ENV.fetch("BM_TIME", 15))
+N_COUNTS = [3, 7, 15, 31, 100, 1000, 10_000, 100_000].freeze
+
+# rubocop:disable Style/GlobalVars
+# rubocop:disable Style/NumericPredicate
+
+# assuming it won't be faster than 2M/s (averaged across all implementations)
+MAX_RANDOM_VALS = 3_000_000 * BENCHMARK_TIME * BENCHMARK_IMPLEMENTATIONS.count
+$random_vals = []
+
+def refill_random_vals
+  count = MAX_RANDOM_VALS - $random_vals.length
+  return unless count.positive?
+  millions = (count / 1_000_000.0).round(3)
+  puts "~~~~~~ refilling $random_vals with #{millions}M ~~~~~~"
+  $stdout.flush
+  while 0 < count
+    $random_vals << rand(0..10_000)
+    count -= 1
+  end
+end
+
+OutOfRandomness = Class.new(IndexError)
+
+def run_in_and_out(queue, count)
+  while 0 < count
+    queue << ($random_vals.pop or raise OutOfRandomness)
+    count -= 1
+  end
+  true while queue.pop
+end
+
+# rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+
+def run_tests
+  refill_random_vals
+  puts "Testing alternate implementations. . ."
+
+  test_size  = Integer(ENV.fetch("TEST_SIZE",  100))
+  test_count = Integer(ENV.fetch("TEST_COUNT", 100))
+
+  test_count.times do
+    BENCHMARK_IMPLEMENTATIONS.each do |name, klass|
+      queue = klass.new
+      values = Array.new(test_size) {
+        $random_vals.pop or raise OutOfRandomness
+      }
+      values.each do |v| queue << v end
+      popped = []
+      while (val = queue.pop)
+        popped << val
+      end
+      next if popped == values.sort
+
+      puts "=== BROKEN %s ===" % [name]
+      puts "  sorted    => %p" % [values.sort]
+      puts "  popped    => %p" % [popped]
+      puts "  remainder => %p" % [queue.a]
+      raise "Broken %s: %p != %p, %p" % [name, values.sort, popped, queue.a]
+    end
+  end
+
+  puts "Tests OK (count=%d, size=%d)" % [test_count, test_size]
+end
+
+def run_profiler(count = Integer(ENV.fetch("PROFILE_N", 50_000)))
+  refill_random_vals
+  puts "Profile w/ N=#{count} (n.b. RubyProf & tracepoint decrease performance.)"
+  require "ruby-prof"
+  BENCHMARK_IMPLEMENTATIONS.each do |name, klass|
+    next if klass == PushAndResort && 50_000 <= count
+    puts "Profiling #{name} ---------------------------"
+    $stdout.flush
+    queue = klass.new
+    result = RubyProf.profile do
+      run_in_and_out(queue, count)
+    end
+    printer = RubyProf::FlatPrinter.new(result)
+    printer.print($stdout, min_percent: 1.0)
+    puts
+  end
+end
+
+def run_benchmarks
+  puts "Running benchmarks . . ."
+  run_benchmarks_push_and_pop_from_prefilled_queue
+  run_benchmarks_push_from_empty_then_pop_til_empty
+end
+
+def run_benchmark(bm_name)
+  puts "============================ #{bm_name} ============================"
+  N_COUNTS.each do |n|
+    refill_random_vals
+    Benchmark.ips do |bm|
+      bm.config(time: BENCHMARK_TIME, warmup: 0)
+      BENCHMARK_IMPLEMENTATIONS.each do |name, klass|
+        yield bm, n, name, klass
+      end
+      bm.compare!
+    end
+  end
+end
+
+def run_benchmarks_push_from_empty_then_pop_til_empty
+  run_benchmark("Insert N then delete N") do |bm, n, name, klass|
+    next if klass == PushAndResort && 50_000 <= n
+    bm.report("#{name} [n=#{n}]") do
+      run_in_and_out(klass.new, n)
+    end
+  end
+end
+
+def run_benchmarks_push_and_pop_from_prefilled_queue(count=10_000)
+  benchmark_name = "Push/pop #{count} with pre-filled queue (size=N)"
+  run_benchmark(benchmark_name) do |bm, n, name, klass|
+    next if klass == PushAndResort && 50_000 <= n
+    puts "Pre-filling #{name} priority queue ---------------------------"
+    queue = klass.new
+    n.times do queue << $random_vals.pop or raise OutOfRandomness end
+    bm.report("#{name} [n=#{n}]") do
+      i = count
+      while 0 < i
+        queue << ($random_vals.pop or raise OutOfRandomness)
+        queue.pop
+        i -= 1
+      end
+    end
+  end
+end
+
+# rubocop:enable Style/GlobalVars
+# rubocop:enable Style/NumericPredicate
+# rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+puts "Benchmark run at %s" % [Time.now]
+puts "ruby v%s, DHeap v%s" % [RUBY_VERSION, DHeap::VERSION]
+
+run_tests
+exit               if ENV["ONLY_TEST"] == "1"
+run_profiler   unless ENV["SKIP_PROFILER"] == "1"
+run_benchmarks unless ENV["SKIP_BENCHMARKS"] == "1"

@@ -33,7 +33,7 @@ heap.push Time.now +    5, Task.new(4)
 # peeking and popping (using last to get the task and ignore the time)
 heap.pop.last  # => Task[4]
 heap.pop.last  # => Task[2]
-heap.peak.last # => Task[3], but don't pop it
+heap.peek.last # => Task[3], but don't pop it
 heap.pop.last  # => Task[3]
 heap.pop.last  # => Task[1]
 ```
@@ -76,7 +76,7 @@ amortized time per push + pop from `O(n)` to `O(d log n / log d)`.
 
 I was surprised to find that, at least under certain benchmarks, my pure ruby
 heap implementation was usually slower than inserting into a fully sorted
-array.  While this is a testament to ruby's fine-tuned Array implementationw, a
+array.  While this is a testament to ruby's fine-tuned Array implementation, a
 heap implementated in C should easily peform faster than `Array#insert`.
 
 The biggest issue is that it just takes far too much time to call `<=>` from
@@ -91,35 +91,86 @@ unnecessary.  This is definitely hotspot code, and the basic ruby implementation
 would work fine, if not for that `<=>` overhead.  Until then... this gem gets
 the job done.
 
-## TODOs...
-
-_TODO:_ In addition to a basic _d_-ary heap class (`DHeap`), this library
-~~includes~~ _will include_ extensions to `Array`, allowing an Array to be
-directly handled as a priority queue.  These extension methods are meant to be
-used similarly to how `#bsearch` and `#bsearch_index` might be used.
-
-_TODO:_ Also ~~included is~~ _will include_ `DHeap::Set`, which augments the
-basic heap with an internal `Hash`, which maps a set of values to scores.
-loosely inspired by go's timers.  e.g: It lazily sifts its heap after deletion
-and adjustments, to achieve faster average runtime for *add* and *cancel*
-operations.
-
-_TODO:_ Also ~~included is~~ _will include_ `DHeap::Timers`, which contains some
-features that are loosely inspired by go's timers.  e.g: It lazily sifts its
-heap after deletion and adjustments, to achieve faster average runtime for *add*
-and *cancel* operations.
-
-Additionally, I was inspired by reading go's "timer.go" implementation to
-experiment with a 4-ary heap instead of the traditional binary heap.  In the
-case of timers, new timers are usually scheduled to run after most of the
-existing timers.  And timers are usually canceled before they have a chance to
-run. While a binary heap holds 50% of its elements in its last layer, 75% of a
-4-ary heap will have no children.  That diminishes the extra comparison overhead
-during sift-down.
-
 ## Benchmarks
 
-_TODO: put benchmarks here._
+These benchmarks were measured with v0.3.0.  They use simple implementations for
+a pure-ruby heap, calling `Array#sort` after each insert, and calling
+`Array#insert` after a binary search.  The benchmark implementations don't allow
+keeping scores and values seperately, which would lead to slowdowns if they
+needed to call `a <=> b` for comparisons.  To rule that out, I've used only
+integer (`Fixnum`) values, which should compare faster than any other object
+type.  I tried to tune these example implementations so that the comparisons
+would be fair.
+
+For very small N values all implementations are roughly equal, although the pure
+ruby binary heap does start to lag:
+
+     push and resort [n=3]:   333884.8 i/s
+    bsearch + insert [n=3]:   329975.9 i/s - same-ish: difference falls within error
+    quaternary DHeap [n=3]:   312167.2 i/s - same-ish: difference falls within error
+    ruby binary heap [n=3]:   291335.9 i/s - same-ish: difference falls within error
+
+With these random pushes + pops, DHeap does run faster than bsearch + insert
+once N > ~5, but the difference is still very small even up to N=31.
+
+    quaternary DHeap [n=31]:    74543.2 i/s
+    bsearch + insert [n=31]:    61674.5 i/s - same-ish: difference falls within error
+     push and resort [n=31]:    42972.6 i/s - 1.73x  (± 0.00) slower
+    ruby binary heap [n=31]:    28067.5 i/s - 2.66x  (± 0.00) slower
+
+OOnce you get to N=100 though, the difference is very measurable, and it only
+gets wider as N increases.  Surprisingly (or at least, it surprised _me_ at
+first), my bsearch + insert still beats my pure ruby binary heap at N=10k:
+
+    quaternary DHeap [n=100]:    23997.9 i/s
+    bsearch + insert [n=100]:    17300.5 i/s - 1.39x  (± 0.00) slower
+    ruby binary heap [n=100]:     6851.2 i/s - 3.50x  (± 0.00) slower
+     push and resort [n=100]:     5859.6 i/s - 4.10x  (± 0.00) slower
+
+    quaternary DHeap [n=10000]:      164.9 i/s
+    bsearch + insert [n=10000]:       81.0 i/s - 2.04x  (± 0.00) slower
+    ruby binary heap [n=10000]:       36.6 i/s - 4.50x  (± 0.00) slower
+     push and resort [n=10000]:        0.5 i/s - 352.10x  (± 0.00) slower
+
+By N=100k, the O(log n) vs O(n) complexity finally started to show, and my ruby
+binary heap does pull ahead of my bsearch + index:
+
+    quaternary DHeap [n=100000]:       13.4 i/s
+    ruby binary heap [n=100000]:        3.0 i/s - 4.55x  (± 0.00) slower
+    bsearch + insert [n=100000]:        1.6 i/s - 8.45x  (± 0.00) slower
+     push and resort [n=100000]: ****** not run... I'm too impatient ******
+
+It's interesting to look at the `ruby-prof` results for a simplistic binary
+search + insert implementation, pushing 50k random integers, then popping all
+of them. In particular, even with 50k members, the linear `Array#insert` is
+_still_ faster than the logarithmic `Array#bsearch_index`. At this scale, ruby
+comparisons are still (relatively) slow and `memcpy` is (relatively) quite fast!
+
+    %self      total      self      wait     child     calls  name                           location
+    45.23      1.664     1.664     0.000     0.000    50000   Array#bsearch_index
+    17.58      2.585     0.647     0.000     1.938    50000   BinarySearchAndInsert#<<       bin/benchmark_implementations.rb:55
+    14.82      3.678     0.545     0.000     3.133        1   Object#run_in_and_out          bin/benchmarks:33
+     8.90      0.438     0.327     0.000     0.111    50001   BinarySearchAndInsert#pop      bin/benchmark_implementations.rb:64
+     7.47      0.275     0.275     0.000     0.000    50000   Array#insert
+     6.00      0.221     0.221     0.000     0.000   100001   Array#pop
+
+_n.b. 50k of those Array#pop calls are for the unsorted input array_
+
+Keep in mind: RubyProf impacts these different implementations differently.  I
+wouldn't use the RubyProf results for comparisons between implementations.
+Contrast this with a simplistic pure-ruby implementation of a binary heap:
+
+    %self      total      self      wait     child     calls  name                           location
+    79.72     11.339    10.996     0.000     0.342    50001   NaiveBinaryHeap#pop            bin/benchmark_implementations.rb:90
+    12.08      1.779     1.667     0.000     0.112    50000   NaiveBinaryHeap#<<             bin/benchmark_implementations.rb:74
+     4.09     13.794     0.564     0.000    13.230        1   Object#run_in_and_out          bin/benchmarks:33
+     1.65      0.227     0.227     0.000     0.000   100000   Array#pop
+
+You can see that it spends almost 7x more time in pop than it does in push.
+That is expected behavior for a heap: although both are O(log n), pop is
+significantly more complex, and has _d_ comparisons per layer.
+
+See `bin/benchmarks` and `docs/benchmarks.txt` for more details.
 
 ## Analysis
 
@@ -194,6 +245,27 @@ family of data structures) can be constructed to have effectively O(1) running
 time in most cases.  However, the implementation for that data structure is more
 complex than a heap.  If a 4-ary heap is good enough for go's timers, it should
 be suitable for many use cases.
+
+## TODOs...
+
+_TODO:_ Also ~~included is~~ _will include_ `DHeap::Set`, which augments the
+basic heap with an internal `Hash`, which maps a set of values to scores.
+loosely inspired by go's timers.  e.g: It lazily sifts its heap after deletion
+and adjustments, to achieve faster average runtime for *add* and *cancel*
+operations.
+
+_TODO:_ Also ~~included is~~ _will include_ `DHeap::Timers`, which contains some
+features that are loosely inspired by go's timers.  e.g: It lazily sifts its
+heap after deletion and adjustments, to achieve faster average runtime for *add*
+and *cancel* operations.
+
+Additionally, I was inspired by reading go's "timer.go" implementation to
+experiment with a 4-ary heap instead of the traditional binary heap.  In the
+case of timers, new timers are usually scheduled to run after most of the
+existing timers.  And timers are usually canceled before they have a chance to
+run. While a binary heap holds 50% of its elements in its last layer, 75% of a
+4-ary heap will have no children.  That diminishes the extra comparison overhead
+during sift-down.
 
 ## Development
 
