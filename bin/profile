@@ -6,5 +6,5 @@ ENV["BUNDLE_GEMFILE"] ||= File.expand_path("../Gemfile", __dir__)
 require "rubygems"
 require "bundler/setup"
 
-require "d_heap/benchmarks/benchmarker"
-DHeap::Benchmarks::Benchmarker.new.call
+require "d_heap/benchmarks/profiler"
+DHeap::Benchmarks::Profiler.new.call

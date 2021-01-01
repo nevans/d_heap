@@ -110,6 +110,17 @@ Naming/RescuedExceptionsVariableName: { Enabled: false }
 Metrics/BlockLength:
   Exclude:
     - "spec/**/*_spec.rb"
+  CountsAsOne:
+    - array
+    - hash
+    - heredoc
+
+Metrics/ClassLength:
+  Max: 200
+  CountsAsOne:
+    - array
+    - hash
+    - heredoc
 
 ###########################################################################
 # Style...
