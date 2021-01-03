@@ -106,18 +106,21 @@ Naming/RescuedExceptionsVariableName: { Enabled: false }
 ###########################################################################
 # Matrics:
 
+Metrics/CyclomaticComplexity:
+  Max: 10
+
 # Although it may be better to split specs into multiple files...?
 Metrics/BlockLength:
   Exclude:
     - "spec/**/*_spec.rb"
-  CountsAsOne:
+  CountAsOne:
     - array
     - hash
     - heredoc
 
 Metrics/ClassLength:
   Max: 200
-  CountsAsOne:
+  CountAsOne:
     - array
     - hash
     - heredoc
@@ -130,13 +133,18 @@ Style/AsciiComments:           { Enabled: false } # 👮 can't stop our 🎉🥳
 Style/EachWithObject:          { Enabled: false }
 Style/FormatStringToken:       { Enabled: false }
 Style/FloatDivision:           { Enabled: false }
+Style/IfUnlessModifier:        { Enabled: false }
+Style/IfWithSemicolon:         { Enabled: false }
 Style/Lambda:                  { Enabled: false }
 Style/LineEndConcatenation:    { Enabled: false }
 Style/MixinGrouping:           { Enabled: false }
+Style/MultilineBlockChain:     { Enabled: false }
 Style/PerlBackrefs:            { Enabled: false } # use occasionally/sparingly
 Style/RescueStandardError:     { Enabled: false }
+Style/Semicolon:               { Enabled: false }
 Style/SingleLineMethods:       { Enabled: false }
 Style/StabbyLambdaParentheses: { Enabled: false }
+Style/WhenThen               : { Enabled: false }
 
 # If rubocop had an option to only enforce this on constants and literals (e.g.
 # strings, regexp, range), I'd agree.
@@ -162,6 +170,7 @@ Style/BlockDelimiters:
   IgnoredMethods:
     - expect  # rspec
     - profile # ruby-prof
+    - ips     # benchmark-ips
 
 
 Style/FormatString:
