@@ -24,6 +24,9 @@ ID id_ivar_d;
         rb_ary_pop(heap->scores), \
         rb_ary_pop(heap->values) \
     ) // score, value
+#define DHEAP_CLEAR(heap) \
+    rb_ary_clear(heap->scores); \
+    rb_ary_clear(heap->values);
 
 #define DHEAP_Check_d_size(d) \
     if (d < 2) { \
@@ -387,6 +390,21 @@ dheap_pop_swap_last_and_sift_down(dheap_t *heap, long last_index)
  * @return [Object] the next value to be popped without popping it.
  */
 static VALUE
+dheap_clear(VALUE self) {
+    dheap_t *heap = get_dheap_struct(self);
+    if (0 < DHEAP_SIZE(heap)) {
+        DHEAP_CLEAR(heap);
+    }
+    return self;
+}
+
+/*
+ * Returns the next value on the heap to be popped without popping it.
+ *
+ * Time complexity: <b>O(1)</b> <i>(worst-case)</i>
+ * @return [Object] the next value to be popped without popping it.
+ */
+static VALUE
 dheap_peek(VALUE self) {
     dheap_t *heap = get_dheap_struct(self);
     if (DHEAP_IDX_LAST(heap) < 0) return Qnil;
@@ -474,6 +492,8 @@ Init_d_heap(void)
 
     rb_define_method(rb_cDHeap, "size", dheap_size, 0);
     rb_define_method(rb_cDHeap, "empty?", dheap_empty_p, 0);
+
+    rb_define_method(rb_cDHeap, "clear",   dheap_clear, 0);
 
     rb_define_method(rb_cDHeap, "peek",    dheap_peek, 0);
     rb_define_method(rb_cDHeap, "push",    dheap_push, -1);
