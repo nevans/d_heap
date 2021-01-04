@@ -29,7 +29,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
     def call(queue_size: ENV.fetch("BENCHMARK_QUEUE_SIZE", :unset))
       DHeap::Benchmarks.puts_version_info("Benchmarking")
       run_tests(io: io) unless ENV["SKIP_TESTS"] == "1"
-      sizes = (queue_size == :unset) ? N_COUNTS : [queue_size]
+      sizes = (queue_size == :unset) ? N_COUNTS : [Integer(queue_size)]
       sizes.each do |size|
         benchmark_size(size)
       end
@@ -49,6 +49,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
     def benchmark_push_n(queue_size)
       benchmarking("push N", queue_size, init: 0) do |queue|
+        queue.clear
         push_n(queue, queue_size)
       end
     end
@@ -64,7 +65,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
         iterations_for_push_pop,
       ]
       benchmarking(benchmark_name, queue_size, init: queue_size) do |queue|
-        push_n_then_pop_n(queue, iterations_for_push_pop)
+        repeated_push_pop(queue, iterations_for_push_pop)
       end
     end
 
@@ -75,7 +76,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       impl.klass == DHeap::Benchmarks::PushAndResort && 10_000 < queue_size
     end
 
-    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Style/MultilineBlockChain
+    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
 
     def implementations_with_queues(init)
       IMPLEMENTATIONS.reject {|impl|
@@ -90,10 +91,17 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       }
     end
 
+    # try to avoid big GC pause during the test run... by doing one before.
+    def gc_mark_sweep_and_compact
+      GC.start(full_mark: true, immediate_sweep: true)
+      GC.compact
+    end
+
     def benchmarking(name, queue_size, init: 0)
-      refill_random_vals
+      fill_random_vals
       impl_queues = implementations_with_queues(init)
-      refill_random_vals
+      fill_random_vals
+      gc_mark_sweep_and_compact
       puts "== #{name} (N=#{queue_size}) ================================="
       Benchmark.ips do |bm|
         bm.config(time: time, warmup: 0)
@@ -114,7 +122,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       io: $stdout
     )
       io.puts "Testing all implementations. . ."
-      refill_random_vals
+      fill_random_vals
 
       test_count.times do
         IMPLEMENTATIONS.each do |impl|
@@ -141,7 +149,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       io.puts
     end
 
-    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Style/MultilineBlockChain
+    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
   end
 end

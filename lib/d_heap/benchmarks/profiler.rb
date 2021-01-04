@@ -14,10 +14,10 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
     def call(
       queue_size: ENV.fetch("PROFILE_QUEUE_SIZE", :unset),
-      iterations: ENV.fetch("PROFILE_ITERATIONS", 100_000)
+      iterations: ENV.fetch("PROFILE_ITERATIONS", 1_000_000)
     )
       DHeap::Benchmarks.puts_version_info("Profiling")
-      sizes = queue_size == :unset ? N_COUNTS : [queue_size]
+      sizes = queue_size == :unset ? N_COUNTS : [Integer(queue_size)]
       sizes.each do |size|
         profile_all(size, iterations)
       end
@@ -44,7 +44,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
     def profile_one(impl, queue_size, iterations, io: $stdout)
       return if skip_profiling?(queue_size, impl)
-      refill_random_vals
+      fill_random_vals
       io.puts "Filling   #{impl.name} ---------------------------"
       queue = impl.klass.new
       push_n(queue, queue_size)
@@ -55,7 +55,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
     end
 
     def profiling(io: $stdout, &block)
-      refill_random_vals
+      fill_random_vals
       # do the thing
       result = RubyProf.profile(&block)
       # report_the_thing

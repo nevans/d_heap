@@ -1,30 +1,29 @@
-Profiling run at 2021-01-01 16:09:25 -0500
+Profiling run at 2021-01-04 11:14:01 -0500
 ruby v2.7.2, DHeap v0.3.0
 
 ########################################################################
-# Profile w/ N=10 (i=100000)
+# Profile w/ N=10 (i=1000000)
 # (n.b. RubyProf & tracepoint can change relative performance.
 #       A sampling profiler can provide more accurate relative metrics.
 ########################################################################
 
-~~~~~~ refilling @dheap_bm_random_vals with 120.0M ~~~~~~
+~~~~~~ filling @dheap_bm_random_vals with 10.0M ~~~~~~
 Filling    push and resort ---------------------------
 Profiling  push and resort ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.0M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.406568
+Thread ID: 1340
+Fiber ID: 1320
+Total: 2.709973
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 49.18      0.200     0.200     0.000     0.000   100000   Array#sort!
- 17.48      0.407     0.071     0.000     0.335        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
- 15.97      0.278     0.065     0.000     0.213   100000   DHeap::Benchmarks::PushAndResort#<< d_heap/lib/d_heap/benchmarks/implementations.rb:31
-  7.79      0.045     0.032     0.000     0.014   100000   DHeap::Benchmarks::PushAndResort#pop d_heap/lib/d_heap/benchmarks/implementations.rb:38
-  3.36      0.014     0.014     0.000     0.000   100000   Array#shift
-  3.27      0.013     0.013     0.000     0.000   100000   Array#push
-  2.94      0.012     0.012     0.000     0.000   100000   Array#pop
+ 30.27      2.710     0.820     0.000     1.890        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 24.69      1.305     0.669     0.000     0.635  1000000   DHeap::Benchmarks::PushAndResort#<< d_heap/benchmarks/implementations.rb:35
+ 18.16      0.492     0.492     0.000     0.000  1000000   Array#sort!
+ 11.76      0.461     0.319     0.000     0.143  1000000   DHeap::Benchmarks::PushAndResort#pop d_heap/benchmarks/implementations.rb:42
+  5.28      0.143     0.143     0.000     0.000  1000000   Array#push
+  5.26      0.143     0.143     0.000     0.000  1000000   Array#shift
+  4.57      0.124     0.124     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 
@@ -44,23 +43,22 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   bsearch + insert ---------------------------
 Profiling bsearch + insert ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.0M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.271884
+Thread ID: 1340
+Fiber ID: 1320
+Total: 2.661524
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 26.99      0.272     0.073     0.000     0.198        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
- 25.21      0.138     0.069     0.000     0.070   100000   DHeap::Benchmarks::BinarySearchAndInsert#<< d_heap/lib/d_heap/benchmarks/implementations.rb:57
- 20.05      0.055     0.055     0.000     0.000   100000   Array#bsearch_index
- 12.96      0.048     0.035     0.000     0.013   100000   DHeap::Benchmarks::BinarySearchAndInsert#pop d_heap/lib/d_heap/benchmarks/implementations.rb:66
-  9.16      0.025     0.025     0.000     0.000   200000   Array#pop
-  5.62      0.015     0.015     0.000     0.000   100000   Array#insert
+ 29.50      2.662     0.785     0.000     1.876        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 24.09      1.309     0.641     0.000     0.668  1000000   DHeap::Benchmarks::BinarySearchAndInsert#<< d_heap/benchmarks/implementations.rb:61
+ 19.78      0.526     0.526     0.000     0.000  1000000   Array#bsearch_index
+ 12.13      0.441     0.323     0.000     0.118  1000000   DHeap::Benchmarks::BinarySearchAndInsert#pop d_heap/benchmarks/implementations.rb:70
+  5.33      0.142     0.142     0.000     0.000  1000000   Array#insert
+  4.74      0.126     0.126     0.000     0.000  1000000   Array#fetch
+  4.43      0.118     0.118     0.000     0.000  1000000   Array#pop
 
 * recursively called methods
 
@@ -80,24 +78,23 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   ruby binary heap ---------------------------
 Profiling ruby binary heap ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.0M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.639402
+Thread ID: 1340
+Fiber ID: 1320
+Total: 5.678843
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 40.93      0.301     0.262     0.000     0.039   100000   DHeap::Benchmarks::NaiveBinaryHeap#pop d_heap/lib/d_heap/benchmarks/implementations.rb:92
- 37.76      0.254     0.241     0.000     0.013   100000   DHeap::Benchmarks::NaiveBinaryHeap#<< d_heap/lib/d_heap/benchmarks/implementations.rb:76
- 11.25      0.639     0.072     0.000     0.567        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
-  4.01      0.026     0.026     0.000     0.000   200000   Array#pop
-  2.09      0.013     0.013     0.000     0.000   100000   Array#first
-  2.01      0.013     0.013     0.000     0.000   100000   Array#push
-  1.95      0.012     0.012     0.000     0.000   100000   Array#last
+ 42.98      2.570     2.441     0.000     0.129  1000000   DHeap::Benchmarks::NaiveBinaryHeap#<< d_heap/benchmarks/implementations.rb:80
+ 31.41      2.154     1.784     0.000     0.370  1000000   DHeap::Benchmarks::NaiveBinaryHeap#pop d_heap/benchmarks/implementations.rb:96
+ 14.44      5.679     0.820     0.000     4.859        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+  2.37      0.135     0.135     0.000     0.000  1000000   Array#fetch
+  2.28      0.129     0.129     0.000     0.000  1000000   Array#pop
+  2.27      0.129     0.129     0.000     0.000  1000000   Array#push
+  2.19      0.125     0.125     0.000     0.000  1000000   Array#first
+  2.05      0.117     0.117     0.000     0.000  1000000   Array#last
 
 * recursively called methods
 
@@ -117,21 +114,19 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   quaternary DHeap ---------------------------
 Profiling quaternary DHeap ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.0M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.135606
+Thread ID: 1340
+Fiber ID: 1320
+Total: 1.274236
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 54.01      0.136     0.073     0.000     0.062        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
- 20.47      0.028     0.028     0.000     0.000   100000   DHeap#<<
- 15.34      0.021     0.021     0.000     0.000   100000   DHeap#pop
- 10.17      0.014     0.014     0.000     0.000   100000   Array#pop
+ 57.87      1.274     0.737     0.000     0.537        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 19.22      0.245     0.245     0.000     0.000  1000000   DHeap#<<
+ 13.21      0.168     0.168     0.000     0.000  1000000   DHeap#pop
+  9.70      0.124     0.124     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 
@@ -152,27 +147,25 @@ The interpretation of method names is:
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
 ########################################################################
-# Profile w/ N=1000 (i=100000)
+# Profile w/ N=1000 (i=1000000)
 # (n.b. RubyProf & tracepoint can change relative performance.
 #       A sampling profiler can provide more accurate relative metrics.
 ########################################################################
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling    push and resort ---------------------------
 Profiling  push and resort ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.001M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 3.113861
+Thread ID: 1340
+Fiber ID: 1320
+Total: 31.376364
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 92.13      2.869     2.869     0.000     0.000   100000   Array#sort!
-  2.58      3.114     0.080     0.000     3.034        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
-  2.21      2.951     0.069     0.000     2.882   100000   DHeap::Benchmarks::PushAndResort#<< d_heap/lib/d_heap/benchmarks/implementations.rb:31
-  1.15      0.069     0.036     0.000     0.033   100000   DHeap::Benchmarks::PushAndResort#pop d_heap/lib/d_heap/benchmarks/implementations.rb:38
-  1.07      0.033     0.033     0.000     0.000   100000   Array#shift
+ 91.86     28.823    28.823     0.000     0.000  1000000   Array#sort!
+  2.83     31.376     0.888     0.000    30.489        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+  2.28     29.683     0.714     0.000    28.969  1000000   DHeap::Benchmarks::PushAndResort#<< d_heap/benchmarks/implementations.rb:35
+  1.10      0.674     0.346     0.000     0.328  1000000   DHeap::Benchmarks::PushAndResort#pop d_heap/benchmarks/implementations.rb:42
+  1.05      0.328     0.328     0.000     0.000  1000000   Array#shift
 
 * recursively called methods
 
@@ -192,23 +185,22 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   bsearch + insert ---------------------------
 Profiling bsearch + insert ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.001M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.325665
+Thread ID: 1340
+Fiber ID: 1320
+Total: 3.485141
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 36.81      0.120     0.120     0.000     0.000   100000   Array#bsearch_index
- 21.07      0.326     0.069     0.000     0.257        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
- 19.89      0.200     0.065     0.000     0.135   100000   DHeap::Benchmarks::BinarySearchAndInsert#<< d_heap/lib/d_heap/benchmarks/implementations.rb:57
- 10.38      0.046     0.034     0.000     0.012   100000   DHeap::Benchmarks::BinarySearchAndInsert#pop d_heap/lib/d_heap/benchmarks/implementations.rb:66
-  7.28      0.024     0.024     0.000     0.000   200000   Array#pop
-  4.56      0.015     0.015     0.000     0.000   100000   Array#insert
+ 36.29      1.265     1.265     0.000     0.000  1000000   Array#bsearch_index
+ 23.21      3.485     0.809     0.000     2.676        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 19.26      2.086     0.671     0.000     1.415  1000000   DHeap::Benchmarks::BinarySearchAndInsert#<< d_heap/benchmarks/implementations.rb:61
+  9.59      0.461     0.334     0.000     0.126  1000000   DHeap::Benchmarks::BinarySearchAndInsert#pop d_heap/benchmarks/implementations.rb:70
+  4.31      0.150     0.150     0.000     0.000  1000000   Array#insert
+  3.71      0.129     0.129     0.000     0.000  1000000   Array#fetch
+  3.63      0.126     0.126     0.000     0.000  1000000   Array#pop
 
 * recursively called methods
 
@@ -228,21 +220,23 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   ruby binary heap ---------------------------
 Profiling ruby binary heap ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.001M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 1.369518
+Thread ID: 1340
+Fiber ID: 1320
+Total: 10.263840
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 52.40      0.754     0.718     0.000     0.036   100000   DHeap::Benchmarks::NaiveBinaryHeap#pop d_heap/lib/d_heap/benchmarks/implementations.rb:92
- 38.15      0.535     0.522     0.000     0.012   100000   DHeap::Benchmarks::NaiveBinaryHeap#<< d_heap/lib/d_heap/benchmarks/implementations.rb:76
-  5.04      1.370     0.069     0.000     1.301        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
-  1.77      0.024     0.024     0.000     0.000   200000   Array#pop
+ 52.25      5.490     5.363     0.000     0.127  1000000   DHeap::Benchmarks::NaiveBinaryHeap#<< d_heap/benchmarks/implementations.rb:80
+ 33.44      3.835     3.432     0.000     0.403  1000000   DHeap::Benchmarks::NaiveBinaryHeap#pop d_heap/benchmarks/implementations.rb:96
+  7.85     10.264     0.805     0.000     9.459        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+  1.39      0.142     0.142     0.000     0.000  1000000   Array#last
+  1.31      0.135     0.135     0.000     0.000  1000000   Array#pop
+  1.30      0.134     0.134     0.000     0.000  1000000   Array#fetch
+  1.24      0.127     0.127     0.000     0.000  1000000   Array#push
+  1.23      0.126     0.126     0.000     0.000  1000000   Array#first
 
 * recursively called methods
 
@@ -262,21 +256,19 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   quaternary DHeap ---------------------------
 Profiling quaternary DHeap ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.001M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.140288
+Thread ID: 1340
+Fiber ID: 1320
+Total: 1.398884
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 44.18      0.140     0.062     0.000     0.078        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
- 25.47      0.036     0.036     0.000     0.000   100000   DHeap#<<
- 22.39      0.031     0.031     0.000     0.000   100000   DHeap#pop
-  7.96      0.011     0.011     0.000     0.000   100000   Array#pop
+ 50.76      1.399     0.710     0.000     0.689        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 26.29      0.368     0.368     0.000     0.000  1000000   DHeap#<<
+ 14.27      0.200     0.200     0.000     0.000  1000000   DHeap#pop
+  8.68      0.121     0.121     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 
@@ -297,28 +289,27 @@ The interpretation of method names is:
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
 ########################################################################
-# Profile w/ N=100000 (i=100000)
+# Profile w/ N=100000 (i=1000000)
 # (n.b. RubyProf & tracepoint can change relative performance.
 #       A sampling profiler can provide more accurate relative metrics.
 ########################################################################
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   bsearch + insert ---------------------------
 Profiling bsearch + insert ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 1.033389
+Thread ID: 1340
+Fiber ID: 1320
+Total: 6.385769
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 59.52      0.615     0.615     0.000     0.000   100000   Array#insert
- 20.38      0.211     0.211     0.000     0.000   100000   Array#bsearch_index
-  7.36      1.033     0.076     0.000     0.957        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
-  6.70      0.895     0.069     0.000     0.826   100000   DHeap::Benchmarks::BinarySearchAndInsert#<< d_heap/lib/d_heap/benchmarks/implementations.rb:57
-  3.46      0.049     0.036     0.000     0.014   100000   DHeap::Benchmarks::BinarySearchAndInsert#pop d_heap/lib/d_heap/benchmarks/implementations.rb:66
-  2.58      0.027     0.027     0.000     0.000   200000   Array#pop
+ 34.79      2.222     2.222     0.000     0.000  1000000   Array#insert
+ 32.59      2.081     2.081     0.000     0.000  1000000   Array#bsearch_index
+ 12.84      6.386     0.820     0.000     5.566        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 10.38      4.966     0.663     0.000     4.303  1000000   DHeap::Benchmarks::BinarySearchAndInsert#<< d_heap/benchmarks/implementations.rb:61
+  5.38      0.468     0.343     0.000     0.125  1000000   DHeap::Benchmarks::BinarySearchAndInsert#pop d_heap/benchmarks/implementations.rb:70
+  2.06      0.132     0.132     0.000     0.000  1000000   Array#fetch
+  1.95      0.125     0.125     0.000     0.000  1000000   Array#pop
 
 * recursively called methods
 
@@ -338,21 +329,18 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   ruby binary heap ---------------------------
 Profiling ruby binary heap ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 1.766487
+Thread ID: 1340
+Fiber ID: 1320
+Total: 16.731633
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 71.25      1.294     1.259     0.000     0.036   100000   DHeap::Benchmarks::NaiveBinaryHeap#pop d_heap/lib/d_heap/benchmarks/implementations.rb:92
- 21.28      0.388     0.376     0.000     0.012   100000   DHeap::Benchmarks::NaiveBinaryHeap#<< d_heap/lib/d_heap/benchmarks/implementations.rb:76
-  4.08      1.766     0.072     0.000     1.694        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
-  1.36      0.024     0.024     0.000     0.000   200000   Array#pop
+ 48.52      8.487     8.118     0.000     0.369  1000000   DHeap::Benchmarks::NaiveBinaryHeap#pop d_heap/benchmarks/implementations.rb:96
+ 42.94      7.310     7.184     0.000     0.126  1000000   DHeap::Benchmarks::NaiveBinaryHeap#<< d_heap/benchmarks/implementations.rb:80
+  4.80     16.732     0.803     0.000    15.929        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
 
 * recursively called methods
 
@@ -372,21 +360,19 @@ The interpretation of method names is:
   * MyObject#test - An instance method "test" of the class "MyObject"
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Filling   quaternary DHeap ---------------------------
 Profiling quaternary DHeap ---------------------------
-~~~~~~ refilling @dheap_bm_random_vals with 0.1M ~~~~~~
 Measure Mode: wall_time
-Thread ID: 1280
-Fiber ID: 1260
-Total: 0.165078
+Thread ID: 1340
+Fiber ID: 1320
+Total: 1.685324
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 39.51      0.165     0.065     0.000     0.100        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/lib/d_heap/benchmarks.rb:77
- 36.19      0.060     0.060     0.000     0.000   100000   DHeap#pop
- 17.15      0.028     0.028     0.000     0.000   100000   DHeap#<<
-  7.14      0.012     0.012     0.000     0.000   100000   Array#pop
+ 43.09      1.685     0.726     0.000     0.959        1   DHeap::Benchmarks::Scenarios#repeated_push_pop d_heap/benchmarks.rb:77
+ 26.05      0.439     0.439     0.000     0.000  1000000   DHeap#<<
+ 23.57      0.397     0.397     0.000     0.000  1000000   DHeap#pop
+  7.29      0.123     0.123     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 

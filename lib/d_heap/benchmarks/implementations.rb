@@ -10,6 +10,10 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       @a = []
     end
 
+    def clear
+      @a.clear
+    end
+
     def empty?
       @a.empty?
     end
