@@ -33,8 +33,17 @@ analysis below), it's always advisable to benchmark your specific use-case.
 
 ## Usage
 
-The simplest way to use it is simply with `#push` and `#pop`.  `#push` takes a
-score and a value, and `#pop` returns the value with the current minimum score.
+The basic interface is `#push(score, value)` to adds the value ranked by the
+score, and `#pop` to remove and return the value with the minimum score.
+
+The score must be Numeric or convertable to a `Float` via `Float(score)`.  _n.b.
+Because of the enormous performance impact, the score must either be an integer
+with an absolute value that fits into_ `unsigned long long` _or a_ `double`
+_(architecture dependant, but these are both 64bit values on an IA-64 system).
+This gives a 40+% speedup under some simulations!  Comparing arbitary objects
+via_ `a <=> b` _was the original design and may be added back in a future
+version,_ iff _it can be done without impacting the speed of numeric
+comparisons._
 
 ```ruby
 require "d_heap"
@@ -48,23 +57,34 @@ heap.push Time.now +   60, Task.new(3)
 heap.push Time.now +    5, Task.new(4)
 
 # peeking and popping (using last to get the task and ignore the time)
-heap.pop  # => Task[4]
-heap.pop  # => Task[2]
-heap.peek # => Task[3], but don't pop it from the heap
-heap.pop  # => Task[3]
-heap.pop  # => Task[1]
+heap.pop    # => Task[4]
+heap.pop    # => Task[2]
+heap.peek   # => Task[3], but don't pop it from the heap
+heap.pop    # => Task[3]
+heap.pop    # => Task[1]
+heap.empty? # => true
+heap.pop    # => nil
+```
 
+If your values behave as their own score, by being convertible via
+`Float(value)`, then you can use `#<<` for implicit scoring.  The score should
+not change for as long as the value remains in the heap, since it will not be
+re-evaluated after being pushed.
+
+```ruby
 heap.clear
 
-# For simplicity, the score can be derived from the value.  However this should
-# usually be avoided: "a <=> b" is much slower than comparing numbers.
+# The score can be derived from the value by using to_f.
+# "a <=> b" is *much* slower than comparing numbers, so it isn't used.
 class Event
   include Comparable
-  attr_reader :time, :event
+  attr_reader :time, :payload
+  alias_method :to_time, :time
 
-  def initialize(time, data)
+  def initialize(time, payload)
     @time = time.to_time
-    @data = data
+    @payload = payload
+    freeze
   end
 
   def to_f
@@ -86,10 +106,8 @@ heap.empty? # => true
 heap.pop    # => nil
 ```
 
-_n.b. because of the enormous performance impact, comparing arbitary objects may
-be removed from a future version. In that case, scores must fit into a 64bit
-`long` integer or `double` floating point, and values added without an explicit
-score will automatically derived a score by calling `to_f` or `to_i`._
+You can also pass a value into `#pop(max)` which will only pop if the minimum
+score is less than or equal to `max`.
 
 Read the [API documentation] for more detailed documentation and examples.
 

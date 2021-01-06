@@ -106,10 +106,24 @@ RSpec.describe DHeap do
       # rubocop:enable Layout/IndentationWidth
 
       it "can push a score with a related value" do
-        expect(heap.push("score 0", obj0 = Object.new))
-        expect(heap.push("score 1", Object.new))
-        expect(heap.push("score 2", Object.new))
+        heap.push(0.0, obj0 = Object.new)
+        heap.push(0.1, Object.new)
+        heap.push(0.2, Object.new)
         expect(heap.peek).to eq(obj0)
+      end
+
+      it "can push any value that returns a float from #to_f" do
+        klass = Struct.new(:to_f)
+        heap << 1
+        heap << (obj = klass.new(-99.999))
+        heap << (t = Time.now)
+        heap << "1.2"
+        expect { heap << klass.new("not a float") }.to raise_error(TypeError)
+        expect { heap << "not a float" }.to raise_error(ArgumentError)
+        expect(heap.pop).to equal(obj)
+        expect(heap.pop).to equal(1)
+        expect(heap.pop).to equal("1.2")
+        expect(heap.pop).to equal(t)
       end
 
     end

@@ -21,9 +21,9 @@ RSpec.describe DHeap, "benchmarks" do
   def silent; ENV["RSPEC_BENCHMARK_VOLUME"] != "loud" end
 
   # using before(:all) allows the instance var to be re-used between all specs
-  before(:all)  do refill_random_vals(io: silent ? nil : $stderr) end
+  before(:all)  do fill_random_vals(io: silent ? nil : $stderr) end
   before(:each) do
-    refill_random_vals(io: silent ? nil : $stderr)
+    fill_random_vals(io: silent ? nil : $stderr)
     # try to avoid doing these during the test run...
     GC.start(full_mark: true, immediate_sweep: true)
     GC.compact

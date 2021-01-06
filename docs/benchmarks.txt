@@ -1,4 +1,4 @@
-Benchmarking run at 2021-01-03 17:15:09 -0500
+Benchmarking run at 2021-01-05 22:36:11 -0500
 ruby v2.7.2, DHeap v0.3.0
 
 Testing all implementations. . .
@@ -12,29 +12,29 @@ Tests OK (count=1000, size=1000)
 ~~~~~~ filling @dheap_bm_random_vals with 4.0M ~~~~~~
 == push N (N=3) =================================
 Calculating -------------------------------------
-     push and resort      1.266M (±10.7%) i/s -     10.055M in   8.408372s
-    bsearch + insert      1.174M (± 8.9%) i/s -      9.763M
-    ruby binary heap      1.274M (±14.4%) i/s -     10.209M
-    quaternary DHeap      1.592M (± 8.9%) i/s -     12.673M
+     push and resort      1.255M (±10.3%) i/s -      9.986M in   8.385356s
+    bsearch + insert      1.158M (± 7.6%) i/s -      9.654M in   8.472831s
+    ruby binary heap      1.291M (±10.2%) i/s -     10.466M in   8.274911s
+    quaternary DHeap      1.617M (± 9.2%) i/s -     12.619M
 
 Comparison:
-    quaternary DHeap:  1591581.7 i/s
-    ruby binary heap:  1274455.6 i/s - same-ish: difference falls within error
-     push and resort:  1265910.5 i/s - 1.26x  (± 0.00) slower
-    bsearch + insert:  1174107.2 i/s - 1.36x  (± 0.00) slower
+    quaternary DHeap:  1617144.0 i/s
+    ruby binary heap:  1290788.8 i/s - 1.25x  (± 0.00) slower
+     push and resort:  1254587.2 i/s - 1.29x  (± 0.00) slower
+    bsearch + insert:  1157835.1 i/s - 1.40x  (± 0.00) slower
 
 == push N then pop N (N=3) =================================
 Calculating -------------------------------------
-     push and resort      1.075M (± 7.0%) i/s -      9.006M in   8.597595s
-    bsearch + insert      1.027M (± 4.7%) i/s -      8.820M in   8.624589s
-    ruby binary heap    827.750k (± 6.5%) i/s -      7.242M
-    quaternary DHeap      1.189M (± 6.8%) i/s -      9.924M
+     push and resort      1.055M (± 9.6%) i/s -      8.699M
+    bsearch + insert      1.023M (± 8.1%) i/s -      8.672M in   8.611256s
+    ruby binary heap    809.429k (± 8.7%) i/s -      6.941M
+    quaternary DHeap      1.240M (± 8.2%) i/s -     10.171M
 
 Comparison:
-    quaternary DHeap:  1189485.1 i/s
-     push and resort:  1075016.9 i/s - same-ish: difference falls within error
-    bsearch + insert:  1027028.7 i/s - 1.16x  (± 0.00) slower
-    ruby binary heap:   827749.7 i/s - 1.44x  (± 0.00) slower
+    quaternary DHeap:  1239554.5 i/s
+     push and resort:  1054765.2 i/s - same-ish: difference falls within error
+    bsearch + insert:  1023449.6 i/s - 1.21x  (± 0.00) slower
+    ruby binary heap:   809428.6 i/s - 1.53x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -42,16 +42,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=3) =================================
 Calculating -------------------------------------
-     push and resort    315.808  (± 4.1%) i/s -      3.150k in  10.000912s
-    bsearch + insert    433.476  (± 5.8%) i/s -      4.309k in   9.998978s
-    ruby binary heap    218.512  (± 8.7%) i/s -      2.159k in   9.998655s
-    quaternary DHeap    523.924  (± 5.3%) i/s -      5.209k in   9.999424s
+     push and resort    310.214  (± 4.5%) i/s -      3.093k in  10.000096s
+    bsearch + insert    427.064  (± 6.1%) i/s -      4.242k in   9.999548s
+    ruby binary heap    215.021  (± 4.7%) i/s -      2.144k in  10.002072s
+    quaternary DHeap    591.926  (± 4.4%) i/s -      5.899k in   9.997895s
 
 Comparison:
-    quaternary DHeap:      523.9 i/s
-    bsearch + insert:      433.5 i/s - 1.21x  (± 0.00) slower
-     push and resort:      315.8 i/s - 1.66x  (± 0.00) slower
-    ruby binary heap:      218.5 i/s - 2.40x  (± 0.00) slower
+    quaternary DHeap:      591.9 i/s
+    bsearch + insert:      427.1 i/s - 1.39x  (± 0.00) slower
+     push and resort:      310.2 i/s - 1.91x  (± 0.00) slower
+    ruby binary heap:      215.0 i/s - 2.75x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=7 (t=10sec/benchmark)
@@ -59,29 +59,29 @@ Comparison:
 
 == push N (N=7) =================================
 Calculating -------------------------------------
-     push and resort    481.982k (± 8.5%) i/s -      4.361M in   9.287989s
-    bsearch + insert    549.238k (± 4.5%) i/s -      4.998M
-    ruby binary heap    624.129k (± 9.5%) i/s -      5.587M in   9.071560s
-    quaternary DHeap    850.467k (± 8.7%) i/s -      7.318M in   8.726394s
+     push and resort    478.065k (±11.1%) i/s -      4.257M in   9.289855s
+    bsearch + insert    549.614k (± 8.1%) i/s -      4.970M in   9.174841s
+    ruby binary heap    617.740k (±10.8%) i/s -      5.507M in   9.089557s
+    quaternary DHeap    873.063k (± 9.4%) i/s -      7.477M in   8.728869s
 
 Comparison:
-    quaternary DHeap:   850466.9 i/s
-    ruby binary heap:   624128.7 i/s - 1.36x  (± 0.00) slower
-    bsearch + insert:   549238.2 i/s - 1.55x  (± 0.00) slower
-     push and resort:   481982.4 i/s - 1.76x  (± 0.00) slower
+    quaternary DHeap:   873063.2 i/s
+    ruby binary heap:   617739.7 i/s - 1.41x  (± 0.00) slower
+    bsearch + insert:   549614.0 i/s - 1.59x  (± 0.00) slower
+     push and resort:   478065.2 i/s - 1.83x  (± 0.00) slower
 
 == push N then pop N (N=7) =================================
 Calculating -------------------------------------
-     push and resort    415.882k (± 8.5%) i/s -      3.795M in   9.366607s
-    bsearch + insert    463.615k (± 6.1%) i/s -      4.282M
-    ruby binary heap    295.701k (± 6.5%) i/s -      2.806M in   9.553754s
-    quaternary DHeap    532.641k (±10.9%) i/s -      4.753M in   9.150842s
+     push and resort    410.724k (±10.2%) i/s -      3.714M in   9.365918s
+    bsearch + insert    469.343k (± 8.3%) i/s -      4.281M in   9.284109s
+    ruby binary heap    289.614k (± 8.3%) i/s -      2.721M in   9.546213s
+    quaternary DHeap    595.232k (± 7.9%) i/s -      5.305M in   9.066868s
 
 Comparison:
-    quaternary DHeap:   532640.7 i/s
-    bsearch + insert:   463614.8 i/s - same-ish: difference falls within error
-     push and resort:   415882.1 i/s - 1.28x  (± 0.00) slower
-    ruby binary heap:   295701.3 i/s - 1.80x  (± 0.00) slower
+    quaternary DHeap:   595232.2 i/s
+    bsearch + insert:   469342.6 i/s - 1.27x  (± 0.00) slower
+     push and resort:   410724.5 i/s - 1.45x  (± 0.00) slower
+    ruby binary heap:   289614.0 i/s - 2.06x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -89,16 +89,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=7) =================================
 Calculating -------------------------------------
-     push and resort    254.537  (±11.8%) i/s -      2.490k in  10.000009s
-    bsearch + insert    384.730  (± 3.9%) i/s -      3.837k in  10.000886s
-    ruby binary heap    190.165  (± 3.2%) i/s -      1.900k in  10.002468s
-    quaternary DHeap    436.612  (± 2.3%) i/s -      4.362k in   9.999524s
+     push and resort    261.336  (± 5.4%) i/s -      2.602k in  10.000939s
+    bsearch + insert    379.339  (± 4.2%) i/s -      3.781k in   9.998602s
+    ruby binary heap    183.753  (± 4.4%) i/s -      1.832k in  10.003362s
+    quaternary DHeap    514.630  (± 4.3%) i/s -      5.130k in   9.999409s
 
 Comparison:
-    quaternary DHeap:      436.6 i/s
-    bsearch + insert:      384.7 i/s - 1.13x  (± 0.00) slower
-     push and resort:      254.5 i/s - 1.72x  (± 0.00) slower
-    ruby binary heap:      190.2 i/s - 2.30x  (± 0.00) slower
+    quaternary DHeap:      514.6 i/s
+    bsearch + insert:      379.3 i/s - 1.36x  (± 0.00) slower
+     push and resort:      261.3 i/s - 1.97x  (± 0.00) slower
+    ruby binary heap:      183.8 i/s - 2.80x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=15 (t=10sec/benchmark)
@@ -106,29 +106,29 @@ Comparison:
 
 == push N (N=15) =================================
 Calculating -------------------------------------
-     push and resort    187.559k (± 7.7%) i/s -      1.791M in   9.702420s
-    bsearch + insert    249.922k (± 3.9%) i/s -      2.382M in   9.589856s
-    ruby binary heap    299.388k (± 8.6%) i/s -      2.825M in   9.531620s
-    quaternary DHeap    462.497k (± 8.5%) i/s -      4.215M in   9.233735s
+     push and resort    185.178k (±10.3%) i/s -      1.747M in   9.702608s
+    bsearch + insert    250.747k (± 7.9%) i/s -      2.371M in   9.586547s
+    ruby binary heap    294.822k (±10.8%) i/s -      2.751M in   9.541493s
+    quaternary DHeap    478.904k (± 8.9%) i/s -      4.341M in   9.227877s
 
 Comparison:
-    quaternary DHeap:   462496.9 i/s
-    ruby binary heap:   299387.9 i/s - 1.54x  (± 0.00) slower
-    bsearch + insert:   249922.1 i/s - 1.85x  (± 0.00) slower
-     push and resort:   187559.3 i/s - 2.47x  (± 0.00) slower
+    quaternary DHeap:   478904.0 i/s
+    ruby binary heap:   294822.2 i/s - 1.62x  (± 0.00) slower
+    bsearch + insert:   250747.0 i/s - 1.91x  (± 0.00) slower
+     push and resort:   185178.1 i/s - 2.59x  (± 0.00) slower
 
 == push N then pop N (N=15) =================================
 Calculating -------------------------------------
-     push and resort    165.369k (± 7.6%) i/s -      1.585M in   9.735420s
-    bsearch + insert    212.651k (± 4.7%) i/s -      2.047M in   9.672305s
-    ruby binary heap    114.645k (± 6.4%) i/s -      1.119M
-    quaternary DHeap    251.696k (± 5.0%) i/s -      2.394M
+     push and resort    162.347k (± 9.8%) i/s -      1.538M in   9.734602s
+    bsearch + insert    216.105k (± 6.8%) i/s -      2.064M in   9.660806s
+    ruby binary heap    113.495k (± 7.8%) i/s -      1.102M in   9.814616s
+    quaternary DHeap    283.120k (± 8.5%) i/s -      2.644M
 
 Comparison:
-    quaternary DHeap:   251696.1 i/s
-    bsearch + insert:   212651.2 i/s - 1.18x  (± 0.00) slower
-     push and resort:   165369.1 i/s - 1.52x  (± 0.00) slower
-    ruby binary heap:   114644.7 i/s - 2.20x  (± 0.00) slower
+    quaternary DHeap:   283120.3 i/s
+    bsearch + insert:   216104.9 i/s - 1.31x  (± 0.00) slower
+     push and resort:   162347.0 i/s - 1.74x  (± 0.00) slower
+    ruby binary heap:   113494.9 i/s - 2.49x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -136,16 +136,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=15) =================================
 Calculating -------------------------------------
-     push and resort    179.414  (± 3.9%) i/s -      1.790k in  10.000821s
-    bsearch + insert    342.748  (± 4.1%) i/s -      3.418k in  10.000567s
-    ruby binary heap    160.268  (± 4.4%) i/s -      1.599k in  10.001904s
-    quaternary DHeap    434.723  (± 3.7%) i/s -      4.337k in   9.999893s
+     push and resort    175.871  (± 4.5%) i/s -      1.754k in  10.003840s
+    bsearch + insert    338.651  (± 5.0%) i/s -      3.372k in   9.998847s
+    ruby binary heap    154.924  (± 5.2%) i/s -      1.544k in  10.004687s
+    quaternary DHeap    516.078  (± 4.3%) i/s -      5.143k in   9.999239s
 
 Comparison:
-    quaternary DHeap:      434.7 i/s
-    bsearch + insert:      342.7 i/s - 1.27x  (± 0.00) slower
-     push and resort:      179.4 i/s - 2.42x  (± 0.00) slower
-    ruby binary heap:      160.3 i/s - 2.71x  (± 0.00) slower
+    quaternary DHeap:      516.1 i/s
+    bsearch + insert:      338.7 i/s - 1.52x  (± 0.00) slower
+     push and resort:      175.9 i/s - 2.93x  (± 0.00) slower
+    ruby binary heap:      154.9 i/s - 3.33x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=31 (t=10sec/benchmark)
@@ -153,29 +153,29 @@ Comparison:
 
 == push N (N=31) =================================
 Calculating -------------------------------------
-     push and resort     65.265k (± 7.1%) i/s -    637.557k in   9.885376s
-    bsearch + insert    111.076k (± 4.2%) i/s -      1.086M in   9.803847s
-    ruby binary heap    142.304k (± 8.1%) i/s -      1.377M in   9.768252s
-    quaternary DHeap    240.406k (± 6.5%) i/s -      2.287M in   9.576403s
+     push and resort     64.440k (± 8.9%) i/s -    625.343k in   9.890167s
+    bsearch + insert    112.225k (± 6.7%) i/s -      1.090M
+    ruby binary heap    139.225k (±10.5%) i/s -      1.335M
+    quaternary DHeap    246.248k (± 9.0%) i/s -      2.316M in   9.572320s
 
 Comparison:
-    quaternary DHeap:   240405.9 i/s
-    ruby binary heap:   142304.2 i/s - 1.69x  (± 0.00) slower
-    bsearch + insert:   111075.6 i/s - 2.16x  (± 0.00) slower
-     push and resort:    65265.3 i/s - 3.68x  (± 0.00) slower
+    quaternary DHeap:   246247.5 i/s
+    ruby binary heap:   139225.2 i/s - 1.77x  (± 0.00) slower
+    bsearch + insert:   112224.8 i/s - 2.19x  (± 0.00) slower
+     push and resort:    64440.2 i/s - 3.82x  (± 0.00) slower
 
 == push N then pop N (N=31) =================================
 Calculating -------------------------------------
-     push and resort     58.754k (± 6.5%) i/s -    576.022k in   9.896099s
-    bsearch + insert     93.618k (± 4.3%) i/s -    909.138k in   9.841218s
-    ruby binary heap     45.418k (± 4.8%) i/s -    447.285k in   9.910727s
-    quaternary DHeap    109.238k (± 5.9%) i/s -      1.038M in   9.783999s
+     push and resort     57.055k (±11.6%) i/s -    545.508k in   9.893610s
+    bsearch + insert     93.296k (± 8.5%) i/s -    890.567k in   9.836420s
+    ruby binary heap     44.345k (± 8.7%) i/s -    431.579k in   9.898826s
+    quaternary DHeap    125.244k (± 7.9%) i/s -      1.187M in   9.749409s
 
 Comparison:
-    quaternary DHeap:   109237.8 i/s
-    bsearch + insert:    93617.9 i/s - 1.17x  (± 0.00) slower
-     push and resort:    58753.6 i/s - 1.86x  (± 0.00) slower
-    ruby binary heap:    45417.6 i/s - 2.41x  (± 0.00) slower
+    quaternary DHeap:   125244.3 i/s
+    bsearch + insert:    93296.2 i/s - 1.34x  (± 0.00) slower
+     push and resort:    57054.7 i/s - 2.20x  (± 0.00) slower
+    ruby binary heap:    44345.1 i/s - 2.82x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -183,16 +183,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=31) =================================
 Calculating -------------------------------------
-     push and resort    106.097  (± 3.8%) i/s -      1.059k in  10.001121s
-    bsearch + insert    309.799  (± 3.6%) i/s -      3.090k in   9.999935s
-    ruby binary heap    143.999  (± 4.2%) i/s -      1.436k in  10.001538s
-    quaternary DHeap    374.444  (± 2.7%) i/s -      3.740k in  10.000167s
+     push and resort    114.182  (± 4.4%) i/s -      1.139k in  10.001351s
+    bsearch + insert    306.229  (± 4.9%) i/s -      3.051k in   9.999296s
+    ruby binary heap    138.365  (± 5.8%) i/s -      1.377k in  10.001052s
+    quaternary DHeap    460.355  (± 4.8%) i/s -      4.586k in   9.999600s
 
 Comparison:
-    quaternary DHeap:      374.4 i/s
-    bsearch + insert:      309.8 i/s - 1.21x  (± 0.00) slower
-    ruby binary heap:      144.0 i/s - 2.60x  (± 0.00) slower
-     push and resort:      106.1 i/s - 3.53x  (± 0.00) slower
+    quaternary DHeap:      460.4 i/s
+    bsearch + insert:      306.2 i/s - 1.50x  (± 0.00) slower
+    ruby binary heap:      138.4 i/s - 3.33x  (± 0.00) slower
+     push and resort:      114.2 i/s - 4.03x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=100 (t=10sec/benchmark)
@@ -200,29 +200,29 @@ Comparison:
 
 == push N (N=100) =================================
 Calculating -------------------------------------
-     push and resort      8.522k (± 4.1%) i/s -     84.851k in   9.983882s
-    bsearch + insert     28.119k (± 4.8%) i/s -    278.788k in   9.952063s
-    ruby binary heap     41.839k (± 5.9%) i/s -    413.420k in   9.930070s
-    quaternary DHeap     75.350k (± 6.3%) i/s -    738.209k in   9.863357s
+     push and resort      8.344k (± 7.3%) i/s -     82.496k in   9.982204s
+    bsearch + insert     28.515k (± 7.1%) i/s -    280.872k in   9.949424s
+    ruby binary heap     40.760k (± 8.7%) i/s -    399.107k in   9.930830s
+    quaternary DHeap     78.618k (± 8.6%) i/s -    763.964k in   9.855780s
 
 Comparison:
-    quaternary DHeap:    75350.4 i/s
-    ruby binary heap:    41838.8 i/s - 1.80x  (± 0.00) slower
-    bsearch + insert:    28118.9 i/s - 2.68x  (± 0.00) slower
-     push and resort:     8521.6 i/s - 8.84x  (± 0.00) slower
+    quaternary DHeap:    78617.9 i/s
+    ruby binary heap:    40760.2 i/s - 1.93x  (± 0.00) slower
+    bsearch + insert:    28514.7 i/s - 2.76x  (± 0.00) slower
+     push and resort:     8343.8 i/s - 9.42x  (± 0.00) slower
 
 == push N then pop N (N=100) =================================
 Calculating -------------------------------------
-     push and resort      8.189k (± 4.8%) i/s -     81.438k in   9.984057s
-    bsearch + insert     24.714k (± 4.2%) i/s -    245.476k in   9.957973s
-    ruby binary heap     11.053k (± 4.9%) i/s -    109.979k in   9.981181s
-    quaternary DHeap     31.806k (± 5.5%) i/s -    314.076k in   9.939390s
+     push and resort      8.029k (± 8.1%) i/s -     79.208k in   9.981823s
+    bsearch + insert     24.920k (± 7.3%) i/s -    245.535k in   9.955648s
+    ruby binary heap     10.869k (± 6.7%) i/s -    107.557k in   9.978001s
+    quaternary DHeap     35.460k (± 6.9%) i/s -    348.347k in   9.935493s
 
 Comparison:
-    quaternary DHeap:    31806.4 i/s
-    bsearch + insert:    24713.8 i/s - 1.29x  (± 0.00) slower
-    ruby binary heap:    11052.5 i/s - 2.88x  (± 0.00) slower
-     push and resort:     8189.4 i/s - 3.88x  (± 0.00) slower
+    quaternary DHeap:    35459.9 i/s
+    bsearch + insert:    24920.5 i/s - 1.42x  (± 0.00) slower
+    ruby binary heap:    10868.9 i/s - 3.26x  (± 0.00) slower
+     push and resort:     8028.6 i/s - 4.42x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -230,16 +230,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=100) =================================
 Calculating -------------------------------------
-     push and resort     44.468  (± 2.2%) i/s -    445.000  in  10.013761s
-    bsearch + insert    278.874  (± 3.6%) i/s -      2.784k in   9.999800s
-    ruby binary heap    129.609  (± 6.9%) i/s -      1.285k in  10.002277s
-    quaternary DHeap    316.678  (± 4.4%) i/s -      3.158k in   9.999955s
+     push and resort     44.364  (± 2.3%) i/s -    444.000  in  10.019016s
+    bsearch + insert    277.462  (± 5.8%) i/s -      2.761k in  10.002372s
+    ruby binary heap    125.096  (± 7.2%) i/s -      1.242k in  10.004472s
+    quaternary DHeap    414.230  (± 5.6%) i/s -      4.121k in  10.000119s
 
 Comparison:
-    quaternary DHeap:      316.7 i/s
-    bsearch + insert:      278.9 i/s - 1.14x  (± 0.00) slower
-    ruby binary heap:      129.6 i/s - 2.44x  (± 0.00) slower
-     push and resort:       44.5 i/s - 7.12x  (± 0.00) slower
+    quaternary DHeap:      414.2 i/s
+    bsearch + insert:      277.5 i/s - 1.49x  (± 0.00) slower
+    ruby binary heap:      125.1 i/s - 3.31x  (± 0.00) slower
+     push and resort:       44.4 i/s - 9.34x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=1000 (t=10sec/benchmark)
@@ -247,29 +247,29 @@ Comparison:
 
 == push N (N=1000) =================================
 Calculating -------------------------------------
-     push and resort     83.603  (± 2.4%) i/s -    836.000  in  10.005034s
-    bsearch + insert      1.994k (± 5.0%) i/s -     19.856k in   9.996471s
-    ruby binary heap      4.055k (± 4.8%) i/s -     40.369k in   9.992779s
-    quaternary DHeap      7.821k (± 4.6%) i/s -     77.812k in   9.985053s
+     push and resort     82.833  (± 2.4%) i/s -    828.000  in  10.005113s
+    bsearch + insert      2.017k (± 5.0%) i/s -     20.087k in   9.995250s
+    ruby binary heap      3.903k (± 6.2%) i/s -     38.769k in   9.992012s
+    quaternary DHeap      8.014k (± 7.2%) i/s -     79.296k in   9.982809s
 
 Comparison:
-    quaternary DHeap:     7821.3 i/s
-    ruby binary heap:     4054.7 i/s - 1.93x  (± 0.00) slower
-    bsearch + insert:     1994.1 i/s - 3.92x  (± 0.00) slower
-     push and resort:       83.6 i/s - 93.55x  (± 0.00) slower
+    quaternary DHeap:     8014.3 i/s
+    ruby binary heap:     3902.8 i/s - 2.05x  (± 0.00) slower
+    bsearch + insert:     2016.7 i/s - 3.97x  (± 0.00) slower
+     push and resort:       82.8 i/s - 96.75x  (± 0.00) slower
 
 == push N then pop N (N=1000) =================================
 Calculating -------------------------------------
-     push and resort     83.171  (± 3.6%) i/s -    831.000  in  10.010096s
-    bsearch + insert      1.830k (± 4.5%) i/s -     18.246k in   9.996791s
-    ruby binary heap    767.051  (± 4.7%) i/s -      7.645k in   9.999330s
-    quaternary DHeap      2.634k (± 4.5%) i/s -     26.232k in   9.994321s
+     push and resort     82.028  (± 4.9%) i/s -    818.000  in  10.002961s
+    bsearch + insert      1.842k (± 6.2%) i/s -     18.304k in   9.995121s
+    ruby binary heap    755.344  (± 4.2%) i/s -      7.534k in   9.998227s
+    quaternary DHeap      2.858k (± 5.7%) i/s -     28.423k in   9.991636s
 
 Comparison:
-    quaternary DHeap:     2634.3 i/s
-    bsearch + insert:     1830.2 i/s - 1.44x  (± 0.00) slower
-    ruby binary heap:      767.1 i/s - 3.43x  (± 0.00) slower
-     push and resort:       83.2 i/s - 31.67x  (± 0.00) slower
+    quaternary DHeap:     2857.6 i/s
+    bsearch + insert:     1841.8 i/s - 1.55x  (± 0.00) slower
+    ruby binary heap:      755.3 i/s - 3.78x  (± 0.00) slower
+     push and resort:       82.0 i/s - 34.84x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -277,16 +277,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=1000) =================================
 Calculating -------------------------------------
-     push and resort      3.565  (± 0.0%) i/s -     36.000  in  10.100616s
-    bsearch + insert    211.201  (± 4.3%) i/s -      2.107k in   9.999988s
-    ruby binary heap     99.990  (±11.0%) i/s -    980.000  in  10.006686s
-    quaternary DHeap    283.270  (± 4.9%) i/s -      2.822k in  10.001810s
+     push and resort      3.518  (± 0.0%) i/s -     36.000  in  10.235007s
+    bsearch + insert    211.465  (± 4.3%) i/s -      2.109k in   9.999092s
+    ruby binary heap     95.340  (±11.5%) i/s -    934.000  in  10.003264s
+    quaternary DHeap    375.819  (± 4.8%) i/s -      3.746k in   9.998735s
 
 Comparison:
-    quaternary DHeap:      283.3 i/s
-    bsearch + insert:      211.2 i/s - 1.34x  (± 0.00) slower
-    ruby binary heap:      100.0 i/s - 2.83x  (± 0.00) slower
-     push and resort:        3.6 i/s - 79.46x  (± 0.00) slower
+    quaternary DHeap:      375.8 i/s
+    bsearch + insert:      211.5 i/s - 1.78x  (± 0.00) slower
+    ruby binary heap:       95.3 i/s - 3.94x  (± 0.00) slower
+     push and resort:        3.5 i/s - 106.82x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=10000 (t=10sec/benchmark)
@@ -294,29 +294,29 @@ Comparison:
 
 == push N (N=10000) =================================
 Calculating -------------------------------------
-     push and resort      0.676  (± 0.0%) i/s -      7.000  in  10.362017s
-    bsearch + insert    120.474  (± 2.5%) i/s -      1.204k in  10.001199s
-    ruby binary heap    401.785  (± 4.0%) i/s -      4.009k in  10.001499s
-    quaternary DHeap    789.482  (± 4.1%) i/s -      7.870k in   9.999043s
+     push and resort      0.672  (± 0.0%) i/s -      7.000  in  10.424064s
+    bsearch + insert    120.973  (± 3.3%) i/s -      1.208k in  10.000401s
+    ruby binary heap    389.220  (± 4.1%) i/s -      3.882k in   9.998704s
+    quaternary DHeap    807.050  (± 4.5%) i/s -      8.041k in   9.997096s
 
 Comparison:
-    quaternary DHeap:      789.5 i/s
-    ruby binary heap:      401.8 i/s - 1.96x  (± 0.00) slower
-    bsearch + insert:      120.5 i/s - 6.55x  (± 0.00) slower
-     push and resort:        0.7 i/s - 1168.64x  (± 0.00) slower
+    quaternary DHeap:      807.1 i/s
+    ruby binary heap:      389.2 i/s - 2.07x  (± 0.00) slower
+    bsearch + insert:      121.0 i/s - 6.67x  (± 0.00) slower
+     push and resort:        0.7 i/s - 1201.81x  (± 0.00) slower
 
 == push N then pop N (N=10000) =================================
 Calculating -------------------------------------
-     push and resort      0.672  (± 0.0%) i/s -      7.000  in  10.421790s
-    bsearch + insert    113.329  (± 2.6%) i/s -      1.132k in   9.999913s
-    ruby binary heap     59.347  (± 3.4%) i/s -    593.000  in  10.007278s
-    quaternary DHeap    216.759  (± 3.7%) i/s -      2.163k in   9.999528s
+     push and resort      0.667  (± 0.0%) i/s -      7.000  in  10.500011s
+    bsearch + insert    114.197  (± 3.5%) i/s -      1.141k in  10.005383s
+    ruby binary heap     58.254  (± 1.7%) i/s -    583.000  in  10.013368s
+    quaternary DHeap    236.172  (± 3.4%) i/s -      2.358k in  10.001903s
 
 Comparison:
-    quaternary DHeap:      216.8 i/s
-    bsearch + insert:      113.3 i/s - 1.91x  (± 0.00) slower
-    ruby binary heap:       59.3 i/s - 3.65x  (± 0.00) slower
-     push and resort:        0.7 i/s - 322.70x  (± 0.00) slower
+    quaternary DHeap:      236.2 i/s
+    bsearch + insert:      114.2 i/s - 2.07x  (± 0.00) slower
+    ruby binary heap:       58.3 i/s - 4.05x  (± 0.00) slower
+     push and resort:        0.7 i/s - 354.25x  (± 0.00) slower
 
 Pre-filling  push and resort priority queue ---------------------
 Pre-filling bsearch + insert priority queue ---------------------
@@ -324,16 +324,16 @@ Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=10000) =================================
 Calculating -------------------------------------
-     push and resort      0.298  (± 0.0%) i/s -      3.000  in  10.057424s
-    bsearch + insert    168.200  (± 3.0%) i/s -      1.681k in  10.003749s
-    ruby binary heap     69.509  (±12.9%) i/s -    678.000  in  10.002890s
-    quaternary DHeap    190.450  (± 8.4%) i/s -      1.890k in   9.999673s
+     push and resort      0.295  (± 0.0%) i/s -      3.000  in  10.165550s
+    bsearch + insert    169.457  (± 4.7%) i/s -      1.689k in   9.998815s
+    ruby binary heap     66.726  (±13.5%) i/s -    650.000  in  10.004652s
+    quaternary DHeap    293.562  (± 9.5%) i/s -      2.897k in   9.998505s
 
 Comparison:
-    quaternary DHeap:      190.4 i/s
-    bsearch + insert:      168.2 i/s - 1.13x  (± 0.00) slower
-    ruby binary heap:       69.5 i/s - 2.74x  (± 0.00) slower
-     push and resort:        0.3 i/s - 638.47x  (± 0.00) slower
+    quaternary DHeap:      293.6 i/s
+    bsearch + insert:      169.5 i/s - 1.73x  (± 0.00) slower
+    ruby binary heap:       66.7 i/s - 4.40x  (± 0.00) slower
+     push and resort:        0.3 i/s - 994.74x  (± 0.00) slower
 
 ########################################################################
 # Benchmarks with N=100000 (t=10sec/benchmark)
@@ -341,37 +341,37 @@ Comparison:
 
 == push N (N=100000) =================================
 Calculating -------------------------------------
-    bsearch + insert      2.255  (± 0.0%) i/s -     23.000  in  10.200219s
-    ruby binary heap     40.176  (± 2.5%) i/s -    402.000  in  10.015331s
-    quaternary DHeap     79.123  (± 2.5%) i/s -    791.000  in  10.006094s
+    bsearch + insert      2.199  (± 0.0%) i/s -     22.000  in  10.006556s
+    ruby binary heap     37.929  (± 5.3%) i/s -    378.000  in  10.008772s
+    quaternary DHeap     79.332  (± 3.8%) i/s -    792.000  in  10.002725s
 
 Comparison:
-    quaternary DHeap:       79.1 i/s
-    ruby binary heap:       40.2 i/s - 1.97x  (± 0.00) slower
-    bsearch + insert:        2.3 i/s - 35.09x  (± 0.00) slower
+    quaternary DHeap:       79.3 i/s
+    ruby binary heap:       37.9 i/s - 2.09x  (± 0.00) slower
+    bsearch + insert:        2.2 i/s - 36.08x  (± 0.00) slower
 
 == push N then pop N (N=100000) =================================
 Calculating -------------------------------------
-    bsearch + insert      2.235  (± 0.0%) i/s -     23.000  in  10.292199s
-    ruby binary heap      4.791  (± 0.0%) i/s -     48.000  in  10.019989s
-    quaternary DHeap     18.089  (± 5.5%) i/s -    181.000  in  10.021194s
+    bsearch + insert      2.107  (± 0.0%) i/s -     22.000  in  10.446718s
+    ruby binary heap      4.574  (± 0.0%) i/s -     46.000  in  10.081376s
+    quaternary DHeap     19.509  (± 5.1%) i/s -    195.000  in  10.016774s
 
 Comparison:
-    quaternary DHeap:       18.1 i/s
-    ruby binary heap:        4.8 i/s - 3.78x  (± 0.00) slower
-    bsearch + insert:        2.2 i/s - 8.09x  (± 0.00) slower
+    quaternary DHeap:       19.5 i/s
+    ruby binary heap:        4.6 i/s - 4.27x  (± 0.00) slower
+    bsearch + insert:        2.1 i/s - 9.26x  (± 0.00) slower
 
 Pre-filling bsearch + insert priority queue ---------------------
 Pre-filling ruby binary heap priority queue ---------------------
 Pre-filling quaternary DHeap priority queue ---------------------
 == Push/pop 10000 with pre-filled queue (size=N) (N=100000) =================================
 Calculating -------------------------------------
-    bsearch + insert    106.106  (±24.5%) i/s -    907.000  in  10.003597s
-    ruby binary heap     48.948  (±14.3%) i/s -    481.000  in  10.008993s
-    quaternary DHeap    178.668  (± 6.2%) i/s -      1.779k in  10.000943s
+    bsearch + insert    105.164  (±25.7%) i/s -    891.000  in   9.999131s
+    ruby binary heap     46.231  (±13.0%) i/s -    456.000  in  10.003243s
+    quaternary DHeap    246.973  (± 6.9%) i/s -      2.455k in  10.000362s
 
 Comparison:
-    quaternary DHeap:      178.7 i/s
-    bsearch + insert:      106.1 i/s - 1.68x  (± 0.00) slower
-    ruby binary heap:       48.9 i/s - 3.65x  (± 0.00) slower
+    quaternary DHeap:      247.0 i/s
+    bsearch + insert:      105.2 i/s - 2.35x  (± 0.00) slower
+    ruby binary heap:       46.2 i/s - 5.34x  (± 0.00) slower
 

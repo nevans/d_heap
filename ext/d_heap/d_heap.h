@@ -11,6 +11,12 @@
 // comparisons as d gets further from 4.
 #define DHEAP_MAX_D 32
 
+#define DHEAP_DEFAULT_SIZE 16
+#define DHEAP_MAX_SIZE (LONG_MAX / (int)sizeof(long double))
+
+// 10MB
+#define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(long double))
+
 VALUE rb_cDHeap;
 
 // copied from pg gem
@@ -25,9 +31,6 @@ VALUE rb_cDHeap;
 #define dheap_compact_callback(x) {(x)}
 #define dheap_gc_location(x) UNUSED(x)
 #endif
-
-// from internal/compar.h
-#define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
 
 #ifdef __D_HEAP_DEBUG
 #define debug(v) { \
