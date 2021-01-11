@@ -18,9 +18,9 @@ benchmark:
          q.pop
          i -= 1
        end
-    name:    "push N + pop N (sorting)"
-    prelude: "q = initq Sorting"
-  - script: *script
+    # name:    "push N + pop N (sorting)"
+    # prelude: "q = initq Sorting"
+  # - script: *script
     name:    "push N + pop N (bsearch)"
     prelude: "q = initq BSearch"
   - script: *script

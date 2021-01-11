@@ -252,8 +252,8 @@ module DHeap::Benchmarks
         @actual_tms = measure("actual", *args, &@actual_proc)
         @cmp_tms    = measure("cmp",    *args, &@cmp_proc) if @cmp_proc
         return unless @cmp_proc
-        @cmp_ratios = @cmp_tms.tms / @actual_tms.tms # how many times faster?
-        @actual_cmp = @cmp_ratios.real
+        # how many times faster?
+        @actual_cmp = @actual_tms.ips_real / @cmp_tms.ips_real
         puts "Ran %0.3fx as fast as comparison" % [@actual_cmp] if loud?
       end
 

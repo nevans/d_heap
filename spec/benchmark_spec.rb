@@ -7,8 +7,8 @@ RSpec.describe DHeap, "benchmarks" do
   include DHeap::Benchmarks::Scenarios
   include DHeap::Benchmarks::RSpecMatchers
 
-  subject(:heap) { DHeap.new }
-  subject(:sorted) { DHeap::Benchmarks::BSearch.new }
+  subject!(:heap) { DHeap.new }
+  subject!(:sorted) { DHeap::Benchmarks::BSearch.new }
 
   # don't use more than 1 million values per benchmark
   def max_bm_items; 25_000_000 end
@@ -32,8 +32,8 @@ RSpec.describe DHeap, "benchmarks" do
   end
 
   describe "test comparison implementations" do
-    let(:test_size)  {  341 }
-    let(:test_count) { 1000 }
+    let!(:test_size)  {  341 }
+    let!(:test_count) { 1000 }
     DHeap::Benchmarks::IMPLEMENTATIONS.each do |impl|
       describe impl.klass, impl.name do
         it "works for 1000 random heap sorts" do
@@ -51,7 +51,7 @@ RSpec.describe DHeap, "benchmarks" do
   end
 
   context "iterations per second" do
-    let(:total_pushes) { 50_000_000 }
+    let!(:total_pushes) { 50_000_000 }
     it "pushes and pops on an empty heap at least 5M items/sec" do
       expect do |i|
         repeated_push_pop(heap, i)
@@ -82,9 +82,11 @@ RSpec.describe DHeap, "benchmarks" do
     # rubocop:disable Style/BlockDelimiters
 
     shared_examples "pushes faster" do |count, times|
-      let(:items_per_round) { 100 * count }
-      let(:max_items) {
-        12_500_000 / items_per_round * items_per_round # int division truncation
+      let!(:items_per_round) {
+        count * [[100_000 / count, 1000].min, 1].max
+      }
+      let!(:max_items) {
+        items_per_round * [100_000_000 / items_per_round, 2].max
       }
       it "pushes #{count} items >= #{times}x faster" do
         expect do |i|
@@ -105,7 +107,7 @@ RSpec.describe DHeap, "benchmarks" do
           .running_at_most(max_items).times
           .running_at_most(5).seconds
           .warmup_at_most(0).times
-          .iterations_per_round(100 * count))
+          .iterations_per_round(items_per_round))
       end
     end
 
@@ -113,9 +115,17 @@ RSpec.describe DHeap, "benchmarks" do
       it "pushes then pops on existing queue (size=#{count}) #{times}x faster" do
         push_n_multiple_queues(count, heap, sorted)
         expect do |items_per_round|
-          repeated_push_pop(heap, items_per_round)
+          while 0 < items_per_round
+            heap << random_val
+            heap.pop
+            items_per_round -= 1
+          end
         end.to(perform_at_least(times).times_faster_than do |items_per_round|
-          repeated_push_pop(sorted, items_per_round)
+          while 0 < items_per_round
+            sorted << random_val
+            sorted.pop
+            items_per_round -= 1
+          end
         end
           .running_at_most(10_000_000).times
           .running_at_most(5).seconds
@@ -126,24 +136,28 @@ RSpec.describe DHeap, "benchmarks" do
 
     # rubocop:enable Style/BlockDelimiters
 
-    describe "with 15 items" do
-      include_examples "pushes faster",                                15, 1.5
-      include_examples "pushes and pops faster with pre-filled queue", 15, 1.01
+    # two layers: 1 + 4 = 5
+    describe "with 5 items" do
+      include_examples "pushes faster",                                5, 1.5
+      include_examples "pushes and pops faster with pre-filled queue", 5, 1.1
     end
 
-    describe "with 341 items" do
-      include_examples "pushes faster",                                341, 2.5
-      include_examples "pushes and pops faster with pre-filled queue", 341, 1.01
-    end
-
+    # six layers: 1 + 4 + 16 + 64 + 256 + 1025 = 1365
     describe "with 1365 items" do
-      include_examples "pushes faster",                                1365, 3
-      include_examples "pushes and pops faster with pre-filled queue", 1365, 1.01
+      include_examples "pushes faster",                                1365, 3.5
+      include_examples "pushes and pops faster with pre-filled queue", 1365, 1.1
     end
 
+    # nine layers: 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384 + 65536
     describe "with 87_381 items" do
-      include_examples "pushes faster",                                87_381, 3.5
-      include_examples "pushes and pops faster with pre-filled queue", 87_381, 1.01
+      include_examples "pushes faster",                                87_381, 30
+      include_examples "pushes and pops faster with pre-filled queue", 87_381, 1.5
+    end
+
+    # < ten layers
+    describe "with 200_000 items" do
+      include_examples "pushes faster",                                200_000, 60
+      include_examples "pushes and pops faster with pre-filled queue", 200_000, 10
     end
 
   end
