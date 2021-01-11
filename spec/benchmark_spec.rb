@@ -25,8 +25,10 @@ RSpec.describe DHeap, "benchmarks" do
   before(:each) do
     fill_random_vals(io: silent ? nil : $stderr)
     # try to avoid doing these during the test run...
-    GC.start(full_mark: true, immediate_sweep: true)
-    GC.compact
+    if GC.respond_to?(:compact)
+      GC.start(full_mark: true, immediate_sweep: true)
+      GC.compact
+    end
   end
 
   describe "test comparison implementations" do
@@ -118,30 +120,30 @@ RSpec.describe DHeap, "benchmarks" do
           .running_at_most(10_000_000).times
           .running_at_most(5).seconds
           .warmup_at_most(0).times
-          .iterations_per_round(10_000))
+          .iterations_per_round(100_000))
       end
     end
 
     # rubocop:enable Style/BlockDelimiters
 
-    describe "with 10 items" do
+    describe "with 15 items" do
       include_examples "pushes faster",                                15, 1.5
       include_examples "pushes and pops faster with pre-filled queue", 15, 1.01
     end
 
-    describe "with 100 items" do
-      include_examples "pushes faster",                                127, 2.5
-      include_examples "pushes and pops faster with pre-filled queue", 127, 1.01
+    describe "with 341 items" do
+      include_examples "pushes faster",                                341, 2.5
+      include_examples "pushes and pops faster with pre-filled queue", 341, 1.01
     end
 
-    describe "with 1000 items" do
-      include_examples "pushes faster",                                1023, 3
-      include_examples "pushes and pops faster with pre-filled queue", 1023, 1.05
+    describe "with 1365 items" do
+      include_examples "pushes faster",                                1365, 3
+      include_examples "pushes and pops faster with pre-filled queue", 1365, 1.01
     end
 
-    describe "with 10_000 items" do
-      include_examples "pushes faster",                                8191, 3.5
-      include_examples "pushes and pops faster with pre-filled queue", 8191, 1.05
+    describe "with 87_381 items" do
+      include_examples "pushes faster",                                87_381, 3.5
+      include_examples "pushes and pops faster with pre-filled queue", 87_381, 1.01
     end
 
   end
