@@ -6,7 +6,7 @@ implemented as a C extension.
 With a regular queue, you expect "FIFO" behavior: first in, first out.  With a
 stack you expect "LIFO": last in first out.  With a priority queue, you push
 elements along with a score and the lowest scored element is the first to be
-poppsed.  Priority queues are often used in algorithms for e.g. [scheduling] of
+popped.  Priority queues are often used in algorithms for e.g. [scheduling] of
 timers or bandwidth management, [Huffman coding], and various graph search
 algorithms such as [Dijkstra's algorithm], [A* search], or [Prim's algorithm].
 
@@ -33,20 +33,30 @@ analysis below), it's always advisable to benchmark your specific use-case.
 
 ## Usage
 
-The basic interface is `#push(score, value)` to adds the value ranked by the
-score, and `#pop` to remove and return the value with the minimum score.
+The basic API is:
+* `heap << object` adds a value as its own score.
+* `heap.push(score, value)` adds a value with an extrinsic score.
+* `heap.pop` removes and returns the value with the minimum score.
+* `heap.pop_lte(score)` pops if the minimum score is `<=` the provided score.
+* `heap.peek` to view the minimum value without popping it.
 
-The score must be Numeric or convertable to a `Float` via `Float(score)`.  _n.b.
-Because of the enormous performance impact, the score must either be an integer
-with an absolute value that fits into_ `unsigned long long` _or a_ `double`
-_(architecture dependant, but these are both 64bit values on an IA-64 system).
-This gives a 40+% speedup under some simulations!  Comparing arbitary objects
-via_ `a <=> b` _was the original design and may be added back in a future
-version,_ iff _it can be done without impacting the speed of numeric
-comparisons._
+The score must be `Integer` or `Float` or convertable to a `Float` via
+`Float(score)` (i.e. it should implement `#to_f`).  Constraining scores to
+numeric values gives a 40+% speedup under some benchmarks!
+
+_n.b._ `Integer` _scores must have an absolute value that fits into_ `unsigned
+long long`. _This is architecture dependant but on an IA-64 system this is 64
+bits, which gives a range of -18,446,744,073,709,551,615 to
++18446744073709551615._
+
+_Comparing arbitary objects via_ `a <=> b` _was the original design and may
+be added back in a future version,_ if (and only if) _it can be done without
+impacting the speed of numeric comparisons._
 
 ```ruby
 require "d_heap"
+
+Task = Struct.new(:id) # for demonstration
 
 heap = DHeap.new # defaults to a 4-heap
 
