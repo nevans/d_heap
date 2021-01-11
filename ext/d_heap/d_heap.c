@@ -333,25 +333,47 @@ dheap_initialize(int argc, VALUE *argv, VALUE self) {
     rb_check_arity(argc, 0, 1);
     TypedData_Get_Struct(self, dheap_t, &dheap_data_type, heap);
 
-    d = DHEAP_DEFAULT_D;
-    if (argc) {
-        d = NUM2INT(argv[0]);
-    }
+    d = argc ? NUM2INT(argv[0]) : DHEAP_DEFAULT_D;
     DHEAP_Check_d_size(d);
     heap->d = d;
 
     heap->values = rb_ary_new_capa(DHEAP_DEFAULT_SIZE);
 
 #ifdef SCORE_AS_LONG_DOUBLE
-    heap->capa = 0;
-    heap->size = 0;
-    heap->cscores = NULL;
     dheap_set_capa(heap, DHEAP_DEFAULT_SIZE);
 #else
     heap->scores = rb_ary_new_capa(DHEAP_DEFAULT_SIZE);
 #endif
 
     return self;
+}
+
+/* :nodoc: */
+static VALUE
+dheap_initialize_copy(VALUE copy, VALUE orig)
+{
+    dheap_t *heap_copy;
+    dheap_t *heap_orig = get_dheap_struct(orig);
+
+    rb_check_frozen(copy);
+    TypedData_Get_Struct(copy, dheap_t, &dheap_data_type, heap_copy);
+
+    heap_copy->d = heap_orig->d;
+
+    heap_copy->values = rb_ary_new();
+    rb_ary_replace(heap_copy->values, heap_orig->values);
+
+#ifdef SCORE_AS_LONG_DOUBLE
+    dheap_set_capa(heap_copy, heap_orig->capa);
+    heap_copy->size = heap_orig->size;
+    if (heap_copy->size)
+        MEMCPY(heap_orig->cscores, heap_copy->cscores, long double, heap_orig->size);
+#else
+    heap_copy->scores = rb_ary_new();
+    rb_ary_replace(heap_copy->scores, heap_orig->scores);
+#endif
+
+    return copy;
 }
 
 static inline void
@@ -497,6 +519,17 @@ dheap_freeze(VALUE self) {
     return rb_call_super(0, NULL);
 }
 
+/* :nodoc: */
+static VALUE
+dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
+{
+    dheap_initialize_copy(clone, orig);
+    if (RTEST(kwfreeze) || (kwfreeze == Qnil && OBJ_FROZEN(orig))) {
+        rb_funcall(clone, rb_intern("freeze"), 0);
+    }
+    return clone;
+}
+
 /*
  * @overload push(score, value = score)
  *
@@ -517,12 +550,12 @@ dheap_push(int argc, VALUE *argv, VALUE self) {
     VALUE scr, val;
     dheap_t *heap;
     long last_index;
+    rb_check_frozen(self);
 
     rb_check_arity(argc, 1, 2);
     heap = get_dheap_struct(self);
     scr = argv[0];
     val = argc < 2 ? scr : argv[1];
-
 
 #ifdef SCORE_AS_LONG_DOUBLE
     do {
@@ -605,6 +638,7 @@ dheap_pop_swap_last_and_sift_down(dheap_t *heap, long last_index)
 static VALUE
 dheap_clear(VALUE self) {
     dheap_t *heap = get_dheap_struct(self);
+    rb_check_frozen(self);
     if (0 < DHEAP_SIZE(heap)) {
         DHEAP_CLEAR(heap);
     }
@@ -634,6 +668,7 @@ dheap_pop(VALUE self) {
     VALUE pop_value;
     dheap_t *heap = get_dheap_struct(self);
     long last_index = DHEAP_IDX_LAST(heap);
+    rb_check_frozen(self);
 
     if (last_index < 0) return Qnil;
     pop_value = DHEAP_VALUE(heap, 0);
@@ -654,12 +689,13 @@ dheap_pop_lte(VALUE self, VALUE max_score) {
     VALUE pop_value;
     dheap_t *heap = get_dheap_struct(self);
     long last_index = DHEAP_IDX_LAST(heap);
-    SCORE max = VAL2SCORE(max_score);
+    rb_check_frozen(self);
 
     if (last_index <  0) return Qnil;
     pop_value = DHEAP_VALUE(heap, 0);
 
     do {
+        SCORE max = VAL2SCORE(max_score);
         SCORE pop_score = DHEAP_SCORE(heap, 0);
         if (max && !CMP_LTE(pop_score, max)) return Qnil;
     } while (0);
@@ -680,12 +716,13 @@ dheap_pop_lt(VALUE self, VALUE max_score) {
     VALUE pop_value;
     dheap_t *heap = get_dheap_struct(self);
     long last_index = DHEAP_IDX_LAST(heap);
-    SCORE max = VAL2SCORE(max_score);
+    rb_check_frozen(self);
 
     if (last_index <  0) return Qnil;
     pop_value = DHEAP_VALUE(heap, 0);
 
     do {
+        SCORE max = VAL2SCORE(max_score);
         SCORE pop_score = DHEAP_SCORE(heap, 0);
         if (max && !CMP_LT(pop_score, max)) return Qnil;
     } while (0);
@@ -707,15 +744,16 @@ Init_d_heap(void)
     rb_define_const(rb_cDHeap, "DEFAULT_D", INT2NUM(DHEAP_DEFAULT_D));
 
     rb_define_method(rb_cDHeap, "initialize", dheap_initialize, -1);
-    rb_define_method(rb_cDHeap, "d", dheap_attr_d, 0);
+    rb_define_method(rb_cDHeap, "initialize_copy", dheap_initialize_copy, 1);
+    rb_define_private_method(rb_cDHeap, "__init_clone__", dheap_init_clone, 2);
     rb_define_method(rb_cDHeap, "freeze", dheap_freeze, 0);
 
-    rb_define_method(rb_cDHeap, "size", dheap_size, 0);
-    rb_define_method(rb_cDHeap, "empty?", dheap_empty_p, 0);
+    rb_define_method(rb_cDHeap, "d",       dheap_attr_d, 0);
+    rb_define_method(rb_cDHeap, "size",    dheap_size, 0);
+    rb_define_method(rb_cDHeap, "empty?",  dheap_empty_p, 0);
+    rb_define_method(rb_cDHeap, "peek",    dheap_peek, 0);
 
     rb_define_method(rb_cDHeap, "clear",   dheap_clear, 0);
-
-    rb_define_method(rb_cDHeap, "peek",    dheap_peek, 0);
     rb_define_method(rb_cDHeap, "push",    dheap_push, -1);
     rb_define_method(rb_cDHeap, "<<",      dheap_left_shift, 1);
     rb_define_method(rb_cDHeap, "pop",     dheap_pop, 0);

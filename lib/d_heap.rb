@@ -15,8 +15,11 @@ require "d_heap/version"
 #
 class DHeap
 
-  def initialize_copy(other)
-    raise NotImplementedError, "initialize_copy should deep copy array"
+  # ruby 3.0+ (2.x can just use inherited initialize_clone)
+  if Object.instance_method(:initialize_clone).arity == -1
+    def initialize_clone(other, freeze: nil)
+      __init_clone__(other, freeze ? true : freeze)
+    end
   end
 
 end
