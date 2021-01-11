@@ -2,15 +2,26 @@
 
 require "d_heap/benchmarks"
 
-require "benchmark/ips"
+require "benchmark_driver"
+require "shellwords"
+require "English"
 
-module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
+module DHeap::Benchmarks
   # Benchmarks different implementations with different sizes
   class Benchmarker
     include Randomness
     include Scenarios
 
-    N_COUNTS = [3, 7, 15, 31, 100, 1000, 10_000, 100_000].freeze
+    N_COUNTS = [
+      5,      # 1 + 4
+      21,     # 1 + 4 + 16
+      85,     # 1 + 4 + 16 + 64
+      341,    # 1 + 4 + 16 + 64 + 256
+      1365,   # 1 + 4 + 16 + 64 + 256 + 1024
+      5461,   # 1 + 4 + 16 + 64 + 256 + 1024 + 4096
+      21_845, # 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384
+      87_381, # 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384 + 65536
+    ].freeze
 
     attr_reader :time
     attr_reader :iterations_for_push_pop
@@ -35,38 +46,26 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       end
     end
 
-    def benchmark_size(queue_size)
-      io.puts <<~TEXT
-        ########################################################################
-        # Benchmarks with N=#{queue_size} (t=#{time}sec/benchmark)
-        ########################################################################
-
-      TEXT
-      benchmark_push_n            queue_size
-      benchmark_push_n_then_pop_n queue_size
-      benchmark_repeated_push_pop queue_size
+    def benchmark_size(size)
+      sep "#", "Benchmarks with N=#{size} (t=#{time}sec/benchmark)", big: true
+      io.puts
+      benchmark_push_n            size
+      benchmark_push_n_then_pop_n size
+      benchmark_repeated_push_pop size
     end
 
     def benchmark_push_n(queue_size)
-      benchmarking("push N", queue_size, init: 0) do |queue|
-        queue.clear
-        push_n(queue, queue_size)
-      end
+      benchmarking("push N", "push_n", queue_size)
     end
 
     def benchmark_push_n_then_pop_n(queue_size)
-      benchmarking("push N then pop N", queue_size, init: 0) do |queue|
-        push_n_then_pop_n(queue, queue_size)
-      end
+      benchmarking("push N then pop N", "push_n_pop_n", queue_size)
     end
 
     def benchmark_repeated_push_pop(queue_size)
-      benchmark_name = "Push/pop %d with pre-filled queue (size=N)" % [
-        iterations_for_push_pop,
-      ]
-      benchmarking(benchmark_name, queue_size, init: queue_size) do |queue|
-        repeated_push_pop(queue, iterations_for_push_pop)
-      end
+      benchmarking(
+        "Push/pop with pre-filled queue (size=N)", "push_pop", queue_size
+      )
     end
 
     private
@@ -78,47 +77,41 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
     # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
 
-    def implementations_with_queues(init)
-      IMPLEMENTATIONS.reject {|impl|
-        skip_profiling?(init, impl)
-      }.map {|impl|
-        queue = impl.klass.new
-        unless init.zero?
-          puts "Pre-filling #{impl.name} priority queue ---------------------"
-          push_n(queue, init)
-        end
-        [impl, queue]
-      }
-    end
-
-    # try to avoid big GC pause during the test run... by doing one before.
-    def gc_mark_sweep_and_compact
-      GC.start(full_mark: true, immediate_sweep: true)
-      GC.compact
-    end
-
-    def benchmarking(name, queue_size, init: 0)
-      fill_random_vals
-      impl_queues = implementations_with_queues(init)
-      fill_random_vals
-      gc_mark_sweep_and_compact
-      puts "== #{name} (N=#{queue_size}) ================================="
-      Benchmark.ips do |bm|
-        bm.config(time: time, warmup: 0)
-        impl_queues.each do |impl, queue|
-          next if skip_profiling?(queue_size, impl)
-          bm.report(impl.name) do
-            yield queue
-          end
-          bm.compare!
-        end
+    def benchmarking(name, file, size)
+      Bundler.with_unbundled_env do
+        sep "==", "#{name} (N=#{size})"
+        cmd = %W[
+          bin/benchmark-driver
+          --bundler
+          --run-duration 6
+          --timeout 15
+          --runner ips_zero_fail
+          benchmarks/#{file}.yml
+        ]
+        env = ENV.to_h.merge(
+          "BENCH_N" => size.to_s,
+          "RUBYLIB" => File.expand_path("../..", __dir__),
+        )
+        system(env, *cmd)
       end
+    end
+
+    def sep(sep, msg = "", width: 80, big: false)
+      txt = String.new
+      txt += "#{sep * (width / sep.length)}\n" if big
+      txt += sep
+      txt += " #{msg}" if msg && !msg.empty?
+      txt += " " unless big
+      txt += sep * ((width - txt.length) / sep.length) unless big
+      txt += "\n"
+      txt += "#{sep * (width / sep.length)}\n" if big
+      io.print txt
     end
 
     # TODO: move this to specs dir
     def run_tests(
       test_size:  Integer(ENV.fetch("TEST_SIZE",  1000)),
-      test_count: Integer(ENV.fetch("TEST_COUNT", 1000)),
+      test_count: Integer(ENV.fetch("TEST_COUNT",  100)),
       io: $stdout
     )
       io.puts "Testing all implementations. . ."
@@ -127,9 +120,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       test_count.times do
         IMPLEMENTATIONS.each do |impl|
           queue = impl.klass.new
-          values = Array.new(test_size) {
-            @dheap_bm_random_vals.pop or raise OutOfRandomness
-          }
+          values = Array.new(test_size) { random_val }
           values.each do |v| queue << v end
           popped = []
           while (val = queue.pop)

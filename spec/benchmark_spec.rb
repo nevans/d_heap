@@ -8,7 +8,7 @@ RSpec.describe DHeap, "benchmarks" do
   include DHeap::Benchmarks::RSpecMatchers
 
   subject(:heap) { DHeap.new }
-  subject(:sorted) { DHeap::Benchmarks::BinarySearchAndInsert.new }
+  subject(:sorted) { DHeap::Benchmarks::BSearch.new }
 
   # don't use more than 1 million values per benchmark
   def max_bm_items; 25_000_000 end
@@ -27,6 +27,25 @@ RSpec.describe DHeap, "benchmarks" do
     # try to avoid doing these during the test run...
     GC.start(full_mark: true, immediate_sweep: true)
     GC.compact
+  end
+
+  describe "test comparison implementations" do
+    let(:test_size)  {  341 }
+    let(:test_count) { 1000 }
+    DHeap::Benchmarks::IMPLEMENTATIONS.each do |impl|
+      describe impl.klass, impl.name do
+        it "works for 1000 random heap sorts" do
+          queue = impl.klass.new
+          values = Array.new(test_size) { random_val }
+          values.each do |v| queue << v end
+          popped = []
+          while (val = queue.pop)
+            popped << val
+          end
+          next if popped == values.sort
+        end
+      end
+    end
   end
 
   context "iterations per second" do

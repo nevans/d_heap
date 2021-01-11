@@ -6,6 +6,7 @@ AllCops:
   TargetRubyVersion: 2.5
   NewCops: disable
   Exclude:
+    - bin/benchmark-driver
     - bin/rake
     - bin/rspec
     - bin/rubocop
@@ -130,6 +131,7 @@ Metrics/ClassLength:
 
 Style/AccessorGrouping:        { Enabled: false }
 Style/AsciiComments:           { Enabled: false } # 👮 can't stop our 🎉🥳🎊🥳!
+Style/ClassAndModuleChildren:  { Enabled: false }
 Style/EachWithObject:          { Enabled: false }
 Style/FormatStringToken:       { Enabled: false }
 Style/FloatDivision:           { Enabled: false }
@@ -145,6 +147,9 @@ Style/Semicolon:               { Enabled: false }
 Style/SingleLineMethods:       { Enabled: false }
 Style/StabbyLambdaParentheses: { Enabled: false }
 Style/WhenThen               : { Enabled: false }
+
+# I require trailing commas elsewhere, but these are optional
+Style/TrailingCommaInArguments: { Enabled: false }
 
 # If rubocop had an option to only enforce this on constants and literals (e.g.
 # strings, regexp, range), I'd agree.

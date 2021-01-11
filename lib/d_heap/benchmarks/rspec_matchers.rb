@@ -2,7 +2,7 @@
 
 require "d_heap/benchmarks"
 
-module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
+module DHeap::Benchmarks
 
   # Profiles different implementations with different sizes
   module RSpecMatchers # rubocop:disable Metrics/ModuleLength

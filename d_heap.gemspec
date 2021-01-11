@@ -31,7 +31,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/d_heap/extconf.rb"]
 
-  spec.add_development_dependency "benchmark-ips"
-  spec.add_development_dependency "rspec-benchmark"
+  spec.add_development_dependency "benchmark_driver"
   spec.add_development_dependency "ruby-prof"
 end

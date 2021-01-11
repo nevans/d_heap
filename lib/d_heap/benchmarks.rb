@@ -4,7 +4,7 @@ require "d_heap"
 require "ostruct"
 
 # Different benchmark scenarios and implementations to benchmark
-module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
+module DHeap::Benchmarks
 
   def self.puts_version_info(type = "Benchmark", io = $stdout)
     io.puts "#{type} run at %s" % [Time.now]
@@ -16,6 +16,8 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
   # moves "rand" outside the benchmarked code, to avoid measuring that too.
   module Randomness
+
+    def default_randomness_size; 1_000_000 end
 
     def fill_random_vals(target_size = default_randomness_size, io: $stdout)
       @dheap_bm_random_vals ||= []
@@ -30,8 +32,10 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
       nil
     end
 
-    def default_randomness_size
-      10_000_000
+    def random_val
+      @dheap_bm_random_vals.fetch(
+        @dheap_bm_random_idx = ((@dheap_bm_random_idx + 1) % @dheap_bm_random_len)
+      )
     end
 
   end
@@ -86,16 +90,22 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
   end
 
+  include Randomness
+  include Scenarios
+
+  def initq(klass, count = 0)
+    queue = klass.new
+    while 0 < count
+      queue << @dheap_bm_random_vals.fetch(
+        @dheap_bm_random_idx = ((@dheap_bm_random_idx + 1) % @dheap_bm_random_len)
+      )
+      count -= 1
+    end
+    queue
+  end
+
   # rubocop:enable Style/NumericPredicate
 
   require "d_heap/benchmarks/implementations"
-
-  # Different duck-typed priority queue implemenations
-  IMPLEMENTATIONS = [
-    OpenStruct.new(name: " push and resort", klass: PushAndResort).freeze,
-    OpenStruct.new(name: "bsearch + insert", klass: BinarySearchAndInsert).freeze,
-    OpenStruct.new(name: "ruby binary heap", klass: NaiveBinaryHeap).freeze,
-    OpenStruct.new(name: "quaternary DHeap", klass: DHeap).freeze,
-  ].freeze
 
 end

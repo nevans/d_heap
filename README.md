@@ -206,8 +206,8 @@ as an array which only stores values.
 ## Benchmarks
 
 _See `bin/benchmarks` and `docs/benchmarks.txt`, as well as `bin/profile` and
-`docs/profile.txt` for more details. These benchmarks were measured with v0.3.0.
-and ruby 2.7.2 without MJIT enabled._
+`docs/profile.txt` for more details or updated results. These benchmarks were
+measured with v0.3.0 and ruby 2.7.2 without MJIT enabled._
 
 These benchmarks use very simple implementations for a pure-ruby heap and an
 array that is kept sorted using `Array#bsearch_index` and `Array#insert`.  For
@@ -239,79 +239,79 @@ than bsearch + insert for push + pop until N is _very_ large (somewhere between
 10k and 100k)!
 
 For very small N values the benchmark implementations,  `DHeap` runs faster than
-the other implementations for each scenario, although the difference is small.
-The pure ruby binary heap is already 2x slower than bsearch + insert for the
-common push/pop scenario.
+the other implementations for each scenario, although the difference is still
+relatively small.  The pure ruby binary heap is 2x or more slower than bsearch +
+insert for common common push/pop scenario.
 
-    == push N (N=3) ==========================================================
-    quaternary DHeap:  1591581.7 i/s
-    ruby binary heap:  1274455.6 i/s - same-ish: difference falls within error
-     push and resort:  1265910.5 i/s - 1.26x  (± 0.00) slower
-    bsearch + insert:  1174107.2 i/s - 1.36x  (± 0.00) slower
+    == push N (N=5) ==========================================================
+    push N (c_dheap):   1590118.0 i/s
+    push N (rb_heap):    922644.3 i/s - 1.72x  slower
+    push N (bsearch):    920035.0 i/s - 1.73x  slower
+    push N (sorting):    819813.5 i/s - 1.94x  slower
 
-    == push N then pop N (N=3) ===============================================
-    quaternary DHeap:  1189485.1 i/s
-     push and resort:  1075016.9 i/s - same-ish: difference falls within error
-    bsearch + insert:  1027028.7 i/s - 1.16x  (± 0.00) slower
-    ruby binary heap:   827749.7 i/s - 1.44x  (± 0.00) slower
+    == push N then pop N (N=5) ===============================================
+    push N + pop N (c_dheap):   1085752.1 i/s
+    push N + pop N (bsearch):    765205.7 i/s - 1.42x  slower
+    push N + pop N (sorting):    694043.4 i/s - 1.56x  slower
+    push N + pop N (rb_heap):    465018.2 i/s - 2.33x  slower
 
-    == Push/pop 10000 with pre-filled queue of size=N (N=3) ==================
-    quaternary DHeap:      523.9 i/s
-    bsearch + insert:      433.5 i/s - 1.21x  (± 0.00) slower
-     push and resort:      315.8 i/s - 1.66x  (± 0.00) slower
-    ruby binary heap:      218.5 i/s - 2.40x  (± 0.00) slower
+    == Push/pop with pre-filled queue of size=N (N=5) ========================
+    push + pop (c_dheap):   5411341.7 i/s
+    push + pop (bsearch):   4259042.8 i/s - 1.27x  slower
+    push + pop (sorting):   2852751.5 i/s - 1.90x  slower
+    push + pop (rb_heap):   2186260.5 i/s - 2.48x  slower
 
-By N=15, `DHeap` has pulled significantly ahead of bsearch + insert for all
+By N=21, `DHeap` has pulled significantly ahead of bsearch + insert for all
 scenarios, and the pure ruby heap has fallen behind every implementation—even
 resorting the array after every `#push`—in any scenario that uses `#pop`.
 
-    == push N (N=15) =========================================================
-    quaternary DHeap:   462496.9 i/s
-    ruby binary heap:   299387.9 i/s - 1.54x  (± 0.00) slower
-    bsearch + insert:   249922.1 i/s - 1.85x  (± 0.00) slower
-     push and resort:   187559.3 i/s - 2.47x  (± 0.00) slower
+    == push N (N=21) =========================================================
+    push N (c_dheap):    389943.6 i/s
+    push N (rb_heap):    207784.2 i/s - 1.88x  slower
+    push N (bsearch):    172513.5 i/s - 2.26x  slower
+    push N (sorting):    112125.6 i/s - 3.48x  slower
 
-    == push N then pop N (N=15) ==============================================
-    quaternary DHeap:   251696.1 i/s
-    bsearch + insert:   212651.2 i/s - 1.18x  (± 0.00) slower
-     push and resort:   165369.1 i/s - 1.52x  (± 0.00) slower
-    ruby binary heap:   114644.7 i/s - 2.20x  (± 0.00) slower
+    == push N then pop N (N=21) ==============================================
+    push N + pop N (c_dheap):    196376.1 i/s
+    push N + pop N (bsearch):    141854.7 i/s - 1.38x  slower
+    push N + pop N (sorting):     96815.7 i/s - 2.03x  slower
+    push N + pop N (rb_heap):     71385.1 i/s - 2.75x  slower
 
-    == Push/pop 10000 with pre-filled queue of size=N (N=15) =================
-    quaternary DHeap:      434.7 i/s
-    bsearch + insert:      342.7 i/s - 1.27x  (± 0.00) slower
-     push and resort:      179.4 i/s - 2.42x  (± 0.00) slower
-    ruby binary heap:      160.3 i/s - 2.71x  (± 0.00) slower
+    == Push/pop with pre-filled queue of size=N (N=21) =======================
+    push + pop (c_dheap):   4721156.3 i/s
+    push + pop (bsearch):   3316974.2 i/s - 1.42x  slower
+    push + pop (rb_heap):   1574341.6 i/s - 3.00x  slower
+    push + pop (sorting):   1449704.5 i/s - 3.26x  slower
 
 At higher values of N, `DHeap`'s logarithmic growth leads to little slowdown
 of `DHeap#push`, while insert's linear growth causes it to run slower and
 slower.  But because `#pop` is O(1) for a sorted array and O(d log n / log d)
 for a _d_-heap, scenarios involving `#pop` remain relatively close even as N
-increases to 10k:
+increases to 5k:
 
-    == Push/pop 10000 with pre-filled queue of size=N (N=10000) ==============
-    quaternary DHeap:      190.4 i/s
-    bsearch + insert:      168.2 i/s - 1.13x  (± 0.00) slower
-    ruby binary heap:       69.5 i/s - 2.74x  (± 0.00) slower
-     push and resort:        0.3 i/s - 638.47x  (± 0.00) slower
+    == Push/pop with pre-filled queue of size=N (N=5461) ==============
+    push + pop (c_dheap):   2939356.4 i/s
+    push + pop (bsearch):   1950891.5 i/s - 1.51x  slower
+    push + pop (rb_heap):    815817.2 i/s - 3.60x  slower
+    push + pop (sorting):     25603.2 i/s - 114.80x  slower
 
 Somewhat surprisingly, bsearch + insert still runs faster than a pure ruby heap
-for the repeated push/pop scenario, all the way up to N as high as 100k:
+for the repeated push/pop scenario, all the way up to N as high as 87k:
 
-    == push N (N=100000) =====================================================
-    quaternary DHeap:       79.1 i/s
-    ruby binary heap:       40.2 i/s - 1.97x  (± 0.00) slower
-    bsearch + insert:        2.3 i/s - 35.09x  (± 0.00) slower
+    == push N (N=87381) ======================================================
+    push N (c_dheap):        88.3 i/s
+    push N (rb_heap):        43.6 i/s - 2.02x  slower
+    push N (bsearch):         2.9 i/s - 30.34x  slower
 
-    == push N then pop N (N=100000) ==========================================
-    quaternary DHeap:       18.1 i/s
-    ruby binary heap:        4.8 i/s - 3.78x  (± 0.00) slower
-    bsearch + insert:        2.2 i/s - 8.09x  (± 0.00) slower
+    == push N then pop N (N=87381) ===========================================
+    push N + pop (c_dheap):        21.8 i/s
+    push N + pop (rb_heap):         5.4 i/s - 4.07x  slower
+    push N + pop (bsearch):         2.8 i/s - 7.86x  slower
 
-    == Push/pop 10000 with pre-filled queue of size=N (N=100000) =============
-    quaternary DHeap:      178.7 i/s
-    bsearch + insert:      106.1 i/s - 1.68x  (± 0.00) slower
-    ruby binary heap:       48.9 i/s - 3.65x  (± 0.00) slower
+    == Push/pop with pre-filled queue of size=N (N=87381) ====================
+    push + pop (c_dheap):   1765639.1 i/s
+    push + pop (bsearch):    774272.3 i/s - 2.28x  slower
+    push + pop (rb_heap):    523594.7 i/s - 3.37x  slower
 
 ## Profiling
 

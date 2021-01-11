@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
+module DHeap::Benchmarks
 
   # base class for example priority queues
   class ExamplePriorityQueue
@@ -29,7 +29,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
   end
 
   # The most naive approach: resort after insert
-  class PushAndResort < ExamplePriorityQueue
+  class Sorting < ExamplePriorityQueue
 
     # O(n log n)
     def <<(score)
@@ -49,7 +49,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
   #
   # It uses Array#bsearch + Array#insert to push new values, and Array#pop to pop
   # the min value.
-  class BinarySearchAndInsert < ExamplePriorityQueue
+  class BSearch < ExamplePriorityQueue
 
     # Array#bsearch_index is O(log n)
     # Array#insert        is O(n)
@@ -75,7 +75,7 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
   # a very simple pure ruby binary heap
   # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-  class NaiveBinaryHeap < ExamplePriorityQueue
+  class RbHeap < ExamplePriorityQueue
 
     def <<(score)
       raise ArgumentError unless score
@@ -134,5 +134,13 @@ module DHeap::Benchmarks # rubocop:disable Style/ClassAndModuleChildren
 
   end
   # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+  # Different duck-typed priority queue implemenations
+  IMPLEMENTATIONS = [
+    OpenStruct.new(name: " push and resort", klass: Sorting).freeze,
+    OpenStruct.new(name: "bsearch + insert", klass: BSearch).freeze,
+    OpenStruct.new(name: "ruby binary heap", klass: RbHeap).freeze,
+    OpenStruct.new(name: "quaternary DHeap", klass: DHeap).freeze,
+  ].freeze
 
 end

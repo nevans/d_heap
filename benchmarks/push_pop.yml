@@ -1,0 +1,24 @@
+---
+prelude: |
+  system("#{RbConfig.ruby} bin/rake compile", err: :out, exception: true)
+  require "d_heap/benchmarks"
+  include DHeap::Benchmarks
+  fill_random_vals
+
+  n = ENV.fetch("BENCH_N", 1000).to_i
+
+benchmark:
+  - script: &script |
+       q << random_val
+       q.pop
+    name:    "push + pop (sorting)"
+    prelude: "q = initq Sorting, n"
+  - script: *script
+    name:    "push + pop (bsearch)"
+    prelude: "q = initq BSearch, n"
+  - script: *script
+    name:    "push + pop (rb_heap)"
+    prelude: "q = initq RbHeap, n"
+  - script: *script
+    name:    "push + pop (c_dheap)"
+    prelude: "q = initq DHeap, n"
