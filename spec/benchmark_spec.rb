@@ -136,27 +136,27 @@ RSpec.describe DHeap, "benchmarks" do
 
     # rubocop:enable Style/BlockDelimiters
 
-    # two layers: 1 + 4 = 5
-    describe "with 5 items" do
-      include_examples "pushes faster",                                5, 1.5
-      include_examples "pushes and pops faster with pre-filled queue", 5, 1.1
+    # two layers: 1 + 4 + 16 = 21
+    describe "with 21 items" do
+      include_examples "pushes faster",                                21, 1.25
+      include_examples "pushes and pops faster with pre-filled queue", 21, 1.01
     end
 
     # six layers: 1 + 4 + 16 + 64 + 256 + 1025 = 1365
     describe "with 1365 items" do
-      include_examples "pushes faster",                                1365, 3.5
+      include_examples "pushes faster",                                1365, 3.0
       include_examples "pushes and pops faster with pre-filled queue", 1365, 1.1
     end
 
     # nine layers: 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384 + 65536
     describe "with 87_381 items" do
-      include_examples "pushes faster",                                87_381, 30
+      include_examples "pushes faster",                                87_381, 15
       include_examples "pushes and pops faster with pre-filled queue", 87_381, 1.5
     end
 
     # < ten layers
     describe "with 200_000 items" do
-      include_examples "pushes faster",                                200_000, 60
+      include_examples "pushes faster",                                200_000, 40
       include_examples "pushes and pops faster with pre-filled queue", 200_000, 10
     end
 
