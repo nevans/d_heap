@@ -217,18 +217,12 @@ as an array which only stores values.
 
 _See `bin/benchmarks` and `docs/benchmarks.txt`, as well as `bin/profile` and
 `docs/profile.txt` for more details or updated results. These benchmarks were
-measured with v0.3.0 and ruby 2.7.2 without MJIT enabled._
+measured with v0.4.0 and ruby 2.7.2 without MJIT enabled._
 
 These benchmarks use very simple implementations for a pure-ruby heap and an
 array that is kept sorted using `Array#bsearch_index` and `Array#insert`.  For
-comparison, an alternate implementation using `Array#sort` after each insert is
-also shown.  The benchmark implementations do not use separate scores and
-values, which allows the example implementations to use half as much memory as
-`DHeap` and as a result may give them a small comparative performance boost.
-To measure the lowest possible comparison overhead, the benchmarks use only
-integer (`Fixnum`) scores, which compare faster than any other object type.
-Because `DHeap` specifically optimizes for `Integer` and `Float` scores, other
-score types would likely perform more slowly.
+comparison, an alternate implementation `Array#min` and `Array#delete_at` is
+also shown.
 
 Three different scenarios are measured:
  * push N values but never pop (clearing between each set of pushes).
@@ -254,44 +248,43 @@ relatively small.  The pure ruby binary heap is 2x or more slower than bsearch +
 insert for common common push/pop scenario.
 
     == push N (N=5) ==========================================================
-    push N (c_dheap):   1590118.0 i/s
-    push N (rb_heap):    922644.3 i/s - 1.72x  slower
-    push N (bsearch):    920035.0 i/s - 1.73x  slower
-    push N (sorting):    819813.5 i/s - 1.94x  slower
+    push N (c_dheap):   1701338.1 i/s
+    push N (rb_heap):    971614.1 i/s - 1.75x  slower
+    push N (bsearch):    946363.7 i/s - 1.80x  slower
 
     == push N then pop N (N=5) ===============================================
-    push N + pop N (c_dheap):   1085752.1 i/s
-    push N + pop N (bsearch):    765205.7 i/s - 1.42x  slower
-    push N + pop N (sorting):    694043.4 i/s - 1.56x  slower
-    push N + pop N (rb_heap):    465018.2 i/s - 2.33x  slower
+    push N + pop N (c_dheap):   1087944.8 i/s
+    push N + pop N (findmin):    841708.1 i/s - 1.29x  slower
+    push N + pop N (bsearch):    773252.7 i/s - 1.41x  slower
+    push N + pop N (rb_heap):    471852.9 i/s - 2.31x  slower
 
     == Push/pop with pre-filled queue of size=N (N=5) ========================
-    push + pop (c_dheap):   5411341.7 i/s
-    push + pop (bsearch):   4259042.8 i/s - 1.27x  slower
-    push + pop (sorting):   2852751.5 i/s - 1.90x  slower
-    push + pop (rb_heap):   2186260.5 i/s - 2.48x  slower
+    push + pop (c_dheap):   5525418.8 i/s
+    push + pop (findmin):   5003904.8 i/s - 1.10x  slower
+    push + pop (bsearch):   4320581.8 i/s - 1.28x  slower
+    push + pop (rb_heap):   2207042.0 i/s - 2.50x  slower
 
 By N=21, `DHeap` has pulled significantly ahead of bsearch + insert for all
-scenarios, and the pure ruby heap has fallen behind every implementation—even
-resorting the array after every `#push`—in any scenario that uses `#pop`.
+scenarios, but the pure ruby heap is still slower than every other
+implementation—even resorting the array after every `#push`—in any scenario that
+uses `#pop`.
 
     == push N (N=21) =========================================================
-    push N (c_dheap):    389943.6 i/s
-    push N (rb_heap):    207784.2 i/s - 1.88x  slower
-    push N (bsearch):    172513.5 i/s - 2.26x  slower
-    push N (sorting):    112125.6 i/s - 3.48x  slower
+    push N (c_dheap):    408307.0 i/s
+    push N (rb_heap):    212275.2 i/s - 1.92x  slower
+    push N (bsearch):    169583.2 i/s - 2.41x  slower
 
     == push N then pop N (N=21) ==============================================
-    push N + pop N (c_dheap):    196376.1 i/s
-    push N + pop N (bsearch):    141854.7 i/s - 1.38x  slower
-    push N + pop N (sorting):     96815.7 i/s - 2.03x  slower
-    push N + pop N (rb_heap):     71385.1 i/s - 2.75x  slower
+    push N + pop N (c_dheap):    199435.5 i/s
+    push N + pop N (findmin):    162024.5 i/s - 1.23x  slower
+    push N + pop N (bsearch):    146284.3 i/s - 1.36x  slower
+    push N + pop N (rb_heap):     72289.0 i/s - 2.76x  slower
 
     == Push/pop with pre-filled queue of size=N (N=21) =======================
-    push + pop (c_dheap):   4721156.3 i/s
-    push + pop (bsearch):   3316974.2 i/s - 1.42x  slower
-    push + pop (rb_heap):   1574341.6 i/s - 3.00x  slower
-    push + pop (sorting):   1449704.5 i/s - 3.26x  slower
+    push + pop (c_dheap):   4836860.0 i/s
+    push + pop (findmin):   4467453.9 i/s - 1.08x  slower
+    push + pop (bsearch):   3345458.4 i/s - 1.45x  slower
+    push + pop (rb_heap):   1560476.3 i/s - 3.10x  slower
 
 At higher values of N, `DHeap`'s logarithmic growth leads to little slowdown
 of `DHeap#push`, while insert's linear growth causes it to run slower and
@@ -300,28 +293,29 @@ for a _d_-heap, scenarios involving `#pop` remain relatively close even as N
 increases to 5k:
 
     == Push/pop with pre-filled queue of size=N (N=5461) ==============
-    push + pop (c_dheap):   2939356.4 i/s
-    push + pop (bsearch):   1950891.5 i/s - 1.51x  slower
-    push + pop (rb_heap):    815817.2 i/s - 3.60x  slower
-    push + pop (sorting):     25603.2 i/s - 114.80x  slower
+    push + pop (c_dheap):   2718225.1 i/s
+    push + pop (bsearch):   1793546.4 i/s - 1.52x  slower
+    push + pop (rb_heap):    707139.9 i/s - 3.84x  slower
+    push + pop (findmin):    122316.0 i/s - 22.22x  slower
 
 Somewhat surprisingly, bsearch + insert still runs faster than a pure ruby heap
 for the repeated push/pop scenario, all the way up to N as high as 87k:
 
     == push N (N=87381) ======================================================
-    push N (c_dheap):        88.3 i/s
-    push N (rb_heap):        43.6 i/s - 2.02x  slower
-    push N (bsearch):         2.9 i/s - 30.34x  slower
+    push N (c_dheap):        92.8 i/s
+    push N (rb_heap):        43.5 i/s - 2.13x  slower
+    push N (bsearch):         2.9 i/s - 31.70x  slower
 
     == push N then pop N (N=87381) ===========================================
-    push N + pop (c_dheap):        21.8 i/s
-    push N + pop (rb_heap):         5.4 i/s - 4.07x  slower
-    push N + pop (bsearch):         2.8 i/s - 7.86x  slower
+    push N + pop N (c_dheap):        22.6 i/s
+    push N + pop N (rb_heap):         5.5 i/s - 4.08x  slower
+    push N + pop N (bsearch):         2.9 i/s - 7.90x  slower
 
     == Push/pop with pre-filled queue of size=N (N=87381) ====================
-    push + pop (c_dheap):   1765639.1 i/s
-    push + pop (bsearch):    774272.3 i/s - 2.28x  slower
-    push + pop (rb_heap):    523594.7 i/s - 3.37x  slower
+    push + pop (c_dheap):   1815277.3 i/s
+    push + pop (bsearch):    762343.2 i/s - 2.38x  slower
+    push + pop (rb_heap):    535913.6 i/s - 3.39x  slower
+    push + pop (findmin):      2262.8 i/s - 802.24x  slower
 
 ## Profiling
 
