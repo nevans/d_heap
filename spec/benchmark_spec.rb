@@ -2,7 +2,7 @@
 
 require "d_heap/benchmarks/rspec_matchers"
 
-RSpec.describe DHeap, "benchmarks" do
+RSpec.describe DHeap, "benchmarks", :benchmarks do
   include DHeap::Benchmarks::Randomness
   include DHeap::Benchmarks::Scenarios
   include DHeap::Benchmarks::RSpecMatchers
@@ -28,25 +28,6 @@ RSpec.describe DHeap, "benchmarks" do
     if GC.respond_to?(:compact)
       GC.start(full_mark: true, immediate_sweep: true)
       GC.compact
-    end
-  end
-
-  describe "test comparison implementations" do
-    let!(:test_size)  {  341 }
-    let!(:test_count) { 1000 }
-    DHeap::Benchmarks::IMPLEMENTATIONS.each do |impl|
-      describe impl.klass, impl.name do
-        it "works for 1000 random heap sorts" do
-          queue = impl.klass.new
-          values = Array.new(test_size) { random_val }
-          values.each do |v| queue << v end
-          popped = []
-          while (val = queue.pop)
-            popped << val
-          end
-          next if popped == values.sort
-        end
-      end
     end
   end
 

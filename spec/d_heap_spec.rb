@@ -47,7 +47,7 @@ RSpec.describe DHeap do
 
       it "retains min peek for one element" do
         t = Time.now
-        expect(heap.push(t)).to eq(0)
+        heap.push(t)
         expect(heap).to_not be_empty
         expect(heap.peek).to eq(t)
         expect(heap.size).to eq(1)
@@ -56,8 +56,8 @@ RSpec.describe DHeap do
       it "retains min peek for two elements in-order" do
         t0 = Time.now
         t1 = Time.now + 0.001
-        expect(heap.push(t0)).to eq(0)
-        expect(heap.push(t1)).to eq(1)
+        heap.push(t0)
+        heap.push(t1)
         expect(heap.peek).to eq(t0)
         expect(heap.size).to eq(2)
       end
@@ -65,8 +65,8 @@ RSpec.describe DHeap do
       it "retains min peek for two elements reversed" do
         t0 = Time.now
         t1 = Time.now + 0.001
-        expect(heap.push(t1)).to eq(0)
-        expect(heap.push(t0)).to eq(0)
+        heap.push(t1)
+        heap.push(t0)
         expect(heap.peek).to eq(t0)
         expect(heap.size).to eq(2)
       end
@@ -75,9 +75,9 @@ RSpec.describe DHeap do
         t0 = Time.now
         t1 = Time.now + 0.001
         t2 = Time.now + 0.002
-        expect(heap.push(t0)).to eq(0)
-        expect(heap.push(t1)).to eq(1)
-        expect(heap.push(t2)).to eq(2)
+        heap.push(t0)
+        heap.push(t1)
+        heap.push(t2)
         expect(heap.peek).to eq(t0)
         expect(heap.size).to eq(3)
       end
@@ -86,9 +86,9 @@ RSpec.describe DHeap do
         t0 = Time.now
         t1 = Time.now + 0.001
         t2 = Time.now + 0.002
-        expect(heap.push(t2)).to eq(0)
-        expect(heap.push(t1)).to eq(0)
-        expect(heap.push(t0)).to eq(0)
+        heap.push(t2)
+        heap.push(t1)
+        heap.push(t0)
         expect(heap.peek).to eq(t0)
         expect(heap.size).to eq(3)
       end
@@ -105,10 +105,24 @@ RSpec.describe DHeap do
       end
       # rubocop:enable Layout/IndentationWidth
 
+      it "can insert a value with a score" do
+        heap.insert(0.0, obj0 = Object.new)
+        heap.insert(0.1, Object.new)
+        heap.insert(0.2, Object.new)
+        expect(heap.peek).to eq(obj0)
+      end
+
       it "can push a score with a related value" do
-        heap.push(0.0, obj0 = Object.new)
-        heap.push(0.1, Object.new)
-        heap.push(0.2, Object.new)
+        heap.push(obj0 = Object.new, 0.0)
+        heap.push(Object.new, 0.1)
+        heap.push(Object.new, 0.2)
+        expect(heap.peek).to eq(obj0)
+      end
+
+      it "can enq a score with a related value" do
+        heap.enq(obj0 = Object.new, 0.0)
+        heap.enq(Object.new, 0.1)
+        heap.enq(Object.new, 0.2)
         expect(heap.peek).to eq(obj0)
       end
 
@@ -148,7 +162,7 @@ RSpec.describe DHeap do
 
     describe "#pop_lte(n)" do
       it "pops only the elements that are compare as <= n" do
-        (0..20).to_a.shuffle.each do |i| heap.push i, {i: i} end
+        (0..20).to_a.shuffle.each do |i| heap.insert i, {i: i} end
         expect(heap.pop_lte(-1)).to eq(nil)
         expect(heap.pop_lte(4)).to eq({i: 0})
         expect(heap.pop_lte(4)).to eq({i: 1})
@@ -161,7 +175,7 @@ RSpec.describe DHeap do
 
     describe "#pop_lt(n)" do
       it "pops only the elements that are compare as < n" do
-        (0..20).to_a.shuffle.each do |i| heap.push i, {i: i} end
+        (0..20).to_a.shuffle.each do |i| heap.insert i, {i: i} end
         expect(heap.pop_lt(-1)).to eq(nil)
         expect(heap.pop_lt(5)).to eq({i: 0})
         expect(heap.pop_lt(5)).to eq({i: 1})

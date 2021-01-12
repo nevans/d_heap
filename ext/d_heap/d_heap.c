@@ -348,7 +348,7 @@ dheap_initialize(int argc, VALUE *argv, VALUE self) {
     return self;
 }
 
-/* :nodoc: */
+/* @!visibility private */
 static VALUE
 dheap_initialize_copy(VALUE copy, VALUE orig)
 {
@@ -482,7 +482,7 @@ dheap_size(VALUE self)
 }
 
 /*
- * @return [Boolean] is the heap empty?
+ * @return [Boolean] if the heap is empty
  */
 static VALUE
 dheap_empty_p(VALUE self)
@@ -503,8 +503,7 @@ dheap_attr_d(VALUE self)
 }
 
 /*
- * Freezes the heap as well as its underlying array, but does <i>not</i>
- * deep-freeze the elements in the heap.
+ * Freezes the heap but does <i>not</i> deep-freeze the elements in the heap.
  *
  * @return [self]
  */
@@ -519,7 +518,7 @@ dheap_freeze(VALUE self) {
     return rb_call_super(0, NULL);
 }
 
-/* :nodoc: */
+/* @!visibility private */
 static VALUE
 dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
 {
@@ -531,63 +530,84 @@ dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
 }
 
 /*
- * @overload push(score, value = score)
+ * Inserts a value into the heap, using a score to determine sort-order.
  *
- * Push a value onto heap, using a score to determine sort-order.
- *
- * Ideally, the score should be a frozen value that can be efficiently compared
- * to other scores, e.g. an Integer or Float or (maybe) a String
+ * Score comes first, as an analogy with the +Array#insert+ index.
  *
  * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
- * @param score [#<=>] a value that can be compared to other scores.
+ * @param score [Integer,Float,#to_f] a score to compare against other scores.
  * @param value [Object] an object that is associated with the score.
  *
- * @return [Integer] the index of the value's final position.
+ * @return [self]
  */
 static VALUE
-dheap_push(int argc, VALUE *argv, VALUE self) {
-    VALUE scr, val;
-    dheap_t *heap;
+dheap_insert(VALUE self, VALUE score, VALUE value) {
     long last_index;
+    dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
-
-    rb_check_arity(argc, 1, 2);
-    heap = get_dheap_struct(self);
-    scr = argv[0];
-    val = argc < 2 ? scr : argv[1];
 
 #ifdef SCORE_AS_LONG_DOUBLE
     do {
-        long double score_as_ldbl = VAL2SCORE(scr);
+        long double score_as_ldbl = VAL2SCORE(score);
         dheap_ensure_room_for_push(heap, 1);
         ++heap->size;
         last_index = DHEAP_IDX_LAST(heap);
         heap->cscores[last_index] = score_as_ldbl;
     } while (0);
 #else
-    rb_ary_push((heap)->scores, scr);
+    rb_ary_push((heap)->scores, score);
     last_index = DHEAP_IDX_LAST(heap);
 #endif
-    rb_ary_push((heap)->values, val);
+    rb_ary_push((heap)->values, value);
 
-    return dheap_ary_sift_up(heap, last_index);
+    dheap_ary_sift_up(heap, last_index);
+
+    return self;
 }
 
 /*
- * Pushes a comparable value onto the heap.
+ * @overload push(value, score = value)
  *
- * The value will be its own score.
+ * Push a value onto heap, using a score to determine sort-order.
+ *
+ * Value comes first because the separate score is optional, and because it feels
+ * like a more natural variation on +Array#push+ or +Queue#enq+.  If a score
+ * isn't provided, the value must be an Integer or can be cast with
+ * +Float(value)+.
  *
  * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
- * @param value [#<=>] a value that can be compared to other heap members.
+ * @param value [Object] an object that is associated with the score.
+ * @param score [Integer,Float,#to_f] a score to compare against other scores.
+ *
+ * @return [self]
+ */
+static VALUE
+dheap_push(int argc, VALUE *argv, VALUE self) {
+    VALUE score, value;
+
+    rb_check_arity(argc, 1, 2);
+    value = argv[0];
+    score = argc < 2 ? value : argv[1];
+
+    return dheap_insert(self, score, value);
+}
+
+/*
+ * Pushes a value onto the heap.
+ *
+ * The score will be derived from the value, by using the value itself if it is
+ * an Integer, otherwise by casting it with +Float(value)+.
+ *
+ * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @param value [Integer,#to_f] a value with an intrinsic numeric score
  * @return [self]
  */
 static VALUE
 dheap_left_shift(VALUE self, VALUE value) {
-    dheap_push(1, &value, self);
-    return self;
+    return dheap_insert(self, value, value);
 }
 
 #ifdef SCORE_AS_LONG_DOUBLE
@@ -630,10 +650,9 @@ dheap_pop_swap_last_and_sift_down(dheap_t *heap, long last_index)
 #endif
 
 /*
- * Returns the next value on the heap to be popped without popping it.
+ * Clears all values from the heap, leaving it empty.
  *
- * Time complexity: <b>O(1)</b> <i>(worst-case)</i>
- * @return [Object] the next value to be popped without popping it.
+ * @return [self]
  */
 static VALUE
 dheap_clear(VALUE self) {
@@ -658,77 +677,80 @@ dheap_peek(VALUE self) {
     return DHEAP_VALUE(heap, 0);
 }
 
+#define POP_INIT(self)                                                  \
+    VALUE pop_value;                                                    \
+    dheap_t *heap = get_dheap_struct(self);                             \
+    long last_index = DHEAP_IDX_LAST(heap);                             \
+    rb_check_frozen(self);                                              \
+    if (last_index < 0) return Qnil;
+#define POP_COMPLETE()                                                  \
+    pop_value = DHEAP_VALUE(heap, 0);                                   \
+    dheap_pop_swap_last_and_sift_down(heap, last_index);                \
+    return pop_value;
+
 /*
  * Pops the minimum value from the top of the heap
  *
  * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @return [Object] the value with the minimum score
+ *
+ * @see #peek
+ * @see #pop_lt
+ * @see #pop_lte
  */
 static VALUE
 dheap_pop(VALUE self) {
-    VALUE pop_value;
-    dheap_t *heap = get_dheap_struct(self);
-    long last_index = DHEAP_IDX_LAST(heap);
-    rb_check_frozen(self);
-
-    if (last_index < 0) return Qnil;
-    pop_value = DHEAP_VALUE(heap, 0);
-
-    dheap_pop_swap_last_and_sift_down(heap, last_index);
-    return pop_value;
+    POP_INIT(self);
+    POP_COMPLETE();
 }
 
 /*
  * Pops the minimum value only if it is less than or equal to a max score.
  *
- * @param max_score [#to_f] the maximum score to be popped
+ * @param max_score [Integer,#to_f] the maximum score to be popped
  *
+ * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @return [Object] the value with the minimum score
+ *
+ * @see #peek
  * @see #pop
+ * @see #pop_lt
  */
 static VALUE
 dheap_pop_lte(VALUE self, VALUE max_score) {
-    VALUE pop_value;
-    dheap_t *heap = get_dheap_struct(self);
-    long last_index = DHEAP_IDX_LAST(heap);
-    rb_check_frozen(self);
-
-    if (last_index <  0) return Qnil;
-    pop_value = DHEAP_VALUE(heap, 0);
-
+    POP_INIT(self);
     do {
         SCORE max = VAL2SCORE(max_score);
         SCORE pop_score = DHEAP_SCORE(heap, 0);
         if (max && !CMP_LTE(pop_score, max)) return Qnil;
     } while (0);
-
-    dheap_pop_swap_last_and_sift_down(heap, last_index);
-    return pop_value;
+    POP_COMPLETE();
 }
 
 /*
  * Pops the minimum value only if it is less than a max score.
  *
- * @param max_score [#to_f] the maximum score to be popped
+ * @param max_score [Integer,#to_f] the maximum score to be popped
  *
  * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @return [Object] the value with the minimum score
+ *
+ * @see #peek
+ * @see #pop
+ * @see #pop_lte
  */
 static VALUE
 dheap_pop_lt(VALUE self, VALUE max_score) {
-    VALUE pop_value;
-    dheap_t *heap = get_dheap_struct(self);
-    long last_index = DHEAP_IDX_LAST(heap);
-    rb_check_frozen(self);
-
-    if (last_index <  0) return Qnil;
-    pop_value = DHEAP_VALUE(heap, 0);
-
+    POP_INIT(self);
     do {
         SCORE max = VAL2SCORE(max_score);
         SCORE pop_score = DHEAP_SCORE(heap, 0);
         if (max && !CMP_LT(pop_score, max)) return Qnil;
     } while (0);
-
-    dheap_pop_swap_last_and_sift_down(heap, last_index);
-    return pop_value;
+    POP_COMPLETE();
 }
 
 void
@@ -740,7 +762,7 @@ Init_d_heap(void)
     rb_cDHeap = rb_define_class("DHeap", rb_cObject);
     rb_define_alloc_func(rb_cDHeap, dheap_s_alloc);
 
-    rb_define_const(rb_cDHeap, "MAX_D", INT2NUM(DHEAP_MAX_D));
+    rb_define_const(rb_cDHeap, "MAX_D",     INT2NUM(DHEAP_MAX_D));
     rb_define_const(rb_cDHeap, "DEFAULT_D", INT2NUM(DHEAP_DEFAULT_D));
 
     rb_define_method(rb_cDHeap, "initialize", dheap_initialize, -1);
@@ -754,6 +776,7 @@ Init_d_heap(void)
     rb_define_method(rb_cDHeap, "peek",    dheap_peek, 0);
 
     rb_define_method(rb_cDHeap, "clear",   dheap_clear, 0);
+    rb_define_method(rb_cDHeap, "insert",  dheap_insert, 2);
     rb_define_method(rb_cDHeap, "push",    dheap_push, -1);
     rb_define_method(rb_cDHeap, "<<",      dheap_left_shift, 1);
     rb_define_method(rb_cDHeap, "pop",     dheap_pop, 0);

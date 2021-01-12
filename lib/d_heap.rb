@@ -14,11 +14,35 @@ require "d_heap/version"
 # worst-case time complexity.
 #
 class DHeap
+  alias deq       pop
+  alias enq       push
+  alias first     peek
+  alias pop_below pop_lt
+
+  alias length    size
+  alias count     size
+
   # ruby 3.0+ (2.x can just use inherited initialize_clone)
   if Object.instance_method(:initialize_clone).arity == -1
+    # @!visibility private
     def initialize_clone(other, freeze: nil)
       __init_clone__(other, freeze ? true : freeze)
     end
+  end
+
+  # Consumes the heap by popping each minumum value until it is empty.
+  #
+  # If you want to iterate over the heap without consuming it, you will need to
+  # first call +#dup+
+  #
+  # @yieldparam value [Object] each value that would be popped
+  #
+  # @return [Enumerator] if no block is given
+  # @return [nil] if a block is given
+  def each_pop
+    return to_enum(__method__) unless block_given?
+    yield pop until empty?
+    nil
   end
 
 end
