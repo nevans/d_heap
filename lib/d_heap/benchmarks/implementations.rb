@@ -28,7 +28,26 @@ module DHeap::Benchmarks
 
   end
 
-  # The most naive approach: resort after insert
+  # The most naive approach--completely unsorted!--is ironically not the worst.
+  class FindMin < ExamplePriorityQueue
+
+    # O(1)
+    def <<(score)
+      raise ArgumentError unless score
+      @a.push score
+    end
+
+    # O(n)
+    def pop
+      return unless (score = @a.min)
+      index = @a.rindex(score)
+      @a.delete_at(index)
+      score
+    end
+
+  end
+
+  # Re-sorting after each insert: this both naive and performs the worst.
   class Sorting < ExamplePriorityQueue
 
     # O(n log n)
@@ -67,6 +86,8 @@ module DHeap::Benchmarks
     # Array#pop is O(1). It updates length without changing capacity or contents.
     #
     # No comparisons are necessary.
+    #
+    # shift is usually also O(1) and could be used if it were sorted normally.
     def pop
       @a.pop
     end
@@ -138,6 +159,7 @@ module DHeap::Benchmarks
   # Different duck-typed priority queue implemenations
   IMPLEMENTATIONS = [
     OpenStruct.new(name: " push and resort", klass: Sorting).freeze,
+    OpenStruct.new(name: "  find min + del", klass: FindMin).freeze,
     OpenStruct.new(name: "bsearch + insert", klass: BSearch).freeze,
     OpenStruct.new(name: "ruby binary heap", klass: RbHeap).freeze,
     OpenStruct.new(name: "quaternary DHeap", klass: DHeap).freeze,

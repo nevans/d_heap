@@ -15,8 +15,8 @@ benchmark:
          q << random_val
          i += 1
        end
-    # name:    "push N (sorting)"
-    # prelude: "q = initq Sorting"
+    # name:    "push N (findmin)"
+    # prelude: "q = initq FindMin"
   # - script: *script
     name:    "push N (bsearch)"
     prelude: "q = initq BSearch"

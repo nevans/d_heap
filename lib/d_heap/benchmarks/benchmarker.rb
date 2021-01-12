@@ -39,7 +39,6 @@ module DHeap::Benchmarks
 
     def call(queue_size: ENV.fetch("BENCHMARK_QUEUE_SIZE", :unset))
       DHeap::Benchmarks.puts_version_info("Benchmarking")
-      run_tests(io: io) unless ENV["SKIP_TESTS"] == "1"
       sizes = (queue_size == :unset) ? N_COUNTS : [Integer(queue_size)]
       sizes.each do |size|
         benchmark_size(size)
@@ -106,38 +105,6 @@ module DHeap::Benchmarks
       txt += "\n"
       txt += "#{sep * (width / sep.length)}\n" if big
       io.print txt
-    end
-
-    # TODO: move this to specs dir
-    def run_tests(
-      test_size:  Integer(ENV.fetch("TEST_SIZE",  1000)),
-      test_count: Integer(ENV.fetch("TEST_COUNT",  100)),
-      io: $stdout
-    )
-      io.puts "Testing all implementations. . ."
-      fill_random_vals
-
-      test_count.times do
-        IMPLEMENTATIONS.each do |impl|
-          queue = impl.klass.new
-          values = Array.new(test_size) { random_val }
-          values.each do |v| queue << v end
-          popped = []
-          while (val = queue.pop)
-            popped << val
-          end
-          next if popped == values.sort
-
-          io.puts "=== BROKEN %s ===" % [impl.name]
-          io.puts "  sorted    => %p" % [values.sort]
-          io.puts "  popped    => %p" % [popped]
-          io.puts "  remainder => %p" % [queue.a]
-          raise "Broken %s: %p != %p, %p" % [impl.name, values.sort, popped, queue.a]
-        end
-      end
-
-      io.puts "Tests OK (count=%d, size=%d)" % [test_count, test_size]
-      io.puts
     end
 
     # rubocop:enable Metrics/MethodLength, Metrics/AbcSize

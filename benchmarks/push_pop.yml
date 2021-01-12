@@ -11,9 +11,9 @@ benchmark:
   - script: &script |
        q << random_val
        q.pop
-    # name:    "push + pop (sorting)"
-    # prelude: "q = initq Sorting, n"
-  # - script: *script
+    name:    "push + pop (findmin)"
+    prelude: "q = initq FindMin, n"
+  - script: *script
     name:    "push + pop (bsearch)"
     prelude: "q = initq BSearch, n"
   - script: *script

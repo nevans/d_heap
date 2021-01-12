@@ -14,7 +14,6 @@ require "d_heap/version"
 # worst-case time complexity.
 #
 class DHeap
-
   # ruby 3.0+ (2.x can just use inherited initialize_clone)
   if Object.instance_method(:initialize_clone).arity == -1
     def initialize_clone(other, freeze: nil)
