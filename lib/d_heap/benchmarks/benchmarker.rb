@@ -87,6 +87,9 @@ module DHeap::Benchmarks
           --runner ips_zero_fail
           benchmarks/#{file}.yml
         ]
+        if file == "push_n"
+          cmd << "--filter" << /dheap|\bstl\b|\bbsearch\b|\brb_heap\b/.to_s
+        end
         env = ENV.to_h.merge(
           "BENCH_N" => size.to_s,
           "RUBYLIB" => File.expand_path("../..", __dir__),

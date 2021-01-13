@@ -10,3 +10,7 @@ gem "rake", "~> 13.0"
 gem "rake-compiler"
 gem "rspec", "~> 3.10"
 gem "rubocop", "~> 1.0"
+
+gem "perf"
+gem "priority_queue_cxx"
+gem "stackprof"

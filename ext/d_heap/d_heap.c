@@ -1,54 +1,29 @@
 #include <float.h>
 #include "d_heap.h"
 
-#define SCORE_AS_LONG_DOUBLE 1
-
 ID id_cmp; // <=>
 ID id_abs; // abs
 
-#ifdef SCORE_AS_LONG_DOUBLE
-    #define SCORE long double
-#else
-    #define SCORE VALUE
-#endif
-
 typedef struct dheap_struct {
     int d;
-    VALUE values;
-#ifdef SCORE_AS_LONG_DOUBLE
     long size;
     long capa;
-    SCORE *cscores;
-#else
-    VALUE scores;  // T_ARRAY of comparable objects
-#endif
+    ENTRY *entries;
 } dheap_t;
 
-#define DHEAP_VALUE(heap, idx) RARRAY_AREF((heap)->values, idx)
+#define DHEAP_SCORE(heap, idx) ((heap)->entries[idx].score)
+#define DHEAP_VALUE(heap, idx) ((heap)->entries[idx].value)
 #define DHEAP_IDX_LAST(heap) (DHEAP_SIZE((heap)) - 1)
 #define DHEAP_IDX_PARENT(heap, idx) (((idx) - 1) / (heap)->d)
-#define DHEAP_IDX_CHILD0(heap, idx) (((idx) * (heap)->d) + 1)
+#define DHEAP_IDX_CHILD_0(heap, idx) (((idx) * (heap)->d) + 1)
+#define DHEAP_IDX_CHILD_D(heap, idx) (((idx) * (heap)->d) + (heap)->d)
 
-#ifdef SCORE_AS_LONG_DOUBLE
-    #define DHEAP_SIZE(heap) ((heap)->size)
-#else
-    #define DHEAP_SIZE(heap) (RARRAY_LEN((heap)->scores))
-#endif
+#define DHEAP_SIZE(heap) ((heap)->size)
 
-#ifdef SCORE_AS_LONG_DOUBLE
-    #define DHEAP_SCORE(heap, idx)                                       \
-       (idx < 0 || heap->size <= idx ? (SCORE)0 :                        \
-        ((heap)->cscores[idx]))
-#else
-    #define DHEAP_SCORE(heap, idx) RARRAY_AREF((heap)->scores, idx)
-#endif
-
-#ifdef SCORE_AS_LONG_DOUBLE
-
-#define CMP_LT(a, b)  (a <  b)
-#define CMP_LTE(a, b) (a <= b)
-#define CMP_GT(a, b)  (a >  b)
-#define CMP_GTE(a, b) (a >= b)
+#define CMP_LT(a, b)  ((a) <  (b))
+#define CMP_LTE(a, b) ((a) <= (b))
+#define CMP_GT(a, b)  ((a) >  (b))
+#define CMP_GTE(a, b) ((a) >= (b))
 
 #if LDBL_MANT_DIG < SIZEOF_UNSIGNED_LONG_LONG * 8
 #error 'unsigned long long' should fit into 'long double' mantissa
@@ -118,7 +93,7 @@ VAL2SCORE(VALUE score)
     }
 }
 
-#else
+#ifdef ORIG_SCORE_CMP_CODE
 
 #define VAL2SCORE(score) (score)
 
@@ -169,47 +144,49 @@ optimized_cmp(SCORE a, SCORE b) {
     }                                                         \
 } while (0)
 
-#define DHEAP_Check_Index(index, last_index) do {                     \
+#ifdef __D_HEAP_DEBUG
+#define ASSERT_DHEAP_INDEX(heap, index) do {                           \
     if (index < 0) {                                                  \
         rb_raise(rb_eIndexError, "DHeap index %ld too small", index); \
     }                                                                 \
-    else if (last_index < index) {                                    \
+    else if (DHEAP_IDX_LAST(heap) < index) {                          \
         rb_raise(rb_eIndexError, "DHeap index %ld too large", index); \
     }                                                                 \
 } while (0)
+#else
+#define ASSERT_DHEAP_INDEX(heap, index)
+#endif
 
 static void
 dheap_compact(void *ptr)
 {
     dheap_t *heap = ptr;
-#ifndef SCORE_AS_LONG_DOUBLE
-    if (heap->scores) dheap_gc_location( heap->scores );
-#endif
-    if (heap->values) dheap_gc_location( heap->values );
+    for (long i = 0; i < heap->size; ++i) {
+        if (DHEAP_VALUE(heap, i))
+            dheap_gc_location(DHEAP_VALUE(heap, i));
+    }
 }
 
 static void
 dheap_mark(void *ptr)
 {
     dheap_t *heap = ptr;
-#ifndef SCORE_AS_LONG_DOUBLE
-    if (heap->scores) rb_gc_mark_movable(heap->scores);
-#endif
-    if (heap->values) rb_gc_mark_movable(heap->values);
+    for (long i = 0; i < heap->size; ++i) {
+        if (DHEAP_VALUE(heap, i))
+            rb_gc_mark_movable(DHEAP_VALUE(heap,i));
+    }
 }
 
 static void
 dheap_free(void *ptr)
 {
-#ifdef SCORE_AS_LONG_DOUBLE
     dheap_t *heap = ptr;
     heap->size = 0;
-    if (heap->cscores) {
-        ruby_xfree(heap->cscores);
-        heap->cscores = NULL;
+    if (heap->entries) {
+        xfree(heap->entries);
+        heap->entries = NULL;
     }
     heap->capa = 0;
-#endif
     xfree(ptr);
 }
 
@@ -219,9 +196,7 @@ dheap_memsize(const void *ptr)
     const dheap_t *heap = ptr;
     size_t size = 0;
     size += sizeof(*heap);
-#ifdef SCORE_AS_LONG_DOUBLE
-    size += sizeof(long double) * heap->capa;
-#endif
+    size += sizeof(ENTRY) * heap->capa;
     return size;
 }
 
@@ -245,15 +220,10 @@ dheap_s_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, dheap_t, &dheap_data_type, heap);
     heap->d = DHEAP_DEFAULT_D;
-    heap->values = Qnil;
 
-#ifdef SCORE_AS_LONG_DOUBLE
     heap->size = 0;
     heap->capa = 0;
-    heap->cscores = NULL;
-#else
-    heap->scores = Qnil;
-#endif
+    heap->entries = NULL;
 
     return obj;
 }
@@ -263,32 +233,21 @@ get_dheap_struct(VALUE self)
 {
     dheap_t *heap;
     TypedData_Get_Struct(self, dheap_t, &dheap_data_type, heap);
-    Check_Type(heap->values, T_ARRAY); // ensure it's been initialized
     return heap;
 }
 
-#ifdef SCORE_AS_LONG_DOUBLE
-
-static void
+void
 dheap_set_capa(dheap_t *heap, long new_capa)
 {
-    long double *new, *old;
     // Do nothing if we already have the capacity or are resizing too small
-    if (new_capa <= heap->capa) return;
-    if (new_capa <= heap->size) return;
+    if (new_capa <= heap->capa || new_capa <= heap->size) return;
 
     // allocate
-    new = ruby_xcalloc(new_capa, sizeof(long double));
-    old = heap->cscores;
-
-    // copy contents
-    if (old) {
-        MEMCPY(new, old, long double, heap->size);
-        ruby_xfree(old);
+    if (heap->entries) {
+        RB_REALLOC_N(heap->entries, ENTRY, new_capa);
+    } else {
+        heap->entries = RB_ZALLOC_N(ENTRY, new_capa);
     }
-
-    // set vars
-    heap->cscores = new;
     heap->capa = new_capa;
 }
 
@@ -317,8 +276,6 @@ dheap_ensure_room_for_push(dheap_t *heap, long incr_by)
     }
 }
 
-#endif
-
 /*
  * @overload initialize(d = DHeap::DEFAULT_D)
  *   Initialize a _d_-ary min-heap.
@@ -337,13 +294,7 @@ dheap_initialize(int argc, VALUE *argv, VALUE self) {
     DHEAP_Check_d_size(d);
     heap->d = d;
 
-    heap->values = rb_ary_new_capa(DHEAP_DEFAULT_SIZE);
-
-#ifdef SCORE_AS_LONG_DOUBLE
     dheap_set_capa(heap, DHEAP_DEFAULT_SIZE);
-#else
-    heap->scores = rb_ary_new_capa(DHEAP_DEFAULT_SIZE);
-#endif
 
     return self;
 }
@@ -360,114 +311,82 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
 
     heap_copy->d = heap_orig->d;
 
-    heap_copy->values = rb_ary_new();
-    rb_ary_replace(heap_copy->values, heap_orig->values);
-
-#ifdef SCORE_AS_LONG_DOUBLE
     dheap_set_capa(heap_copy, heap_orig->capa);
     heap_copy->size = heap_orig->size;
     if (heap_copy->size)
-        MEMCPY(heap_orig->cscores, heap_copy->cscores, long double, heap_orig->size);
-#else
-    heap_copy->scores = rb_ary_new();
-    rb_ary_replace(heap_copy->scores, heap_orig->scores);
-#endif
+        MEMCPY(heap_copy->entries, heap_orig->entries, ENTRY, heap_orig->size);
 
     return copy;
 }
 
-static inline void
-dheap_assign(dheap_t *heap, long idx, SCORE score, VALUE value)
-{
-#ifdef SCORE_AS_LONG_DOUBLE
-    heap->cscores[idx] = score;
-    rb_ary_store(heap->values, idx, value);
-#else
-    rb_ary_store(heap->scores, idx, score);
-    rb_ary_store(heap->values, idx, value);
-#endif
-}
-
 VALUE
-dheap_ary_sift_up(dheap_t *heap, long sift_index) {
-    VALUE sift_value;
-    SCORE sift_score;
+dheap_sift_up(dheap_t *heap, long index) {
+    ENTRY entry = heap->entries[index];
 
-    long last_index = DHEAP_IDX_LAST(heap);
-    DHEAP_Check_Index(sift_index, last_index);
-
-    sift_value = DHEAP_VALUE(heap, sift_index);
-    sift_score = DHEAP_SCORE(heap, sift_index);
+    ASSERT_DHEAP_INDEX(heap, index);
 
     // sift it up to where it belongs
-    for (long parent_index; 0 < sift_index; sift_index = parent_index) {
-        SCORE parent_score;
-        VALUE parent_value;
-
-        debug(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
-        parent_index = DHEAP_IDX_PARENT(heap, sift_index);
-        parent_score = DHEAP_SCORE(heap, parent_index);
+    for (long parent_index; 0 < index; index = parent_index) {
+        /* debug(rb_sprintf("sift up(%"PRIsVALUE", %d, %ld)", heap->values, heap->d, index)); */
+        parent_index = DHEAP_IDX_PARENT(heap, index);
 
         // parent is smaller: heap is restored
-        if (CMP_LTE(parent_score, sift_score)) break;
+        if (CMP_LTE(DHEAP_SCORE(heap, parent_index), entry.score)) break;
 
         // parent is larger: swap and continue sifting up
-        parent_value = DHEAP_VALUE(heap, parent_index);
-        dheap_assign(heap, sift_index, parent_score, parent_value);
-        dheap_assign(heap, parent_index, sift_score, sift_value);
+        heap->entries[index] = heap->entries[parent_index];
     }
-    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
-    return LONG2NUM(sift_index);
+    heap->entries[index] = entry;
+    /* debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap->values, heap->d, index)); */
+    return LONG2NUM(index);
 }
 
-VALUE
-dheap_ary_sift_down(dheap_t *heap, long sift_index) {
-    VALUE sift_value;
-    SCORE sift_score;
-    long last_index = DHEAP_IDX_LAST(heap);
-    DHEAP_Check_Index(sift_index, last_index);
+/*
+ * this is a tiny bit more complicated than the binary heap version
+ */
+static inline long
+dheap_find_min_child(dheap_t *heap, long parent, long last_index) {
+    long min_child = DHEAP_IDX_CHILD_0(heap, parent);
+    long last_sib  = DHEAP_IDX_CHILD_D(heap, parent);
+    if (last_index < last_sib) last_sib = last_index;
 
-    sift_value = DHEAP_VALUE(heap, sift_index);
-    sift_score = DHEAP_SCORE(heap, sift_index);
-
-     // iteratively sift it down to where it belongs
-    for (long child_index; sift_index < last_index; sift_index = child_index) {
-        long child_idx0, last_sibidx;
-        SCORE child_score;
-        VALUE child_value;
-
-        // find first child index, and break if we've reached the last layer
-        child_idx0 = child_index = DHEAP_IDX_CHILD0(heap, sift_index);
-        debug(rb_sprintf("sift dn(%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
-        if (last_index < child_idx0) break;
-
-        // find the min child (and its child_index)
-        // requires "d" comparisons to find min child and compare to sift_score
-        last_sibidx = child_idx0 + heap->d - 1;
-        if (last_index < last_sibidx) last_sibidx = last_index;
-        child_score = DHEAP_SCORE(heap, child_idx0);
-        child_index = child_idx0;
-        for (long sibling_index = child_idx0 + 1;
-                sibling_index <= last_sibidx;
-                ++sibling_index) {
-            SCORE sibling_score = DHEAP_SCORE(heap, sibling_index);
-
-            if (CMP_LT(sibling_score, child_score)) {
-                child_score = sibling_score;
-                child_index = sibling_index;
-            }
+    for (long sibidx = min_child + 1; sibidx <= last_sib; ++sibidx) {
+        if (CMP_LT(DHEAP_SCORE(heap, sibidx),
+                    DHEAP_SCORE(heap, min_child))) {
+            min_child = sibidx;
         }
-
-        // child is larger: heap is restored
-        if (CMP_LTE(sift_score, child_score)) break;
-
-        // child is smaller: swap and continue sifting down
-        child_value = DHEAP_VALUE(heap, child_index);
-        dheap_assign(heap, sift_index, child_score, child_value);
-        dheap_assign(heap, child_index, sift_score, sift_value);
     }
-    debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap->values, heap->d, sift_index));
-    return LONG2NUM(sift_index);
+    return min_child;
+}
+
+void
+dheap_sift_down(dheap_t *heap, long index, long last_index) {
+    if (last_index < 1 || DHEAP_IDX_PARENT(heap, last_index) < index) {
+        // short-circuit: no chance for a child
+        return;
+
+    } else {
+        ENTRY entry = heap->entries[index];
+
+        long last_parent = DHEAP_IDX_PARENT(heap, last_index);
+
+        ASSERT_DHEAP_INDEX(heap, index);
+
+        // iteratively sift it down to where it belongs
+        while (index <= last_parent) {
+            // find min child
+            long min_child = dheap_find_min_child(heap, index, last_index);
+
+            // child is larger: heap is restored
+            if (CMP_LTE(entry.score, DHEAP_SCORE(heap, min_child))) break;
+
+            // child is smaller: swap and continue sifting down
+            heap->entries[index] = heap->entries[min_child];
+            index = min_child;
+        }
+        heap->entries[index] = entry;
+        // debug(rb_sprintf("sifted (%"PRIsVALUE", %d, %ld)", heap->values, heap->d, index));
+    }
 }
 
 /*
@@ -502,22 +421,6 @@ dheap_attr_d(VALUE self)
     return INT2FIX(heap->d);
 }
 
-/*
- * Freezes the heap but does <i>not</i> deep-freeze the elements in the heap.
- *
- * @return [self]
- */
-static VALUE
-dheap_freeze(VALUE self) {
-    dheap_t *heap = get_dheap_struct(self);
-    ID id_freeze = rb_intern("freeze");
-    rb_funcall(heap->values, id_freeze, 0);
-#ifndef SCORE_AS_LONG_DOUBLE
-    rb_funcall(heap->scores, id_freeze, 0);
-#endif
-    return rb_call_super(0, NULL);
-}
-
 /* @!visibility private */
 static VALUE
 dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
@@ -527,6 +430,14 @@ dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
         rb_funcall(clone, rb_intern("freeze"), 0);
     }
     return clone;
+}
+
+static inline void
+dheap_push_entry(dheap_t *heap, ENTRY *entry) {
+    dheap_ensure_room_for_push(heap, 1);
+    heap->entries[heap->size] = *entry;
+    ++heap->size;
+    dheap_sift_up(heap, heap->size - 1);
 }
 
 /*
@@ -543,25 +454,13 @@ dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
  */
 static VALUE
 dheap_insert(VALUE self, VALUE score, VALUE value) {
-    long last_index;
+    ENTRY entry;
     dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
 
-#ifdef SCORE_AS_LONG_DOUBLE
-    do {
-        long double score_as_ldbl = VAL2SCORE(score);
-        dheap_ensure_room_for_push(heap, 1);
-        ++heap->size;
-        last_index = DHEAP_IDX_LAST(heap);
-        heap->cscores[last_index] = score_as_ldbl;
-    } while (0);
-#else
-    rb_ary_push((heap)->scores, score);
-    last_index = DHEAP_IDX_LAST(heap);
-#endif
-    rb_ary_push((heap)->values, value);
-
-    dheap_ary_sift_up(heap, last_index);
+    entry.score = VAL2SCORE(score);
+    entry.value = value;
+    dheap_push_entry(heap, &entry);
 
     return self;
 }
@@ -585,13 +484,16 @@ dheap_insert(VALUE self, VALUE score, VALUE value) {
  */
 static VALUE
 dheap_push(int argc, VALUE *argv, VALUE self) {
-    VALUE score, value;
+    dheap_t *heap = get_dheap_struct(self);
+    ENTRY entry;
+    rb_check_frozen(self);
 
     rb_check_arity(argc, 1, 2);
-    value = argv[0];
-    score = argc < 2 ? value : argv[1];
+    entry.value = argv[0];
+    entry.score = VAL2SCORE(argc < 2 ? entry.value : argv[1]);
+    dheap_push_entry(heap, &entry);
 
-    return dheap_insert(self, score, value);
+    return self;
 }
 
 /*
@@ -607,47 +509,30 @@ dheap_push(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 dheap_left_shift(VALUE self, VALUE value) {
-    return dheap_insert(self, value, value);
+    dheap_t *heap = get_dheap_struct(self);
+    ENTRY entry;
+    rb_check_frozen(self);
+
+    entry.score = VAL2SCORE(value);
+    entry.value = value;
+    dheap_push_entry(heap, &entry);
+
+    return self;
 }
 
-#ifdef SCORE_AS_LONG_DOUBLE
-    #define DHEAP_DROP_LAST(heap) do {                                   \
-        rb_ary_pop(heap->values);                                        \
-        --heap->size;                                                    \
-    } while (0)
-#else
-    #define DHEAP_DROP_LAST(heap) do {                                   \
-        rb_ary_pop(heap->values);                                        \
-        rb_ary_pop(heap->scores);                                        \
-    } while (0)
-#endif
-static inline void
-dheap_pop_swap_last_and_sift_down(dheap_t *heap, long last_index)
+static const ENTRY EmptyDheapEntry;
+
+static inline VALUE
+dheap_pop0(dheap_t *heap)
 {
-    if (last_index == 0) {
-        DHEAP_DROP_LAST(heap);
+    VALUE popped = DHEAP_VALUE(heap, 0);
+    if (0 < --heap->size) {
+        heap->entries[0] = heap->entries[heap->size];
+        heap->entries[heap->size] = EmptyDheapEntry; // unnecessary to zero?
+        dheap_sift_down(heap, 0, heap->size - 1);
     }
-    else
-    {
-        VALUE sift_value = DHEAP_VALUE(heap, last_index);
-        SCORE sift_score = DHEAP_SCORE(heap, last_index);
-        dheap_assign(heap, 0, sift_score, sift_value);
-        DHEAP_DROP_LAST(heap);
-        dheap_ary_sift_down(heap, 0);
-    }
+    return popped;
 }
-
-#ifdef SCORE_AS_LONG_DOUBLE
-    #define DHEAP_CLEAR(heap) do {                                       \
-        rb_ary_clear(heap->values);                                      \
-        heap->size = 0;                                                  \
-    } while (0)
-#else
-    #define DHEAP_CLEAR(heap) do {                                       \
-        rb_ary_clear(heap->values);                                      \
-        rb_ary_clear(heap->scores);                                      \
-    } while (0)
-#endif
 
 /*
  * Clears all values from the heap, leaving it empty.
@@ -659,7 +544,7 @@ dheap_clear(VALUE self) {
     dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
     if (0 < DHEAP_SIZE(heap)) {
-        DHEAP_CLEAR(heap);
+        heap->size = 0;
     }
     return self;
 }
@@ -671,22 +556,12 @@ dheap_clear(VALUE self) {
  * @return [Object] the next value to be popped without popping it.
  */
 static VALUE
-dheap_peek(VALUE self) {
+dheap_peek(VALUE self)
+{
     dheap_t *heap = get_dheap_struct(self);
     if (DHEAP_IDX_LAST(heap) < 0) return Qnil;
     return DHEAP_VALUE(heap, 0);
 }
-
-#define POP_INIT(self)                                                  \
-    VALUE pop_value;                                                    \
-    dheap_t *heap = get_dheap_struct(self);                             \
-    long last_index = DHEAP_IDX_LAST(heap);                             \
-    rb_check_frozen(self);                                              \
-    if (last_index < 0) return Qnil;
-#define POP_COMPLETE()                                                  \
-    pop_value = DHEAP_VALUE(heap, 0);                                   \
-    dheap_pop_swap_last_and_sift_down(heap, last_index);                \
-    return pop_value;
 
 /*
  * Pops the minimum value from the top of the heap
@@ -700,9 +575,12 @@ dheap_peek(VALUE self) {
  * @see #pop_lte
  */
 static VALUE
-dheap_pop(VALUE self) {
-    POP_INIT(self);
-    POP_COMPLETE();
+dheap_pop(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    rb_check_frozen(self);
+    if (DHEAP_SIZE(heap) <= 0) return Qnil;
+    return dheap_pop0(heap);
 }
 
 /*
@@ -719,14 +597,13 @@ dheap_pop(VALUE self) {
  * @see #pop_lt
  */
 static VALUE
-dheap_pop_lte(VALUE self, VALUE max_score) {
-    POP_INIT(self);
-    do {
-        SCORE max = VAL2SCORE(max_score);
-        SCORE pop_score = DHEAP_SCORE(heap, 0);
-        if (max && !CMP_LTE(pop_score, max)) return Qnil;
-    } while (0);
-    POP_COMPLETE();
+dheap_pop_lte(VALUE self, VALUE max_score)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    rb_check_frozen(self);
+    if (DHEAP_SIZE(heap) <= 0) return Qnil;
+    if (!CMP_LTE(DHEAP_SCORE(heap, 0), VAL2SCORE(max_score))) return Qnil;
+    return dheap_pop0(heap);
 }
 
 /*
@@ -743,14 +620,13 @@ dheap_pop_lte(VALUE self, VALUE max_score) {
  * @see #pop_lte
  */
 static VALUE
-dheap_pop_lt(VALUE self, VALUE max_score) {
-    POP_INIT(self);
-    do {
-        SCORE max = VAL2SCORE(max_score);
-        SCORE pop_score = DHEAP_SCORE(heap, 0);
-        if (max && !CMP_LT(pop_score, max)) return Qnil;
-    } while (0);
-    POP_COMPLETE();
+dheap_pop_lt(VALUE self, VALUE max_score)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    rb_check_frozen(self);
+    if (DHEAP_SIZE(heap) <= 0) return Qnil;
+    if (!CMP_LT(DHEAP_SCORE(heap, 0), VAL2SCORE(max_score))) return Qnil;
+    return dheap_pop0(heap);
 }
 
 void
@@ -768,7 +644,6 @@ Init_d_heap(void)
     rb_define_method(rb_cDHeap, "initialize", dheap_initialize, -1);
     rb_define_method(rb_cDHeap, "initialize_copy", dheap_initialize_copy, 1);
     rb_define_private_method(rb_cDHeap, "__init_clone__", dheap_init_clone, 2);
-    rb_define_method(rb_cDHeap, "freeze", dheap_freeze, 0);
 
     rb_define_method(rb_cDHeap, "d",       dheap_attr_d, 0);
     rb_define_method(rb_cDHeap, "size",    dheap_size, 0);

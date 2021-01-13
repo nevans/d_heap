@@ -1,0 +1,39 @@
+Calculating -------------------------------------
+                     bin/bench_n 10000  bin/bench_n 100000  bin/bench_n 1000000  bin/bench_n 10000000
+push + pop (findmin)           40.280M             42.236M              58.956M              204.536M bytes -       1.000 times
+push + pop (bsearch)           40.212M             42.036M              59.012M              204.536M bytes -       1.000 times
+push + pop (rb_heap)           40.264M             41.780M              58.940M              204.364M bytes -       1.000 times
+push + pop (c++ stl)           40.416M             42.268M              56.624M              302.152M bytes -       1.000 times
+push + pop (c_dheap)           40.848M             43.968M              72.888M              568.828M bytes -       1.000 times
+
+Comparison:
+             push + pop (findmin)
+   bin/bench_n 10000:  40280000.0 bytes
+  bin/bench_n 100000:  42236000.0 bytes - 1.05x  larger
+ bin/bench_n 1000000:  58956000.0 bytes - 1.46x  larger
+bin/bench_n 10000000: 204536000.0 bytes - 5.08x  larger
+
+             push + pop (bsearch)
+   bin/bench_n 10000:  40212000.0 bytes
+  bin/bench_n 100000:  42036000.0 bytes - 1.05x  larger
+ bin/bench_n 1000000:  59012000.0 bytes - 1.47x  larger
+bin/bench_n 10000000: 204536000.0 bytes - 5.09x  larger
+
+             push + pop (rb_heap)
+   bin/bench_n 10000:  40264000.0 bytes
+  bin/bench_n 100000:  41780000.0 bytes - 1.04x  larger
+ bin/bench_n 1000000:  58940000.0 bytes - 1.46x  larger
+bin/bench_n 10000000: 204364000.0 bytes - 5.08x  larger
+
+             push + pop (c++ stl)
+   bin/bench_n 10000:  40416000.0 bytes
+  bin/bench_n 100000:  42268000.0 bytes - 1.05x  larger
+ bin/bench_n 1000000:  56624000.0 bytes - 1.40x  larger
+bin/bench_n 10000000: 302152000.0 bytes - 7.48x  larger
+
+             push + pop (c_dheap)
+   bin/bench_n 10000:  40848000.0 bytes
+  bin/bench_n 100000:  43968000.0 bytes - 1.08x  larger
+ bin/bench_n 1000000:  72888000.0 bytes - 1.78x  larger
+bin/bench_n 10000000: 568828000.0 bytes - 13.93x  larger
+

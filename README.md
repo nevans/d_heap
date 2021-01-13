@@ -4,20 +4,20 @@ A fast [_d_-ary heap][d-ary heap] [priority queue] implementation for ruby,
 implemented as a C extension.
 
 With a regular queue, you expect "FIFO" behavior: first in, first out.  With a
-stack you expect "LIFO": last in first out.  With a priority queue, you push
-elements along with a score and the lowest scored element is the first to be
-popped.  Priority queues are often used in algorithms for e.g. [scheduling] of
-timers or bandwidth management, [Huffman coding], and various graph search
-algorithms such as [Dijkstra's algorithm], [A* search], or [Prim's algorithm].
+stack you expect "LIFO": last in first out.  A priority queue has a score for
+each element and elements are popped in order by score.  Priority queues are
+often used in algorithms for e.g. [scheduling] of timers or bandwidth
+management, for [Huffman coding], and various graph search algorithms such as
+[Dijkstra's algorithm], [A* search], or [Prim's algorithm].
 
 The _d_-ary heap data structure is a generalization of the [binary heap], in
-which the nodes have _d_ children instead of 2.  This allows for "decrease
-priority" operations to be performed more quickly with the tradeoff of slower
-delete minimum.  Additionally, _d_-ary heaps can have better memory cache
+which the nodes have _d_ children instead of 2.  This allows for "insert" and
+"decrease priority" operations to be performed more quickly with the tradeoff of
+slower delete minimum.  Additionally, _d_-ary heaps can have better memory cache
 behavior than binary heaps, allowing them to run more quickly in practice
 despite slower worst-case time complexity. In the worst case, a _d_-ary heap
-requires only `O(log n / log d)` to push, with the tradeoff that pop is `O(d log
-n / log d)`.
+requires only `O(log n / log d)` operations to push, with the tradeoff that pop
+requires `O(d log n / log d)`.
 
 Although you should probably just use the default _d_ value  of `4` (see the
 analysis below), it's always advisable to benchmark your specific use-case.
@@ -33,53 +33,58 @@ analysis below), it's always advisable to benchmark your specific use-case.
 
 ## Usage
 
-The basic API is:
-* `heap << object` adds a value as its own score.
-* `heap.push(score, value)` adds a value with an extrinsic score.
+Quick reference:
+
+* `heap << object` adds a value, with `Float(object)` as its score.
+* `heap.push(object, score)` adds a value with an extrinsic score.
 * `heap.pop` removes and returns the value with the minimum score.
 * `heap.pop_lte(score)` pops if the minimum score is `<=` the provided score.
 * `heap.peek` to view the minimum value without popping it.
+* `heap.clear` to remove all items from the heap.
+* `heap.empty?` returns true if the heap is empty.
+* `heap.size` returns the number of items in the heap.
 
-The score must be `Integer` or `Float` or convertable to a `Float` via
-`Float(score)` (i.e. it should implement `#to_f`).  Constraining scores to
-numeric values gives a 40+% speedup under some benchmarks!
-
-_n.b._ `Integer` _scores must have an absolute value that fits into_ `unsigned
-long long`. _This is architecture dependant but on an IA-64 system this is 64
-bits, which gives a range of -18,446,744,073,709,551,615 to
-+18446744073709551615._
-
-_Comparing arbitary objects via_ `a <=> b` _was the original design and may
-be added back in a future version,_ if (and only if) _it can be done without
-impacting the speed of numeric comparisons._
+The basic API is `#push` and `pop`.  If your values behave as their own score,
+then you can push with `#<<`.  If the score changes while the object is still in
+the heap, it will not be re-evaluated again.  The score must be `Integer` or
+`Float` or convertable to a `Float` via `Float(score)` (i.e. it should implement
+`#to_f`).
 
 ```ruby
 require "d_heap"
 
-Task = Struct.new(:id) # for demonstration
+Task = Struct.new(:id, :time) do
+  def to_f; time.to_f end
+end
+t1 = Task.new(1, Time.now + 5*60)
+t2 = Task.new(2, Time.now + 50)
+t3 = Task.new(3, Time.now + 60)
+t4 = Task.new(4, Time.now +  5)
 
-heap = DHeap.new # defaults to a 4-heap
+# if the object returns its own score via #to_f, "<<" is the simplest API
+heap << t1 << t2
 
-# storing [score, value] tuples
-heap.push Time.now + 5*60, Task.new(1)
-heap.push Time.now +   30, Task.new(2)
-heap.push Time.now +   60, Task.new(3)
-heap.push Time.now +    5, Task.new(4)
+# or push with an explicit score
+heap.push t3, t4.to_f
+heap.push t4, t4 # score will be cast with Float
 
-# peeking and popping (using last to get the task and ignore the time)
-heap.pop    # => Task[4]
-heap.pop    # => Task[2]
-heap.peek   # => Task[3], but don't pop it from the heap
-heap.pop    # => Task[3]
-heap.pop    # => Task[1]
+# peek and pop
+heap.pop    # => #<struct Task id=4, time=2021-01-17 17:02:22.5574 -0500>
+heap.pop    # => #<struct Task id=2, time=2021-01-17 17:03:07.5574 -0500>
+heap.peek   # => #<struct Task id=3, time=2021-01-17 17:03:17.5574 -0500>
+heap.pop    # => #<struct Task id=3, time=2021-01-17 17:03:17.5574 -0500>
+heap.pop    # => #<struct Task id=1, time=2021-01-17 17:07:17.5574 -0500>
 heap.empty? # => true
 heap.pop    # => nil
 ```
 
-If your values behave as their own score, by being convertible via
-`Float(value)`, then you can use `#<<` for implicit scoring.  The score should
-not change for as long as the value remains in the heap, since it will not be
-re-evaluated after being pushed.
+Constraining scores to numeric values gives more than 50% speedup under some
+benchmarks!  _n.b._ `Integer` _scores must have an absolute value that fits
+into_ `unsigned long long`. _This is architecture dependant but on an IA-64
+system this is 64 bits, which gives a range of -18,446,744,073,709,551,615 to
++18446744073709551615.  Comparing arbitary objects via_ `a <=> b` _was the
+original design and may be added back in a future version,_ if (and only if) _it
+can be done without impacting the speed of numeric comparisons._
 
 ```ruby
 heap.clear
@@ -142,9 +147,10 @@ Or install it yourself as:
 ## Motivation
 
 One naive approach to a priority queue is to maintain an array in sorted order.
-This can be very simply implemented using `Array#bseach_index` + `Array#insert`.
-This can be very fast—`Array#pop` is `O(1)`—but the worst-case for insert is
-`O(n)` because it may need to `memcpy` a significant portion of the array.
+This can be very simply implemented in ruby with `Array#bseach_index` +
+`Array#insert`.  This can be very fast—`Array#pop` is `O(1)`—but the worst-case
+for insert is `O(n)` because it may need to `memcpy` a significant portion of
+the array.
 
 The standard way to implement a priority queue is with a binary heap.  Although
 this increases the time for `pop`, it converts the amortized time per push + pop
@@ -152,7 +158,7 @@ from `O(n)` to `O(d log n / log d)`.
 
 However, I was surprised to find that—at least for some benchmarks—my pure ruby
 heap implementation was much slower than inserting into and popping from a fully
-sorted array.  The reason for this surprising result: Although it is `O(n)`,
+sorted array.  The reasons for this surprising result: Although it is `O(n)`,
 `memcpy` has a _very_ small constant factor, and calling `<=>` from ruby code
 has relatively _much_ larger constant factors.  If your queue contains only a
 few thousand items, the overhead of those extra calls to `<=>` is _far_ more
@@ -162,10 +168,9 @@ sorted array.
 
 Moving the sift-up and sift-down code into C helps some.  But much more helpful
 is optimizing the comparison of numeric scores, so `a <=> b` never needs to be
-called.  I'm hopeful that MJIT will eventually obsolete this C-extension.  JRuby
-or TruffleRuby may already run the pure ruby version at high speed.  This can be
-hotspot code, and the basic ruby implementation should perform well if not for
-the high overhead of `<=>`.
+called.  I'm hopeful that MJIT will eventually obsolete this C-extension.  This
+can be hotspot code, and a basic ruby implementation could perform well if `<=>`
+had much lower overhead.
 
 ## Analysis
 
@@ -248,21 +253,24 @@ relatively small.  The pure ruby binary heap is 2x or more slower than bsearch +
 insert for common common push/pop scenario.
 
     == push N (N=5) ==========================================================
-    push N (c_dheap):   1701338.1 i/s
-    push N (rb_heap):    971614.1 i/s - 1.75x  slower
-    push N (bsearch):    946363.7 i/s - 1.80x  slower
+    push N (c_dheap):   1969700.7 i/s
+    push N (c++ stl):   1049738.1 i/s - 1.88x  slower
+    push N (rb_heap):    928435.2 i/s - 2.12x  slower
+    push N (bsearch):    921060.0 i/s - 2.14x  slower
 
     == push N then pop N (N=5) ===============================================
-    push N + pop N (c_dheap):   1087944.8 i/s
-    push N + pop N (findmin):    841708.1 i/s - 1.29x  slower
-    push N + pop N (bsearch):    773252.7 i/s - 1.41x  slower
-    push N + pop N (rb_heap):    471852.9 i/s - 2.31x  slower
+    push N + pop N (c_dheap):   1375805.0 i/s
+    push N + pop N (c++ stl):   1134997.5 i/s - 1.21x  slower
+    push N + pop N (findmin):    862913.1 i/s - 1.59x  slower
+    push N + pop N (bsearch):    762887.1 i/s - 1.80x  slower
+    push N + pop N (rb_heap):    506890.4 i/s - 2.71x  slower
 
     == Push/pop with pre-filled queue of size=N (N=5) ========================
-    push + pop (c_dheap):   5525418.8 i/s
-    push + pop (findmin):   5003904.8 i/s - 1.10x  slower
-    push + pop (bsearch):   4320581.8 i/s - 1.28x  slower
-    push + pop (rb_heap):   2207042.0 i/s - 2.50x  slower
+    push + pop (c_dheap):   9044435.5 i/s
+    push + pop (c++ stl):   7534583.4 i/s - 1.20x  slower
+    push + pop (findmin):   5026155.1 i/s - 1.80x  slower
+    push + pop (bsearch):   4300260.0 i/s - 2.10x  slower
+    push + pop (rb_heap):   2299499.7 i/s - 3.93x  slower
 
 By N=21, `DHeap` has pulled significantly ahead of bsearch + insert for all
 scenarios, but the pure ruby heap is still slower than every other
@@ -270,52 +278,68 @@ implementation—even resorting the array after every `#push`—in any scenario 
 uses `#pop`.
 
     == push N (N=21) =========================================================
-    push N (c_dheap):    408307.0 i/s
-    push N (rb_heap):    212275.2 i/s - 1.92x  slower
-    push N (bsearch):    169583.2 i/s - 2.41x  slower
+    push N (c_dheap):    464231.4 i/s
+    push N (c++ stl):    305546.7 i/s - 1.52x  slower
+    push N (rb_heap):    202803.7 i/s - 2.29x  slower
+    push N (bsearch):    168678.7 i/s - 2.75x  slower
 
     == push N then pop N (N=21) ==============================================
-    push N + pop N (c_dheap):    199435.5 i/s
-    push N + pop N (findmin):    162024.5 i/s - 1.23x  slower
-    push N + pop N (bsearch):    146284.3 i/s - 1.36x  slower
-    push N + pop N (rb_heap):     72289.0 i/s - 2.76x  slower
+    push N + pop N (c_dheap):    298350.3 i/s
+    push N + pop N (c++ stl):    252227.1 i/s - 1.18x  slower
+    push N + pop N (findmin):    161998.7 i/s - 1.84x  slower
+    push N + pop N (bsearch):    143432.3 i/s - 2.08x  slower
+    push N + pop N (rb_heap):     79622.1 i/s - 3.75x  slower
 
     == Push/pop with pre-filled queue of size=N (N=21) =======================
-    push + pop (c_dheap):   4836860.0 i/s
-    push + pop (findmin):   4467453.9 i/s - 1.08x  slower
-    push + pop (bsearch):   3345458.4 i/s - 1.45x  slower
-    push + pop (rb_heap):   1560476.3 i/s - 3.10x  slower
+    push + pop (c_dheap):   8855093.4 i/s
+    push + pop (c++ stl):   7223079.5 i/s - 1.23x  slower
+    push + pop (findmin):   4542913.7 i/s - 1.95x  slower
+    push + pop (bsearch):   3461802.4 i/s - 2.56x  slower
+    push + pop (rb_heap):   1845488.7 i/s - 4.80x  slower
 
-At higher values of N, `DHeap`'s logarithmic growth leads to little slowdown
-of `DHeap#push`, while insert's linear growth causes it to run slower and
-slower.  But because `#pop` is O(1) for a sorted array and O(d log n / log d)
-for a _d_-heap, scenarios involving `#pop` remain relatively close even as N
-increases to 5k:
+At higher values of N, a heaps logarithmic growth leads to only a little
+slowdown of `DHeap#push`, while insert's linear growth causes it to run
+noticably slower and slower.  But because `#pop` is `O(1)` for a sorted array
+and `O(d log n / log d)` for a heap, scenarios involving both `#push` and
+`#pop` remain relatively close, and bsearch + insert still runs faster than a
+pure ruby heap, even up to queues with 10k items.  But as queue size increases
+beyond than that, the linear time compexity to keep a sorted array dominates.
 
-    == Push/pop with pre-filled queue of size=N (N=5461) ==============
-    push + pop (c_dheap):   2718225.1 i/s
-    push + pop (bsearch):   1793546.4 i/s - 1.52x  slower
-    push + pop (rb_heap):    707139.9 i/s - 3.84x  slower
-    push + pop (findmin):    122316.0 i/s - 22.22x  slower
+    == push + pop (rb_heap)
+    queue size =    10000:    736618.2 i/s
+    queue size =    25000:    670186.8 i/s - 1.10x  slower
+    queue size =    50000:    618156.7 i/s - 1.19x  slower
+    queue size =   100000:    579250.7 i/s - 1.27x  slower
+    queue size =   250000:    572795.0 i/s - 1.29x  slower
+    queue size =   500000:    543648.3 i/s - 1.35x  slower
+    queue size =  1000000:    513523.4 i/s - 1.43x  slower
+    queue size =  2500000:    460848.9 i/s - 1.60x  slower
+    queue size =  5000000:    445234.5 i/s - 1.65x  slower
+    queue size = 10000000:    423119.0 i/s - 1.74x  slower
 
-Somewhat surprisingly, bsearch + insert still runs faster than a pure ruby heap
-for the repeated push/pop scenario, all the way up to N as high as 87k:
+    == push + pop (bsearch)
+    queue size =    10000:    786334.2 i/s
+    queue size =    25000:    364963.8 i/s - 2.15x  slower
+    queue size =    50000:    200520.6 i/s - 3.92x  slower
+    queue size =   100000:     88607.0 i/s - 8.87x  slower
+    queue size =   250000:     34530.5 i/s - 22.77x  slower
+    queue size =   500000:     17965.4 i/s - 43.77x  slower
+    queue size =  1000000:      5638.7 i/s - 139.45x  slower
+    queue size =  2500000:      1302.0 i/s - 603.93x  slower
+    queue size =  5000000:       592.0 i/s - 1328.25x  slower
+    queue size = 10000000:       288.8 i/s - 2722.66x  slower
 
-    == push N (N=87381) ======================================================
-    push N (c_dheap):        92.8 i/s
-    push N (rb_heap):        43.5 i/s - 2.13x  slower
-    push N (bsearch):         2.9 i/s - 31.70x  slower
-
-    == push N then pop N (N=87381) ===========================================
-    push N + pop N (c_dheap):        22.6 i/s
-    push N + pop N (rb_heap):         5.5 i/s - 4.08x  slower
-    push N + pop N (bsearch):         2.9 i/s - 7.90x  slower
-
-    == Push/pop with pre-filled queue of size=N (N=87381) ====================
-    push + pop (c_dheap):   1815277.3 i/s
-    push + pop (bsearch):    762343.2 i/s - 2.38x  slower
-    push + pop (rb_heap):    535913.6 i/s - 3.39x  slower
-    push + pop (findmin):      2262.8 i/s - 802.24x  slower
+    == push + pop (c_dheap)
+    queue size =    10000:   7311366.6 i/s
+    queue size =    50000:   6737824.5 i/s - 1.09x  slower
+    queue size =    25000:   6407340.6 i/s - 1.14x  slower
+    queue size =   100000:   6254396.3 i/s - 1.17x  slower
+    queue size =   250000:   5917684.5 i/s - 1.24x  slower
+    queue size =   500000:   5126307.6 i/s - 1.43x  slower
+    queue size =  1000000:   4403494.1 i/s - 1.66x  slower
+    queue size =  2500000:   3304088.2 i/s - 2.21x  slower
+    queue size =  5000000:   2664897.7 i/s - 2.74x  slower
+    queue size = 10000000:   2137927.6 i/s - 3.42x  slower
 
 ## Profiling
 

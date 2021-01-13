@@ -11,11 +11,17 @@
 // comparisons as d gets further from 4.
 #define DHEAP_MAX_D 32
 
-#define DHEAP_DEFAULT_SIZE 16
-#define DHEAP_MAX_SIZE (LONG_MAX / (int)sizeof(long double))
+typedef long double SCORE;
 
-// 10MB
-#define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(long double))
+typedef struct dheap_entry {
+    SCORE score;
+    VALUE value;
+} ENTRY;
+
+#define DHEAP_DEFAULT_SIZE 256
+#define DHEAP_MAX_SIZE (LONG_MAX / (int)sizeof(ENTRY))
+
+#define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 
 VALUE rb_cDHeap;
 

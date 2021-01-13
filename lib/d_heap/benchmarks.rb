@@ -93,7 +93,7 @@ module DHeap::Benchmarks
   include Randomness
   include Scenarios
 
-  def initq(klass, count = 0)
+  def initq(klass, count = 0, clear: false)
     queue = klass.new
     while 0 < count
       queue << @dheap_bm_random_vals.fetch(
@@ -101,6 +101,7 @@ module DHeap::Benchmarks
       )
       count -= 1
     end
+    queue.clear if clear
     queue
   end
 

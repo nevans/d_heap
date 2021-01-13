@@ -12,13 +12,16 @@ benchmark:
        q << random_val
        q.pop
     name:    "push + pop (findmin)"
-    prelude: "q = initq FindMin, n"
+    prelude: "q = FindMin.new(n) { random_val }"
   - script: *script
     name:    "push + pop (bsearch)"
-    prelude: "q = initq BSearch, n"
+    prelude: "q = BSearch.new(n) { random_val }"
   - script: *script
     name:    "push + pop (rb_heap)"
-    prelude: "q = initq RbHeap, n"
+    prelude: "q = RbHeap.new(n) { random_val }"
+  - script: *script
+    name:    "push + pop (c++ stl)"
+    prelude: "q = initq CppSTL, n"
   - script: *script
     name:    "push + pop (c_dheap)"
     prelude: "q = initq DHeap, n"

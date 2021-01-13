@@ -1,13 +1,19 @@
 # frozen_string_literal: true
 
+require "fc"
+
 module DHeap::Benchmarks
 
   # base class for example priority queues
   class ExamplePriorityQueue
     attr_reader :a
 
-    def initialize
+    # quick initialization by simply sorting the array once.
+    def initialize(count = nil, &block)
       @a = []
+      return unless count
+      count.times {|i| @a << block.call(i) }
+      @a.sort!
     end
 
     def clear
@@ -98,63 +104,110 @@ module DHeap::Benchmarks
   # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
   class RbHeap < ExamplePriorityQueue
 
-    def <<(score)
-      raise ArgumentError unless score
-      @a.push(score)
+    def <<(value)
+      raise ArgumentError unless value
+      @a.push(value)
       # shift up
       index = @a.size - 1
       while 0 < index # rubocop:disable Style/NumericPredicate
         parent_index = (index - 1) / 2
-        break if @a[parent_index] <= @a[index]
-        @a[index] = @a[parent_index]
+        parent_value = @a[parent_index]
+        break if parent_value <= value
+        @a[index] = parent_value
         index = parent_index
-        @a[index] = score
-        # check_heap!(index)
       end
-      self
+      @a[index] = value
+      # dbg "__push__(%p)" % [value]
+      # check_heap!(index)
     end
 
     def pop
       return if @a.empty?
       popped = @a.first
-      @a[0] = shifting = @a.last
-      @a.pop
-      # shift down
-      index = 0
+      value = @a.pop
       last_index = @a.size - 1
-      while (child_index = index * 2 + 1) <= last_index
+      last_parent = (last_index - 1) / 2
+      return popped unless 0 <= last_index
+
+      # sift down from 0
+      index = 0
+      child_index = 1
+      while index <= last_parent
+        child_value = @a[child_index]
         # select min child
-        if child_index < last_index && @a[child_index + 1] < @a[child_index]
-          child_index += 1
+        if child_index < last_index
+          other_child_index = child_index + 1
+          other_child_value = @a[other_child_index]
+          if other_child_value < child_value
+            child_value = other_child_value
+            child_index = other_child_index
+          end
         end
-        break if @a[index] <= @a[child_index]
-        @a[index] = @a[child_index]
+        break if value <= child_value
+        @a[index] = child_value
         index = child_index
-        @a[index] = shifting
+        child_index = index * 2 + 1
       end
+      @a[index] = value
+
       popped
     end
 
     private
 
-    def check_heap!(idx, last = @a.size - 1)
-      pscore = @a[idx]
-      child = idx * 2 + 1
-      if child <= last
-        cscore = check_heap!(child)
-        raise "#{pscore} > #{cscore}" if pscore > cscore
+    def check_heap!(idx)
+      check_heap_up!(idx)
+      check_heap_dn!(idx)
+    end
+
+    # compares index to its parent
+    def check_heap_at!(idx)
+      value = @a[idx]
+      unless idx <= 0
+        pidx = (idx - 1) / 2
+        pval = @a[pidx]
+        raise "@a[#{idx}] == #{value}, #{pval} > #{value}" if pval > value
       end
-      child += 1
-      if child <= last
-        check_heap!(child)
-        cscore = check_heap!(child)
-        raise "#{pscore} > #{cscore}" if pscore > cscore
-      end
-      pscore
+      value
+    end
+
+    def check_heap_up!(idx)
+      return if idx <= 0
+      pidx = (idx - 1) / 2
+      check_heap_at!(pidx)
+      check_heap_up!(pidx)
+    end
+
+    def check_heap_dn!(idx)
+      return unless @a.size <= idx
+      check_heap_at!(idx)
+      check_heap_down!(idx * 2 + 1)
+      check_heap_down!(idx * 2 + 2)
     end
 
   end
   # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+  # minor adjustments to the "priority_queue_cxx" gem, to match the API
+  class CppSTL
+
+    def initialize
+      clear
+    end
+
+    def <<(value); @q.push(value, value) end
+
+    def clear
+      @q = FastContainers::PriorityQueue.new(:min)
+    end
+
+    def pop
+      @q.pop
+    rescue RuntimeError
+      nil
+    end
+
+  end
 
   # Different duck-typed priority queue implemenations
   IMPLEMENTATIONS = [
@@ -162,6 +215,7 @@ module DHeap::Benchmarks
     OpenStruct.new(name: "  find min + del", klass: FindMin).freeze,
     OpenStruct.new(name: "bsearch + insert", klass: BSearch).freeze,
     OpenStruct.new(name: "ruby binary heap", klass: RbHeap).freeze,
+    OpenStruct.new(name: "C++STL PriorityQ", klass: CppSTL).freeze,
     OpenStruct.new(name: "quaternary DHeap", klass: DHeap).freeze,
   ].freeze
 

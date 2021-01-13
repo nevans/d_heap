@@ -6,6 +6,7 @@ prelude: |
   fill_random_vals
 
   n = ENV.fetch("BENCH_N", 1000).to_i
+
   i = 0
 
 benchmark:
@@ -26,6 +27,9 @@ benchmark:
   - script: *script
     name:    "push N + pop N (rb_heap)"
     prelude: "q = initq RbHeap"
+  - script: *script
+    name:    "push N + pop N (c++ stl)"
+    prelude: "q = initq CppSTL"
   - script: *script
     name:    "push N + pop N (c_dheap)"
     prelude: "q = initq DHeap"

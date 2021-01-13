@@ -1,4 +1,4 @@
-Benchmarking run at 2021-01-11 23:29:03 -0500
+Benchmarking run at 2021-01-17 17:17:24 -0500
 ruby v2.7.2, DHeap v0.4.0
 
 ################################################################################
@@ -7,54 +7,63 @@ ruby v2.7.2, DHeap v0.4.0
 
 == push N (N=5) ================================================================
 Warming up --------------------------------------
-    push N (bsearch)   931.441k i/s -      1.879M times in 2.017047s (1.07μs/i)
-    push N (rb_heap)     1.012M i/s -      2.029M times in 2.005686s (988.29ns/i)
-    push N (c_dheap)     1.665M i/s -      3.351M times in 2.012998s (600.72ns/i)
+    push N (bsearch)   921.113k i/s -      1.862M times in 2.021033s (1.09μs/i)
+    push N (rb_heap)   953.542k i/s -      1.933M times in 2.026956s (1.05μs/i)
+    push N (c++ stl)   989.247k i/s -      2.038M times in 2.060495s (1.01μs/i)
+    push N (c_dheap)     1.922M i/s -      3.928M times in 2.043907s (520.30ns/i)
 Calculating -------------------------------------
-    push N (bsearch)   946.364k i/s -      5.589M times in 5.905389s (1.06μs/i)
-    push N (rb_heap)   971.614k i/s -      6.071M times in 6.248476s (1.03μs/i)
-    push N (c_dheap)     1.701M i/s -      9.988M times in 5.870725s (587.77ns/i)
+    push N (bsearch)   921.060k i/s -      5.527M times in 6.000346s (1.09μs/i)
+    push N (rb_heap)   928.435k i/s -      5.721M times in 6.162252s (1.08μs/i)
+    push N (c++ stl)     1.050M i/s -      5.935M times in 5.654249s (952.62ns/i)
+    push N (c_dheap)     1.970M i/s -     11.532M times in 5.854595s (507.69ns/i)
 
 Comparison:
-    push N (c_dheap):   1701338.1 i/s 
-    push N (rb_heap):    971614.1 i/s - 1.75x  slower
-    push N (bsearch):    946363.7 i/s - 1.80x  slower
+    push N (c_dheap):   1969700.7 i/s
+    push N (c++ stl):   1049738.1 i/s - 1.88x  slower
+    push N (rb_heap):    928435.2 i/s - 2.12x  slower
+    push N (bsearch):    921060.0 i/s - 2.14x  slower
 
 == push N then pop N (N=5) ====================================================
 Warming up --------------------------------------
-push N + pop N (findmin)   816.694k i/s -      1.656M times in 2.028176s (1.22μs/i)
-push N + pop N (bsearch)   770.442k i/s -      1.566M times in 2.032470s (1.30μs/i)
-push N + pop N (rb_heap)   467.156k i/s -    971.112k times in 2.078774s (2.14μs/i)
-push N + pop N (c_dheap)     1.072M i/s -      2.164M times in 2.018623s (933.02ns/i)
+push N + pop N (findmin)   812.905k i/s -      1.645M times in 2.023946s (1.23μs/i)
+push N + pop N (bsearch)   756.655k i/s -      1.537M times in 2.031407s (1.32μs/i)
+push N + pop N (rb_heap)   505.268k i/s -      1.051M times in 2.079579s (1.98μs/i)
+push N + pop N (c++ stl)     1.159M i/s -      2.358M times in 2.035009s (863.13ns/i)
+push N + pop N (c_dheap)     1.425M i/s -      2.889M times in 2.028016s (701.91ns/i)
 Calculating -------------------------------------
-push N + pop N (findmin)   841.708k i/s -      4.900M times in 5.821693s (1.19μs/i)
-push N + pop N (bsearch)   773.253k i/s -      4.623M times in 5.978188s (1.29μs/i)
-push N + pop N (rb_heap)   471.853k i/s -      2.803M times in 5.940275s (2.12μs/i)
-push N + pop N (c_dheap)     1.088M i/s -      6.431M times in 5.910898s (919.16ns/i)
+push N + pop N (findmin)   862.913k i/s -      4.877M times in 5.652280s (1.16μs/i)
+push N + pop N (bsearch)   762.887k i/s -      4.540M times in 5.950988s (1.31μs/i)
+push N + pop N (rb_heap)   506.890k i/s -      3.032M times in 5.980790s (1.97μs/i)
+push N + pop N (c++ stl)     1.135M i/s -      6.951M times in 6.124666s (881.06ns/i)
+push N + pop N (c_dheap)     1.376M i/s -      8.548M times in 6.213139s (726.85ns/i)
 
 Comparison:
-push N + pop N (c_dheap):   1087944.8 i/s 
-push N + pop N (findmin):    841708.1 i/s - 1.29x  slower
-push N + pop N (bsearch):    773252.7 i/s - 1.41x  slower
-push N + pop N (rb_heap):    471852.9 i/s - 2.31x  slower
+push N + pop N (c_dheap):   1375805.0 i/s
+push N + pop N (c++ stl):   1134997.5 i/s - 1.21x  slower
+push N + pop N (findmin):    862913.1 i/s - 1.59x  slower
+push N + pop N (bsearch):    762887.1 i/s - 1.80x  slower
+push N + pop N (rb_heap):    506890.4 i/s - 2.71x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=5) ==============================
 Warming up --------------------------------------
-push + pop (findmin)     5.151M i/s -     10.467M times in 2.032075s (194.13ns/i, 464clocks/i)
-push + pop (bsearch)     4.021M i/s -      8.148M times in 2.026548s (248.72ns/i, 664clocks/i)
-push + pop (rb_heap)     2.158M i/s -      4.445M times in 2.059708s (463.35ns/i)
-push + pop (c_dheap)     5.185M i/s -     10.373M times in 2.000519s (192.86ns/i, 483clocks/i)
+push + pop (findmin)     5.115M i/s -     10.399M times in 2.033134s (195.52ns/i, 504clocks/i)
+push + pop (bsearch)     4.203M i/s -      8.569M times in 2.038788s (237.92ns/i, 627clocks/i)
+push + pop (rb_heap)     2.362M i/s -      4.760M times in 2.014718s (423.30ns/i)
+push + pop (c++ stl)     6.881M i/s -     13.910M times in 2.021416s (145.32ns/i, 269clocks/i)
+push + pop (c_dheap)     8.354M i/s -     16.814M times in 2.012796s (119.71ns/i, 343clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)     5.004M i/s -     30.906M times in 6.176454s (199.84ns/i, 413clocks/i)
-push + pop (bsearch)     4.321M i/s -     24.124M times in 5.583405s (231.45ns/i, 647clocks/i)
-push + pop (rb_heap)     2.207M i/s -     12.949M times in 5.867179s (453.10ns/i)
-push + pop (c_dheap)     5.525M i/s -     31.111M times in 5.630456s (180.98ns/i, 458clocks/i)
+push + pop (findmin)     5.026M i/s -     30.687M times in 6.105509s (198.96ns/i, 532clocks/i)
+push + pop (bsearch)     4.300M i/s -     25.219M times in 5.864447s (232.54ns/i, 607clocks/i)
+push + pop (rb_heap)     2.299M i/s -     14.174M times in 6.164105s (434.88ns/i)
+push + pop (c++ stl)     7.535M i/s -     41.288M times in 5.479760s (132.72ns/i, 350clocks/i)
+push + pop (c_dheap)     9.044M i/s -     50.122M times in 5.541698s (110.57ns/i, 241clocks/i)
 
 Comparison:
-push + pop (c_dheap):   5525418.8 i/s 
-push + pop (findmin):   5003904.8 i/s - 1.10x  slower
-push + pop (bsearch):   4320581.8 i/s - 1.28x  slower
-push + pop (rb_heap):   2207042.0 i/s - 2.50x  slower
+push + pop (c_dheap):   9044435.5 i/s
+push + pop (c++ stl):   7534583.4 i/s - 1.20x  slower
+push + pop (findmin):   5026155.1 i/s - 1.80x  slower
+push + pop (bsearch):   4300260.0 i/s - 2.10x  slower
+push + pop (rb_heap):   2299499.7 i/s - 3.93x  slower
 
 ################################################################################
 # Benchmarks with N=21 (t=10sec/benchmark)
@@ -62,54 +71,63 @@ push + pop (rb_heap):   2207042.0 i/s - 2.50x  slower
 
 == push N (N=21) ==============================================================
 Warming up --------------------------------------
-    push N (bsearch)   170.251k i/s -    355.419k times in 2.087615s (5.87μs/i)
-    push N (rb_heap)   212.048k i/s -    442.865k times in 2.088508s (4.72μs/i)
-    push N (c_dheap)   391.469k i/s -    801.504k times in 2.047426s (2.55μs/i)
+    push N (bsearch)   172.478k i/s -    359.942k times in 2.086881s (5.80μs/i)
+    push N (rb_heap)   206.237k i/s -    426.074k times in 2.065940s (4.85μs/i)
+    push N (c++ stl)   317.575k i/s -    652.828k times in 2.055665s (3.15μs/i)
+    push N (c_dheap)   488.947k i/s -    991.484k times in 2.027793s (2.05μs/i)
 Calculating -------------------------------------
-    push N (bsearch)   169.583k i/s -      1.022M times in 6.023633s (5.90μs/i)
-    push N (rb_heap)   212.275k i/s -      1.272M times in 5.993587s (4.71μs/i)
-    push N (c_dheap)   408.307k i/s -      2.349M times in 5.752569s (2.45μs/i)
+    push N (bsearch)   168.679k i/s -      1.035M times in 6.135155s (5.93μs/i)
+    push N (rb_heap)   202.804k i/s -      1.237M times in 6.101584s (4.93μs/i)
+    push N (c++ stl)   305.547k i/s -      1.905M times in 6.236198s (3.27μs/i)
+    push N (c_dheap)   464.231k i/s -      2.934M times in 6.319441s (2.15μs/i)
 
 Comparison:
-    push N (c_dheap):    408307.0 i/s 
-    push N (rb_heap):    212275.2 i/s - 1.92x  slower
-    push N (bsearch):    169583.2 i/s - 2.41x  slower
+    push N (c_dheap):    464231.4 i/s
+    push N (c++ stl):    305546.7 i/s - 1.52x  slower
+    push N (rb_heap):    202803.7 i/s - 2.29x  slower
+    push N (bsearch):    168678.7 i/s - 2.75x  slower
 
 == push N then pop N (N=21) ====================================================
 Warming up --------------------------------------
-push N + pop N (findmin)   166.784k i/s -    344.938k times in 2.068173s (6.00μs/i)
-push N + pop N (bsearch)   145.768k i/s -    304.502k times in 2.088957s (6.86μs/i)
-push N + pop N (rb_heap)    69.234k i/s -    143.020k times in 2.065750s (14.44μs/i)
-push N + pop N (c_dheap)   198.924k i/s -    414.304k times in 2.082722s (5.03μs/i)
+push N + pop N (findmin)   160.307k i/s -    331.191k times in 2.065978s (6.24μs/i)
+push N + pop N (bsearch)   136.665k i/s -    280.830k times in 2.054882s (7.32μs/i)
+push N + pop N (rb_heap)    77.997k i/s -    156.492k times in 2.006388s (12.82μs/i)
+push N + pop N (c++ stl)   243.819k i/s -    489.279k times in 2.006731s (4.10μs/i)
+push N + pop N (c_dheap)   295.254k i/s -    597.410k times in 2.023373s (3.39μs/i)
 Calculating -------------------------------------
-push N + pop N (findmin)   162.025k i/s -      1.001M times in 6.176244s (6.17μs/i)
-push N + pop N (bsearch)   146.284k i/s -    874.605k times in 5.978803s (6.84μs/i)
-push N + pop N (rb_heap)    72.289k i/s -    415.403k times in 5.746419s (13.83μs/i)
-push N + pop N (c_dheap)   199.435k i/s -      1.194M times in 5.984617s (5.01μs/i)
+push N + pop N (findmin)   161.999k i/s -    961.842k times in 5.937343s (6.17μs/i)
+push N + pop N (bsearch)   143.432k i/s -    819.988k times in 5.716901s (6.97μs/i)
+push N + pop N (rb_heap)    79.622k i/s -    467.981k times in 5.877529s (12.56μs/i)
+push N + pop N (c++ stl)   252.227k i/s -      1.463M times in 5.799983s (3.96μs/i)
+push N + pop N (c_dheap)   298.350k i/s -      1.772M times in 5.937739s (3.35μs/i)
 
 Comparison:
-push N + pop N (c_dheap):    199435.5 i/s 
-push N + pop N (findmin):    162024.5 i/s - 1.23x  slower
-push N + pop N (bsearch):    146284.3 i/s - 1.36x  slower
-push N + pop N (rb_heap):     72289.0 i/s - 2.76x  slower
+push N + pop N (c_dheap):    298350.3 i/s
+push N + pop N (c++ stl):    252227.1 i/s - 1.18x  slower
+push N + pop N (findmin):    161998.7 i/s - 1.84x  slower
+push N + pop N (bsearch):    143432.3 i/s - 2.08x  slower
+push N + pop N (rb_heap):     79622.1 i/s - 3.75x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=21) ==============================
 Warming up --------------------------------------
-push + pop (findmin)     4.230M i/s -      8.548M times in 2.020984s (236.43ns/i, 633clocks/i)
-push + pop (bsearch)     3.257M i/s -      6.630M times in 2.035714s (307.06ns/i, 669clocks/i)
-push + pop (rb_heap)     1.544M i/s -      3.159M times in 2.045247s (647.47ns/i)
-push + pop (c_dheap)     4.705M i/s -      9.501M times in 2.019236s (212.53ns/i, 533clocks/i)
+push + pop (findmin)     4.383M i/s -      8.832M times in 2.014937s (228.13ns/i, 482clocks/i)
+push + pop (bsearch)     3.357M i/s -      6.859M times in 2.042965s (297.84ns/i, 709clocks/i)
+push + pop (rb_heap)     1.885M i/s -      3.852M times in 2.043333s (530.48ns/i, 698clocks/i)
+push + pop (c++ stl)     6.362M i/s -     12.844M times in 2.018810s (157.18ns/i, 438clocks/i)
+push + pop (c_dheap)     7.644M i/s -     15.337M times in 2.006451s (130.83ns/i, 350clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)     4.467M i/s -     25.378M times in 5.680532s (223.84ns/i, 551clocks/i)
-push + pop (bsearch)     3.345M i/s -     19.540M times in 5.840823s (298.91ns/i, 831clocks/i)
-push + pop (rb_heap)     1.560M i/s -      9.267M times in 5.938451s (640.83ns/i)
-push + pop (c_dheap)     4.837M i/s -     28.231M times in 5.836574s (206.75ns/i, 591clocks/i)
+push + pop (findmin)     4.543M i/s -     26.301M times in 5.789445s (220.12ns/i, 618clocks/i)
+push + pop (bsearch)     3.462M i/s -     20.145M times in 5.819157s (288.87ns/i, 721clocks/i)
+push + pop (rb_heap)     1.845M i/s -     11.310M times in 6.128707s (541.86ns/i)
+push + pop (c++ stl)     7.223M i/s -     38.172M times in 5.284687s (138.45ns/i, 383clocks/i)
+push + pop (c_dheap)     8.855M i/s -     45.863M times in 5.179255s (112.93ns/i, 331clocks/i)
 
 Comparison:
-push + pop (c_dheap):   4836860.0 i/s 
-push + pop (findmin):   4467453.9 i/s - 1.08x  slower
-push + pop (bsearch):   3345458.4 i/s - 1.45x  slower
-push + pop (rb_heap):   1560476.3 i/s - 3.10x  slower
+push + pop (c_dheap):   8855093.4 i/s
+push + pop (c++ stl):   7223079.5 i/s - 1.23x  slower
+push + pop (findmin):   4542913.7 i/s - 1.95x  slower
+push + pop (bsearch):   3461802.4 i/s - 2.56x  slower
+push + pop (rb_heap):   1845488.7 i/s - 4.80x  slower
 
 ################################################################################
 # Benchmarks with N=85 (t=10sec/benchmark)
@@ -117,54 +135,63 @@ push + pop (rb_heap):   1560476.3 i/s - 3.10x  slower
 
 == push N (N=85) ==============================================================
 Warming up --------------------------------------
-    push N (bsearch)    33.491k i/s -     69.846k times in 2.085516s (29.86μs/i)
-    push N (rb_heap)    43.880k i/s -     91.665k times in 2.089004s (22.79μs/i)
-    push N (c_dheap)    93.190k i/s -    193.557k times in 2.077020s (10.73μs/i)
+    push N (bsearch)    33.725k i/s -     70.434k times in 2.088480s (29.65μs/i)
+    push N (rb_heap)    48.257k i/s -     97.041k times in 2.010935s (20.72μs/i)
+    push N (c++ stl)    89.473k i/s -    179.991k times in 2.011685s (11.18μs/i)
+    push N (c_dheap)   113.625k i/s -    229.362k times in 2.018582s (8.80μs/i)
 Calculating -------------------------------------
-    push N (bsearch)    33.118k i/s -    200.945k times in 6.067575s (30.20μs/i)
-    push N (rb_heap)    47.069k i/s -    263.278k times in 5.593458s (21.25μs/i)
-    push N (c_dheap)    96.077k i/s -    559.138k times in 5.819670s (10.41μs/i)
+    push N (bsearch)    32.896k i/s -    202.350k times in 6.151202s (30.40μs/i)
+    push N (rb_heap)    45.078k i/s -    289.539k times in 6.423085s (22.18μs/i)
+    push N (c++ stl)    90.436k i/s -    536.836k times in 5.936116s (11.06μs/i)
+    push N (c_dheap)   115.218k i/s -    681.751k times in 5.917030s (8.68μs/i)
 
 Comparison:
-    push N (c_dheap):     96077.3 i/s 
-    push N (rb_heap):     47068.9 i/s - 2.04x  slower
-    push N (bsearch):     33117.8 i/s - 2.90x  slower
+    push N (c_dheap):    115218.4 i/s
+    push N (c++ stl):     90435.6 i/s - 1.27x  slower
+    push N (rb_heap):     45077.9 i/s - 2.56x  slower
+    push N (bsearch):     32896.0 i/s - 3.50x  slower
 
 == push N then pop N (N=85) ====================================================
 Warming up --------------------------------------
-push N + pop N (findmin)    27.530k i/s -     57.351k times in 2.083246s (36.32μs/i)
-push N + pop N (bsearch)    29.264k i/s -     59.283k times in 2.025786s (34.17μs/i)
-push N + pop N (rb_heap)    13.281k i/s -     27.783k times in 2.091902s (75.29μs/i)
-push N + pop N (c_dheap)    42.532k i/s -     87.318k times in 2.052993s (23.51μs/i)
+push N + pop N (findmin)    28.014k i/s -     57.855k times in 2.065181s (35.70μs/i)
+push N + pop N (bsearch)    28.759k i/s -     59.829k times in 2.080345s (34.77μs/i)
+push N + pop N (rb_heap)    14.748k i/s -     29.500k times in 2.000302s (67.81μs/i)
+push N + pop N (c++ stl)    58.058k i/s -    117.831k times in 2.029553s (17.22μs/i)
+push N + pop N (c_dheap)    67.639k i/s -    139.587k times in 2.063705s (14.78μs/i)
 Calculating -------------------------------------
-push N + pop N (findmin)    27.615k i/s -    165.177k times in 5.981465s (36.21μs/i)
-push N + pop N (bsearch)    29.643k i/s -    175.585k times in 5.923305s (33.73μs/i)
-push N + pop N (rb_heap)    13.267k i/s -     79.687k times in 6.006463s (75.38μs/i)
-push N + pop N (c_dheap)    41.943k i/s -    255.192k times in 6.084224s (23.84μs/i)
+push N + pop N (findmin)    27.713k i/s -    168.086k times in 6.065197s (36.08μs/i)
+push N + pop N (bsearch)    29.110k i/s -    172.554k times in 5.927752s (34.35μs/i)
+push N + pop N (rb_heap)    14.908k i/s -     88.486k times in 5.935373s (67.08μs/i)
+push N + pop N (c++ stl)    54.774k i/s -    348.345k times in 6.359716s (18.26μs/i)
+push N + pop N (c_dheap)    68.487k i/s -    405.834k times in 5.925729s (14.60μs/i)
 
 Comparison:
-push N + pop N (c_dheap):     41943.2 i/s 
-push N + pop N (bsearch):     29643.1 i/s - 1.41x  slower
-push N + pop N (findmin):     27614.8 i/s - 1.52x  slower
-push N + pop N (rb_heap):     13266.9 i/s - 3.16x  slower
+push N + pop N (c_dheap):     68486.8 i/s
+push N + pop N (c++ stl):     54773.7 i/s - 1.25x  slower
+push N + pop N (bsearch):     29109.5 i/s - 2.35x  slower
+push N + pop N (findmin):     27713.2 i/s - 2.47x  slower
+push N + pop N (rb_heap):     14908.2 i/s - 4.59x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=85) ==============================
 Warming up --------------------------------------
-push + pop (findmin)     3.070M i/s -      6.171M times in 2.009864s (325.70ns/i, 854clocks/i)
-push + pop (bsearch)     2.693M i/s -      5.458M times in 2.026866s (371.36ns/i)
-push + pop (rb_heap)     1.285M i/s -      2.598M times in 2.021618s (778.13ns/i)
-push + pop (c_dheap)     4.250M i/s -      8.596M times in 2.022749s (235.30ns/i, 676clocks/i)
+push + pop (findmin)     3.148M i/s -      6.329M times in 2.010240s (317.64ns/i, 872clocks/i)
+push + pop (bsearch)     2.616M i/s -      5.241M times in 2.003260s (382.20ns/i)
+push + pop (rb_heap)     1.537M i/s -      3.126M times in 2.033793s (650.57ns/i)
+push + pop (c++ stl)     6.648M i/s -     13.314M times in 2.002850s (150.43ns/i, 396clocks/i)
+push + pop (c_dheap)     7.902M i/s -     15.885M times in 2.010277s (126.55ns/i, 282clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)     3.221M i/s -     18.422M times in 5.719316s (310.46ns/i, 843clocks/i)
-push + pop (bsearch)     2.721M i/s -     16.157M times in 5.937334s (367.48ns/i, 815clocks/i)
-push + pop (rb_heap)     1.219M i/s -      7.711M times in 6.326403s (820.46ns/i)
-push + pop (c_dheap)     4.309M i/s -     25.499M times in 5.917551s (232.07ns/i, 615clocks/i)
+push + pop (findmin)     3.327M i/s -     18.889M times in 5.677677s (300.58ns/i, 809clocks/i)
+push + pop (bsearch)     2.827M i/s -     15.699M times in 5.553113s (353.73ns/i, 891clocks/i)
+push + pop (rb_heap)     1.465M i/s -      9.223M times in 6.293793s (682.42ns/i)
+push + pop (c++ stl)     7.057M i/s -     39.885M times in 5.651789s (141.70ns/i, 418clocks/i)
+push + pop (c_dheap)     8.422M i/s -     47.412M times in 5.629438s (118.73ns/i, 281clocks/i)
 
 Comparison:
-push + pop (c_dheap):   4309094.2 i/s 
-push + pop (findmin):   3221024.5 i/s - 1.34x  slower
-push + pop (bsearch):   2721221.4 i/s - 1.58x  slower
-push + pop (rb_heap):   1218828.1 i/s - 3.54x  slower
+push + pop (c_dheap):   8422216.3 i/s
+push + pop (c++ stl):   7057057.1 i/s - 1.19x  slower
+push + pop (findmin):   3326922.6 i/s - 2.53x  slower
+push + pop (bsearch):   2827025.2 i/s - 2.98x  slower
+push + pop (rb_heap):   1465369.7 i/s - 5.75x  slower
 
 ################################################################################
 # Benchmarks with N=341 (t=10sec/benchmark)
@@ -172,54 +199,63 @@ push + pop (rb_heap):   1218828.1 i/s - 3.54x  slower
 
 == push N (N=341) ==============================================================
 Warming up --------------------------------------
-    push N (bsearch)     6.749k i/s -     13.500k times in 2.000413s (148.18μs/i)
-    push N (rb_heap)    11.089k i/s -     23.142k times in 2.086845s (90.18μs/i)
-    push N (c_dheap)    24.122k i/s -     50.652k times in 2.099804s (41.46μs/i)
+    push N (bsearch)     6.761k i/s -     13.860k times in 2.049946s (147.90μs/i)
+    push N (rb_heap)    11.284k i/s -     23.040k times in 2.041838s (88.62μs/i)
+    push N (c++ stl)    23.839k i/s -     49.266k times in 2.066605s (41.95μs/i)
+    push N (c_dheap)    30.654k i/s -     63.420k times in 2.068901s (32.62μs/i)
 Calculating -------------------------------------
-    push N (bsearch)     6.480k i/s -     40.491k times in 6.248994s (154.33μs/i)
-    push N (rb_heap)    11.533k i/s -     66.536k times in 5.769108s (86.71μs/i)
-    push N (c_dheap)    24.443k i/s -    144.733k times in 5.921130s (40.91μs/i)
+    push N (bsearch)     6.624k i/s -     40.566k times in 6.123861s (150.96μs/i)
+    push N (rb_heap)    11.433k i/s -     67.703k times in 5.921638s (87.46μs/i)
+    push N (c++ stl)    23.055k i/s -    143.034k times in 6.204083s (43.37μs/i)
+    push N (c_dheap)    27.951k i/s -    183.923k times in 6.580153s (35.78μs/i)
 
 Comparison:
-    push N (c_dheap):     24443.5 i/s 
-    push N (rb_heap):     11533.2 i/s - 2.12x  slower
-    push N (bsearch):      6479.6 i/s - 3.77x  slower
+    push N (c_dheap):     27951.2 i/s
+    push N (c++ stl):     23054.8 i/s - 1.21x  slower
+    push N (rb_heap):     11433.2 i/s - 2.44x  slower
+    push N (bsearch):      6624.3 i/s - 4.22x  slower
 
 == push N then pop N (N=341) ==================================================
 Warming up --------------------------------------
-push N + pop N (findmin)     3.022k i/s -      6.100k times in 2.018293s (330.87μs/i)
-push N + pop N (bsearch)     5.731k i/s -     11.660k times in 2.034429s (174.48μs/i)
-push N + pop N (rb_heap)     2.587k i/s -      5.200k times in 2.009894s (386.52μs/i)
-push N + pop N (c_dheap)     9.199k i/s -     19.341k times in 2.102558s (108.71μs/i)
+push N + pop N (findmin)     3.013k i/s -      6.040k times in 2.004514s (331.87μs/i)
+push N + pop N (bsearch)     6.202k i/s -     12.684k times in 2.045306s (161.25μs/i)
+push N + pop N (rb_heap)     3.028k i/s -      6.100k times in 2.014435s (330.24μs/i)
+push N + pop N (c++ stl)    13.177k i/s -     27.006k times in 2.049544s (75.89μs/i)
+push N + pop N (c_dheap)    15.142k i/s -     31.563k times in 2.084497s (66.04μs/i)
 Calculating -------------------------------------
-push N + pop N (findmin)     2.987k i/s -     18.134k times in 6.070835s (334.78μs/i)
-push N + pop N (bsearch)     6.084k i/s -     34.388k times in 5.651801s (164.35μs/i)
-push N + pop N (rb_heap)     2.485k i/s -     15.523k times in 6.246007s (402.37μs/i)
-push N + pop N (c_dheap)     9.378k i/s -     55.192k times in 5.885032s (106.63μs/i)
+push N + pop N (findmin)     3.025k i/s -     18.079k times in 5.976274s (330.56μs/i)
+push N + pop N (bsearch)     5.906k i/s -     37.209k times in 6.300596s (169.33μs/i)
+push N + pop N (rb_heap)     3.008k i/s -     18.168k times in 6.039305s (332.41μs/i)
+push N + pop N (c++ stl)    13.135k i/s -     79.059k times in 6.018814s (76.13μs/i)
+push N + pop N (c_dheap)    15.142k i/s -     90.850k times in 5.999735s (66.04μs/i)
 
 Comparison:
-push N + pop N (c_dheap):      9378.4 i/s 
-push N + pop N (bsearch):      6084.4 i/s - 1.54x  slower
-push N + pop N (findmin):      2987.1 i/s - 3.14x  slower
-push N + pop N (rb_heap):      2485.3 i/s - 3.77x  slower
+push N + pop N (c_dheap):     15142.3 i/s
+push N + pop N (c++ stl):     13135.3 i/s - 1.15x  slower
+push N + pop N (bsearch):      5905.6 i/s - 2.56x  slower
+push N + pop N (findmin):      3025.1 i/s - 5.01x  slower
+push N + pop N (rb_heap):      3008.3 i/s - 5.03x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=341) ============================
 Warming up --------------------------------------
-push + pop (findmin)     1.521M i/s -      3.136M times in 2.061814s (657.42ns/i)
-push + pop (bsearch)     2.204M i/s -      4.426M times in 2.007702s (453.65ns/i)
-push + pop (rb_heap)   979.272k i/s -      2.030M times in 2.073290s (1.02μs/i)
-push + pop (c_dheap)     3.709M i/s -      7.536M times in 2.031644s (269.60ns/i, 700clocks/i)
+push + pop (findmin)     1.508M i/s -      3.048M times in 2.020819s (662.94ns/i)
+push + pop (bsearch)     2.149M i/s -      4.337M times in 2.017794s (465.25ns/i)
+push + pop (rb_heap)     1.144M i/s -      2.313M times in 2.021027s (873.78ns/i)
+push + pop (c++ stl)     5.897M i/s -     11.981M times in 2.031688s (169.57ns/i, 484clocks/i)
+push + pop (c_dheap)     7.452M i/s -     14.981M times in 2.010401s (134.20ns/i, 367clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)     1.546M i/s -      9.127M times in 5.904088s (646.91ns/i)
-push + pop (bsearch)     2.183M i/s -     13.226M times in 6.058119s (458.04ns/i)
-push + pop (rb_heap)   973.052k i/s -      5.876M times in 6.038353s (1.03μs/i)
-push + pop (c_dheap)     3.896M i/s -     22.255M times in 5.712835s (256.69ns/i, 748clocks/i)
+push + pop (findmin)     1.548M i/s -      9.051M times in 5.844950s (645.81ns/i)
+push + pop (bsearch)     2.257M i/s -     12.896M times in 5.713856s (443.06ns/i)
+push + pop (rb_heap)     1.220M i/s -      6.867M times in 5.628146s (819.63ns/i)
+push + pop (c++ stl)     6.578M i/s -     35.384M times in 5.379298s (152.03ns/i, 399clocks/i)
+push + pop (c_dheap)     8.225M i/s -     44.711M times in 5.435966s (121.58ns/i, 327clocks/i)
 
 Comparison:
-push + pop (c_dheap):   3895683.1 i/s 
-push + pop (bsearch):   2183202.6 i/s - 1.78x  slower
-push + pop (findmin):   1545816.8 i/s - 2.52x  slower
-push + pop (rb_heap):    973051.6 i/s - 4.00x  slower
+push + pop (c_dheap):   8225038.0 i/s
+push + pop (c++ stl):   6577756.8 i/s - 1.25x  slower
+push + pop (bsearch):   2257028.3 i/s - 3.64x  slower
+push + pop (findmin):   1548450.8 i/s - 5.31x  slower
+push + pop (rb_heap):   1220067.2 i/s - 6.74x  slower
 
 ################################################################################
 # Benchmarks with N=1365 (t=10sec/benchmark)
@@ -227,54 +263,63 @@ push + pop (rb_heap):    973051.6 i/s - 4.00x  slower
 
 == push N (N=1365) ============================================================
 Warming up --------------------------------------
-    push N (bsearch)     1.371k i/s -      2.800k times in 2.041823s (729.22μs/i)
-    push N (rb_heap)     2.863k i/s -      6.006k times in 2.097685s (349.26μs/i)
-    push N (c_dheap)     5.730k i/s -     11.840k times in 2.066292s (174.52μs/i)
+    push N (bsearch)     1.394k i/s -      2.898k times in 2.079633s (717.61μs/i)
+    push N (rb_heap)     2.943k i/s -      5.920k times in 2.011565s (339.79μs/i)
+    push N (c++ stl)     5.621k i/s -     11.676k times in 2.077224s (177.91μs/i)
+    push N (c_dheap)     7.425k i/s -     15.582k times in 2.098509s (134.68μs/i)
 Calculating -------------------------------------
-    push N (bsearch)     1.362k i/s -      8.227k times in 6.041325s (734.33μs/i)
-    push N (rb_heap)     2.615k i/s -     17.178k times in 6.568916s (382.40μs/i)
-    push N (c_dheap)     5.775k i/s -     34.380k times in 5.953356s (173.16μs/i)
+    push N (bsearch)     1.346k i/s -      8.361k times in 6.211667s (742.93μs/i)
+    push N (rb_heap)     2.908k i/s -     17.657k times in 6.072601s (343.92μs/i)
+    push N (c++ stl)     5.812k i/s -     33.725k times in 5.802474s (172.05μs/i)
+    push N (c_dheap)     7.406k i/s -     44.551k times in 6.015756s (135.03μs/i)
 
 Comparison:
-    push N (c_dheap):      5774.9 i/s 
-    push N (rb_heap):      2615.0 i/s - 2.21x  slower
-    push N (bsearch):      1361.8 i/s - 4.24x  slower
+    push N (c_dheap):      7405.7 i/s
+    push N (c++ stl):      5812.2 i/s - 1.27x  slower
+    push N (rb_heap):      2907.7 i/s - 2.55x  slower
+    push N (bsearch):      1346.0 i/s - 5.50x  slower
 
 == push N then pop N (N=1365) ==================================================
 Warming up --------------------------------------
-push N + pop N (findmin)    196.660 i/s -     400.000 times in 2.033965s (5.08ms/i)
-push N + pop N (bsearch)     1.197k i/s -      2.457k times in 2.052435s (835.34μs/i)
-push N + pop N (rb_heap)    539.093 i/s -      1.080k times in 2.003367s (1.85ms/i)
-push N + pop N (c_dheap)     2.012k i/s -      4.158k times in 2.066145s (496.91μs/i)
+push N + pop N (findmin)    189.039 i/s -     380.000 times in 2.010168s (5.29ms/i)
+push N + pop N (bsearch)     1.275k i/s -      2.667k times in 2.091317s (784.15μs/i)
+push N + pop N (rb_heap)    629.327 i/s -      1.260k times in 2.002137s (1.59ms/i)
+push N + pop N (c++ stl)     3.083k i/s -      6.280k times in 2.036843s (324.34μs/i)
+push N + pop N (c_dheap)     3.434k i/s -      6.880k times in 2.003496s (291.21μs/i)
 Calculating -------------------------------------
-push N + pop N (findmin)    193.288 i/s -      1.179k times in 6.099704s (5.17ms/i)
-push N + pop N (bsearch)     1.282k i/s -      7.182k times in 5.602801s (780.12μs/i)
-push N + pop N (rb_heap)    528.397 i/s -      3.234k times in 6.120397s (1.89ms/i)
-push N + pop N (c_dheap)     2.073k i/s -     12.074k times in 5.824461s (482.40μs/i)
+push N + pop N (findmin)    195.665 i/s -      1.134k times in 5.795620s (5.11ms/i)
+push N + pop N (bsearch)     1.177k i/s -      7.651k times in 6.501332s (849.74μs/i)
+push N + pop N (rb_heap)    624.066 i/s -      3.775k times in 6.049040s (1.60ms/i)
+push N + pop N (c++ stl)     3.105k i/s -     18.499k times in 5.958037s (322.07μs/i)
+push N + pop N (c_dheap)     3.475k i/s -     20.603k times in 5.928992s (287.77μs/i)
 
 Comparison:
-push N + pop N (c_dheap):      2073.0 i/s 
-push N + pop N (bsearch):      1281.9 i/s - 1.62x  slower
-push N + pop N (rb_heap):       528.4 i/s - 3.92x  slower
-push N + pop N (findmin):       193.3 i/s - 10.72x  slower
+push N + pop N (c_dheap):      3475.0 i/s
+push N + pop N (c++ stl):      3104.9 i/s - 1.12x  slower
+push N + pop N (bsearch):      1176.8 i/s - 2.95x  slower
+push N + pop N (rb_heap):       624.1 i/s - 5.57x  slower
+push N + pop N (findmin):       195.7 i/s - 17.76x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=1365) ============================
 Warming up --------------------------------------
-push + pop (findmin)   493.933k i/s -      1.023M times in 2.071688s (2.02μs/i)
-push + pop (bsearch)     1.972M i/s -      3.978M times in 2.017663s (507.20ns/i)
-push + pop (rb_heap)   813.919k i/s -      1.646M times in 2.021751s (1.23μs/i)
-push + pop (c_dheap)     2.969M i/s -      6.033M times in 2.032182s (336.83ns/i, 846clocks/i)
+push + pop (findmin)   496.816k i/s -      1.028M times in 2.069729s (2.01μs/i)
+push + pop (bsearch)     1.964M i/s -      3.956M times in 2.014551s (509.28ns/i)
+push + pop (rb_heap)     1.043M i/s -      2.150M times in 2.061288s (958.58ns/i)
+push + pop (c++ stl)     5.289M i/s -     10.720M times in 2.026911s (189.07ns/i, 346clocks/i)
+push + pop (c_dheap)     6.890M i/s -     13.979M times in 2.029039s (145.15ns/i, 411clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)   493.104k i/s -      2.964M times in 6.010080s (2.03μs/i)
-push + pop (bsearch)     2.002M i/s -     11.830M times in 5.908100s (499.43ns/i)
-push + pop (rb_heap)   831.926k i/s -      4.884M times in 5.870129s (1.20μs/i)
-push + pop (c_dheap)     3.117M i/s -     17.813M times in 5.714019s (320.77ns/i, 787clocks/i)
+push + pop (findmin)   498.357k i/s -      2.981M times in 5.981452s (2.01μs/i)
+push + pop (bsearch)     2.016M i/s -     11.781M times in 5.844338s (496.07ns/i)
+push + pop (rb_heap)     1.056M i/s -      6.259M times in 5.926221s (946.80ns/i)
+push + pop (c++ stl)     6.149M i/s -     31.734M times in 5.160646s (162.62ns/i, 357clocks/i)
+push + pop (c_dheap)     7.240M i/s -     41.337M times in 5.709252s (138.11ns/i, 365clocks/i)
 
 Comparison:
-push + pop (c_dheap):   3117453.6 i/s 
-push + pop (bsearch):   2002296.0 i/s - 1.56x  slower
-push + pop (rb_heap):    831926.4 i/s - 3.75x  slower
-push + pop (findmin):    493104.4 i/s - 6.32x  slower
+push + pop (c_dheap):   7240436.4 i/s
+push + pop (c++ stl):   6149299.4 i/s - 1.18x  slower
+push + pop (bsearch):   2015850.6 i/s - 3.59x  slower
+push + pop (rb_heap):   1056192.6 i/s - 6.86x  slower
+push + pop (findmin):    498356.6 i/s - 14.53x  slower
 
 ################################################################################
 # Benchmarks with N=5461 (t=10sec/benchmark)
@@ -282,54 +327,63 @@ push + pop (findmin):    493104.4 i/s - 6.32x  slower
 
 == push N (N=5461) ============================================================
 Warming up --------------------------------------
-    push N (bsearch)    271.804 i/s -     567.000 times in 2.086065s (3.68ms/i)
-    push N (rb_heap)    708.260 i/s -      1.440k times in 2.033152s (1.41ms/i)
-    push N (c_dheap)     1.523k i/s -      3.171k times in 2.082653s (656.78μs/i)
+    push N (bsearch)    269.520 i/s -     560.000 times in 2.077767s (3.71ms/i)
+    push N (rb_heap)    717.703 i/s -      1.440k times in 2.006402s (1.39ms/i)
+    push N (c++ stl)     1.462k i/s -      3.045k times in 2.082734s (683.99μs/i)
+    push N (c_dheap)     1.823k i/s -      3.780k times in 2.073303s (548.49μs/i)
 Calculating -------------------------------------
-    push N (bsearch)    268.014 i/s -      1.630k times in 6.081766s (3.73ms/i)
-    push N (rb_heap)    682.522 i/s -      4.249k times in 6.225438s (1.47ms/i)
-    push N (c_dheap)     1.494k i/s -      9.135k times in 6.113865s (669.28μs/i)
+    push N (bsearch)    258.932 i/s -      1.617k times in 6.244873s (3.86ms/i)
+    push N (rb_heap)    723.029 i/s -      4.306k times in 5.955502s (1.38ms/i)
+    push N (c++ stl)     1.407k i/s -      8.772k times in 6.235747s (710.87μs/i)
+    push N (c_dheap)     1.853k i/s -     10.939k times in 5.904004s (539.72μs/i)
 
 Comparison:
-    push N (c_dheap):      1494.1 i/s 
-    push N (rb_heap):       682.5 i/s - 2.19x  slower
-    push N (bsearch):       268.0 i/s - 5.57x  slower
+    push N (c_dheap):      1852.8 i/s
+    push N (c++ stl):      1406.7 i/s - 1.32x  slower
+    push N (rb_heap):       723.0 i/s - 2.56x  slower
+    push N (bsearch):       258.9 i/s - 7.16x  slower
 
 == push N then pop N (N=5461) ==================================================
 Warming up --------------------------------------
-push N + pop N (findmin)     12.484 i/s -      26.000 times in 2.082741s (80.11ms/i)
-push N + pop N (bsearch)    250.220 i/s -     520.000 times in 2.078172s (4.00ms/i)
-push N + pop N (rb_heap)    115.535 i/s -     240.000 times in 2.077301s (8.66ms/i)
-push N + pop N (c_dheap)    454.895 i/s -     920.000 times in 2.022444s (2.20ms/i)
+push N + pop N (findmin)     12.207 i/s -      26.000 times in 2.129850s (81.92ms/i)
+push N + pop N (bsearch)    251.139 i/s -     525.000 times in 2.090473s (3.98ms/i)
+push N + pop N (rb_heap)    137.157 i/s -     280.000 times in 2.041453s (7.29ms/i)
+push N + pop N (c++ stl)    724.325 i/s -      1.460k times in 2.015670s (1.38ms/i)
+push N + pop N (c_dheap)    794.655 i/s -      1.600k times in 2.013452s (1.26ms/i)
 Calculating -------------------------------------
-push N + pop N (findmin)     12.423 i/s -      74.000 times in 5.956886s (80.50ms/i)
-push N + pop N (bsearch)    247.409 i/s -      1.501k times in 6.066870s (4.04ms/i)
-push N + pop N (rb_heap)    112.159 i/s -     693.000 times in 6.178754s (8.92ms/i)
-push N + pop N (c_dheap)    452.913 i/s -      2.729k times in 6.025436s (2.21ms/i)
+push N + pop N (findmin)     12.381 i/s -      73.000 times in 5.896102s (80.77ms/i)
+push N + pop N (bsearch)    249.090 i/s -      1.506k times in 6.046014s (4.01ms/i)
+push N + pop N (rb_heap)    136.820 i/s -     822.000 times in 6.007880s (7.31ms/i)
+push N + pop N (c++ stl)    699.853 i/s -      4.345k times in 6.208445s (1.43ms/i)
+push N + pop N (c_dheap)    779.676 i/s -      4.767k times in 6.114082s (1.28ms/i)
 
 Comparison:
-push N + pop N (c_dheap):       452.9 i/s 
-push N + pop N (bsearch):       247.4 i/s - 1.83x  slower
-push N + pop N (rb_heap):       112.2 i/s - 4.04x  slower
-push N + pop N (findmin):        12.4 i/s - 36.46x  slower
+push N + pop N (c_dheap):       779.7 i/s
+push N + pop N (c++ stl):       699.9 i/s - 1.11x  slower
+push N + pop N (bsearch):       249.1 i/s - 3.13x  slower
+push N + pop N (rb_heap):       136.8 i/s - 5.70x  slower
+push N + pop N (findmin):        12.4 i/s - 62.97x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=5461) ============================
 Warming up --------------------------------------
-push + pop (findmin)   124.542k i/s -    250.908k times in 2.014649s (8.03μs/i)
-push + pop (bsearch)     1.610M i/s -      3.242M times in 2.013150s (620.93ns/i)
-push + pop (rb_heap)   704.201k i/s -      1.416M times in 2.010517s (1.42μs/i)
-push + pop (c_dheap)     2.563M i/s -      5.170M times in 2.017119s (390.19ns/i)
+push + pop (findmin)   122.350k i/s -    245.280k times in 2.004736s (8.17μs/i)
+push + pop (bsearch)     1.778M i/s -      3.633M times in 2.043729s (562.57ns/i)
+push + pop (rb_heap)   918.753k i/s -      1.850M times in 2.013237s (1.09μs/i)
+push + pop (c++ stl)     5.000M i/s -     10.088M times in 2.017440s (199.99ns/i, 445clocks/i)
+push + pop (c_dheap)     6.520M i/s -     13.190M times in 2.023137s (153.39ns/i, 427clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)   122.316k i/s -    747.250k times in 6.109176s (8.18μs/i)
-push + pop (bsearch)     1.794M i/s -      9.663M times in 5.387620s (557.55ns/i)
-push + pop (rb_heap)   707.140k i/s -      4.225M times in 5.975062s (1.41μs/i)
-push + pop (c_dheap)     2.718M i/s -     15.377M times in 5.656979s (367.89ns/i)
+push + pop (findmin)   120.450k i/s -    734.101k times in 6.094657s (8.30μs/i)
+push + pop (bsearch)     1.799M i/s -     10.665M times in 5.928598s (555.87ns/i)
+push + pop (rb_heap)   870.024k i/s -      5.513M times in 6.336058s (1.15μs/i)
+push + pop (c++ stl)     5.594M i/s -     30.001M times in 5.363045s (178.76ns/i, 451clocks/i)
+push + pop (c_dheap)     6.991M i/s -     39.117M times in 5.595561s (143.05ns/i, 373clocks/i)
 
 Comparison:
-push + pop (c_dheap):   2718225.1 i/s 
-push + pop (bsearch):   1793546.4 i/s - 1.52x  slower
-push + pop (rb_heap):    707139.9 i/s - 3.84x  slower
-push + pop (findmin):    122316.0 i/s - 22.22x  slower
+push + pop (c_dheap):   6990729.5 i/s
+push + pop (c++ stl):   5594102.7 i/s - 1.25x  slower
+push + pop (bsearch):   1798974.6 i/s - 3.89x  slower
+push + pop (rb_heap):    870023.6 i/s - 8.04x  slower
+push + pop (findmin):    120449.9 i/s - 58.04x  slower
 
 ################################################################################
 # Benchmarks with N=21845 (t=10sec/benchmark)
@@ -337,54 +391,63 @@ push + pop (findmin):    122316.0 i/s - 22.22x  slower
 
 == push N (N=21845) ============================================================
 Warming up --------------------------------------
-    push N (bsearch)     35.384 i/s -      72.000 times in 2.034790s (28.26ms/i)
-    push N (rb_heap)    172.946 i/s -     360.000 times in 2.081571s (5.78ms/i)
-    push N (c_dheap)    364.900 i/s -     740.000 times in 2.027956s (2.74ms/i)
+    push N (bsearch)     29.500 i/s -      60.000 times in 2.033920s (33.90ms/i)
+    push N (rb_heap)    180.110 i/s -     378.000 times in 2.098720s (5.55ms/i)
+    push N (c++ stl)    341.267 i/s -     700.000 times in 2.051181s (2.93ms/i)
+    push N (c_dheap)    452.850 i/s -     920.000 times in 2.031579s (2.21ms/i)
 Calculating -------------------------------------
-    push N (bsearch)     34.023 i/s -     212.000 times in 6.231133s (29.39ms/i)
-    push N (rb_heap)    174.336 i/s -      1.037k times in 5.948268s (5.74ms/i)
-    push N (c_dheap)    368.253 i/s -      2.189k times in 5.944276s (2.72ms/i)
+    push N (bsearch)     34.825 i/s -     176.000 times in 5.053771s (28.71ms/i)
+    push N (rb_heap)    178.444 i/s -      1.080k times in 6.052328s (5.60ms/i)
+    push N (c++ stl)    339.996 i/s -      2.047k times in 6.020652s (2.94ms/i)
+    push N (c_dheap)    471.606 i/s -      2.717k times in 5.761168s (2.12ms/i)
 
 Comparison:
-    push N (c_dheap):       368.3 i/s 
-    push N (rb_heap):       174.3 i/s - 2.11x  slower
-    push N (bsearch):        34.0 i/s - 10.82x  slower
+    push N (c_dheap):       471.6 i/s
+    push N (c++ stl):       340.0 i/s - 1.39x  slower
+    push N (rb_heap):       178.4 i/s - 2.64x  slower
+    push N (bsearch):        34.8 i/s - 13.54x  slower
 
 == push N then pop N (N=21845) ================================================
 Warming up --------------------------------------
-push N + pop N (findmin)      0.779 i/s -       2.000 times in 2.566006s (1.28s/i)
-push N + pop N (bsearch)     34.145 i/s -      72.000 times in 2.108676s (29.29ms/i)
-push N + pop N (rb_heap)     24.870 i/s -      51.000 times in 2.050656s (40.21ms/i)
-push N + pop N (c_dheap)    102.725 i/s -     209.000 times in 2.034560s (9.73ms/i)
+push N + pop N (findmin)      0.779 i/s -       2.000 times in 2.567523s (1.28s/i)
+push N + pop N (bsearch)     34.097 i/s -      72.000 times in 2.111648s (29.33ms/i)
+push N + pop N (rb_heap)     30.004 i/s -      63.000 times in 2.099747s (33.33ms/i)
+push N + pop N (c++ stl)    162.161 i/s -     340.000 times in 2.096682s (6.17ms/i)
+push N + pop N (c_dheap)    174.422 i/s -     360.000 times in 2.063954s (5.73ms/i)
 Calculating -------------------------------------
-push N + pop N (findmin)      0.777 i/s -       4.000 times in 5.148214s (1.29s/i)
-push N + pop N (bsearch)     33.931 i/s -     204.000 times in 6.012272s (29.47ms/i)
-push N + pop N (rb_heap)     25.005 i/s -     149.000 times in 5.958910s (39.99ms/i)
-push N + pop N (c_dheap)    101.482 i/s -     616.000 times in 6.070050s (9.85ms/i)
+push N + pop N (findmin)      0.778 i/s -       4.000 times in 5.144549s (1.29s/i)
+push N + pop N (bsearch)     32.991 i/s -     204.000 times in 6.183540s (30.31ms/i)
+push N + pop N (rb_heap)     29.347 i/s -     180.000 times in 6.133559s (34.08ms/i)
+push N + pop N (c++ stl)    164.692 i/s -     972.000 times in 5.901925s (6.07ms/i)
+push N + pop N (c_dheap)    171.201 i/s -      1.046k times in 6.109760s (5.84ms/i)
 
 Comparison:
-push N + pop N (c_dheap):       101.5 i/s 
-push N + pop N (bsearch):        33.9 i/s - 2.99x  slower
-push N + pop N (rb_heap):        25.0 i/s - 4.06x  slower
-push N + pop N (findmin):         0.8 i/s - 130.61x  slower
+push N + pop N (c_dheap):       171.2 i/s
+push N + pop N (c++ stl):       164.7 i/s - 1.04x  slower
+push N + pop N (bsearch):        33.0 i/s - 5.19x  slower
+push N + pop N (rb_heap):        29.3 i/s - 5.83x  slower
+push N + pop N (findmin):         0.8 i/s - 220.19x  slower
 
 == Push/pop with pre-filled queue (size=N) (N=21845) ==========================
 Warming up --------------------------------------
-push + pop (findmin)    13.737k i/s -     27.540k times in 2.004757s (72.79μs/i)
-push + pop (bsearch)     1.512M i/s -      3.037M times in 2.008949s (661.44ns/i)
-push + pop (rb_heap)   606.616k i/s -      1.239M times in 2.042544s (1.65μs/i)
-push + pop (c_dheap)     2.034M i/s -      4.134M times in 2.032566s (491.70ns/i)
+push + pop (findmin)     9.674k i/s -     19.701k times in 2.036569s (103.37μs/i)
+push + pop (bsearch)     1.565M i/s -      3.181M times in 2.032390s (638.93ns/i)
+push + pop (rb_heap)   830.840k i/s -      1.701M times in 2.047922s (1.20μs/i)
+push + pop (c++ stl)     4.606M i/s -      9.338M times in 2.027286s (217.11ns/i, 525clocks/i)
+push + pop (c_dheap)     5.854M i/s -     11.791M times in 2.014052s (170.81ns/i, 453clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)    15.583k i/s -     82.423k times in 5.289229s (64.17μs/i)
-push + pop (bsearch)     1.575M i/s -      9.071M times in 5.760389s (635.03ns/i)
-push + pop (rb_heap)   611.005k i/s -      3.640M times in 5.956897s (1.64μs/i)
-push + pop (c_dheap)     2.264M i/s -     12.203M times in 5.389179s (441.64ns/i)
+push + pop (findmin)    11.522k i/s -     58.041k times in 5.037203s (86.79μs/i)
+push + pop (bsearch)     1.528M i/s -      9.391M times in 6.144507s (654.32ns/i)
+push + pop (rb_heap)   802.621k i/s -      4.985M times in 6.210948s (1.25μs/i)
+push + pop (c++ stl)     4.959M i/s -     27.636M times in 5.573344s (201.67ns/i, 561clocks/i)
+push + pop (c_dheap)     6.275M i/s -     35.126M times in 5.597394s (159.35ns/i, 421clocks/i)
 
 Comparison:
-push + pop (c_dheap):   2264291.2 i/s 
-push + pop (bsearch):   1574732.8 i/s - 1.44x  slower
-push + pop (rb_heap):    611005.2 i/s - 3.71x  slower
-push + pop (findmin):     15583.2 i/s - 145.30x  slower
+push + pop (c_dheap):   6275438.5 i/s
+push + pop (c++ stl):   4958577.7 i/s - 1.27x  slower
+push + pop (bsearch):   1528297.6 i/s - 4.11x  slower
+push + pop (rb_heap):    802621.5 i/s - 7.82x  slower
+push + pop (findmin):     11522.5 i/s - 544.63x  slower
 
 ################################################################################
 # Benchmarks with N=87381 (t=10sec/benchmark)
@@ -392,52 +455,61 @@ push + pop (findmin):     15583.2 i/s - 145.30x  slower
 
 == push N (N=87381) ============================================================
 Warming up --------------------------------------
-    push N (bsearch)      2.973 i/s -       6.000 times in 2.017930s (336.32ms/i)
-    push N (rb_heap)     43.444 i/s -      90.000 times in 2.071609s (23.02ms/i)
-    push N (c_dheap)     93.043 i/s -     190.000 times in 2.042069s (10.75ms/i)
+    push N (bsearch)      2.860 i/s -       6.000 times in 2.097866s (349.64ms/i)
+    push N (rb_heap)     44.082 i/s -      90.000 times in 2.041662s (22.69ms/i)
+    push N (c++ stl)     87.951 i/s -     180.000 times in 2.046591s (11.37ms/i)
+    push N (c_dheap)    114.586 i/s -     240.000 times in 2.094502s (8.73ms/i)
 Calculating -------------------------------------
-    push N (bsearch)      2.929 i/s -      17.000 times in 5.805017s (341.47ms/i)
-    push N (rb_heap)     43.528 i/s -     260.000 times in 5.973114s (22.97ms/i)
-    push N (c_dheap)     92.841 i/s -     558.000 times in 6.010303s (10.77ms/i)
+    push N (bsearch)      2.876 i/s -      17.000 times in 5.910605s (347.68ms/i)
+    push N (rb_heap)     44.019 i/s -     264.000 times in 5.997408s (22.72ms/i)
+    push N (c++ stl)     79.328 i/s -     527.000 times in 6.643283s (12.61ms/i)
+    push N (c_dheap)    115.006 i/s -     687.000 times in 5.973623s (8.70ms/i)
 
 Comparison:
-    push N (c_dheap):        92.8 i/s 
-    push N (rb_heap):        43.5 i/s - 2.13x  slower
-    push N (bsearch):         2.9 i/s - 31.70x  slower
+    push N (c_dheap):       115.0 i/s
+    push N (c++ stl):        79.3 i/s - 1.45x  slower
+    push N (rb_heap):        44.0 i/s - 2.61x  slower
+    push N (bsearch):         2.9 i/s - 39.99x  slower
 
 == push N then pop N (N=87381) ================================================
 Warming up --------------------------------------
-push N + pop N (findmin)0.0 i/s - 0.0 times in 15.004208s (Infs/i)
-push N + pop N (bsearch)      2.904 i/s -       6.000 times in 2.066042s (344.34ms/i)
-push N + pop N (rb_heap)      5.506 i/s -      12.000 times in 2.179391s (181.62ms/i)
-push N + pop N (c_dheap)     22.529 i/s -      48.000 times in 2.130599s (44.39ms/i)
+push N + pop N (findmin)0.0 i/s - 0.0 times in 15.004015s (Infs/i)
+push N + pop N (bsearch)      2.818 i/s -       6.000 times in 2.129230s (354.87ms/i)
+push N + pop N (rb_heap)      6.587 i/s -      14.000 times in 2.125416s (151.82ms/i)
+push N + pop N (c++ stl)     38.095 i/s -      80.000 times in 2.100037s (26.25ms/i)
+push N + pop N (c_dheap)     39.934 i/s -      80.000 times in 2.003287s (25.04ms/i)
 Calculating -------------------------------------
-push N + pop N (findmin)0.0 i/s - 0.0 times in 15.004208s (Infs/i)
-push N + pop N (bsearch)      2.861 i/s -      17.000 times in 5.942237s (349.54ms/i)
-push N + pop N (rb_heap)      5.540 i/s -      33.000 times in 5.956511s (180.50ms/i)
-push N + pop N (c_dheap)     22.614 i/s -     135.000 times in 5.969706s (44.22ms/i)
+push N + pop N (findmin)0.0 i/s - 0.0 times in 15.004015s (Infs/i)
+push N + pop N (bsearch)      2.905 i/s -      16.000 times in 5.507260s (344.20ms/i)
+push N + pop N (rb_heap)      6.675 i/s -      39.000 times in 5.843054s (149.82ms/i)
+push N + pop N (c++ stl)     38.576 i/s -     228.000 times in 5.910361s (25.92ms/i)
+push N + pop N (c_dheap)     39.508 i/s -     239.000 times in 6.049426s (25.31ms/i)
 
 Comparison:
-push N + pop N (c_dheap):        22.6 i/s 
-push N + pop N (rb_heap):         5.5 i/s - 4.08x  slower
-push N + pop N (bsearch):         2.9 i/s - 7.90x  slower
+push N + pop N (c_dheap):        39.5 i/s
+push N + pop N (c++ stl):        38.6 i/s - 1.02x  slower
+push N + pop N (rb_heap):         6.7 i/s - 5.92x  slower
+push N + pop N (bsearch):         2.9 i/s - 13.60x  slower
 push N + pop N (findmin):         0.0 i/s - Infx  slower
 
 == Push/pop with pre-filled queue (size=N) (N=87381) ==========================
 Warming up --------------------------------------
-push + pop (findmin)     2.275k i/s -      4.683k times in 2.058769s (439.63μs/i)
-push + pop (bsearch)   682.628k i/s -      1.372M times in 2.010489s (1.46μs/i)
-push + pop (rb_heap)   519.439k i/s -      1.058M times in 2.037582s (1.93μs/i)
-push + pop (c_dheap)     1.713M i/s -      3.455M times in 2.016970s (583.83ns/i)
+push + pop (findmin)     1.301k i/s -      2.646k times in 2.033177s (768.40μs/i)
+push + pop (bsearch)   399.722k i/s -    802.368k times in 2.007313s (2.50μs/i)
+push + pop (rb_heap)   693.504k i/s -      1.416M times in 2.042452s (1.44μs/i)
+push + pop (c++ stl)     3.984M i/s -      7.970M times in 2.000250s (250.98ns/i, 578clocks/i)
+push + pop (c_dheap)     5.101M i/s -     10.348M times in 2.028583s (196.05ns/i, 321clocks/i)
 Calculating -------------------------------------
-push + pop (findmin)     2.263k i/s -     13.647k times in 6.031111s (441.94μs/i)
-push + pop (bsearch)   762.343k i/s -      4.096M times in 5.372602s (1.31μs/i)
-push + pop (rb_heap)   535.914k i/s -      3.117M times in 5.815555s (1.87μs/i)
-push + pop (c_dheap)     1.815M i/s -     10.277M times in 5.661404s (550.88ns/i)
+push + pop (findmin)     1.305k i/s -      7.808k times in 5.983727s (766.36μs/i)
+push + pop (bsearch)   516.666k i/s -      2.398M times in 4.641947s (1.94μs/i)
+push + pop (rb_heap)   695.029k i/s -      4.161M times in 5.986830s (1.44μs/i)
+push + pop (c++ stl)     4.478M i/s -     23.906M times in 5.338832s (223.32ns/i, 577clocks/i)
+push + pop (c_dheap)     5.968M i/s -     30.605M times in 5.128099s (167.56ns/i, 426clocks/i)
 
 Comparison:
-push + pop (c_dheap):   1815277.3 i/s 
-push + pop (bsearch):    762343.2 i/s - 2.38x  slower
-push + pop (rb_heap):    535913.6 i/s - 3.39x  slower
-push + pop (findmin):      2262.8 i/s - 802.24x  slower
+push + pop (c_dheap):   5968137.3 i/s
+push + pop (c++ stl):   4477815.8 i/s - 1.33x  slower
+push + pop (rb_heap):    695029.1 i/s - 8.59x  slower
+push + pop (bsearch):    516665.5 i/s - 11.55x  slower
+push + pop (findmin):      1304.9 i/s - 4573.73x  slower
 

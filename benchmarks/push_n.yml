@@ -15,14 +15,17 @@ benchmark:
          q << random_val
          i += 1
        end
-    # name:    "push N (findmin)"
-    # prelude: "q = initq FindMin"
-  # - script: *script
+    name:    "push N (findmin)"
+    prelude: "q = initq FindMin"
+  - script: *script
     name:    "push N (bsearch)"
     prelude: "q = initq BSearch"
   - script: *script
     name:    "push N (rb_heap)"
     prelude: "q = initq RbHeap"
+  - script: *script
+    name:    "push N (c++ stl)"
+    prelude: "q = initq CppSTL"
   - script: *script
     name:    "push N (c_dheap)"
     prelude: "q = initq DHeap"
