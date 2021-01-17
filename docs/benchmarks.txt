@@ -1,5 +1,5 @@
 Benchmarking run at 2021-01-17 17:17:24 -0500
-ruby v2.7.2, DHeap v0.4.0
+ruby v2.7.2, DHeap v0.5.0
 
 ################################################################################
 # Benchmarks with N=5 (t=10sec/benchmark)

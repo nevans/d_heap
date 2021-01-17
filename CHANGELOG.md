@@ -1,5 +1,22 @@
 ## Current/Unreleased
 
+## Release v0.5.0 (2021-01-17)
+
+* 🔥 **Breaking**: reversed order of `#push` arguments to `value, score`.
+* ✨ Added `#insert(score, value)` to replace earlier version of `#push`.
+* ✨ Added `#each_pop` enumerator.
+* ✨ Added aliases for `deq`, `enq`, `first`, `pop_below`, `length`, and
+    `count`, to mimic other classes in ruby's stdlib.
+* ⚡️♻️  More performance improvements:
+  * Created an `ENTRY` struct and store both the score and the value pointer in
+    the same `ENTRY *entries` array.
+  * Reduced unnecessary allocations or copies in both sift loops.  A similar
+    refactoring also sped up the pure ruby benchmark implementation.
+  * Compiling with `-O3`.
+* 📝 Updated (and in some cases, fixed) yardoc
+* ♻️  Moved aliases and less performance sensitive code into ruby.
+* ♻️  DRY up push/insert methods
+
 ## Release v0.4.0 (2021-01-12)
 
 * ⚡️ Big performance improvements, by using C `long double *cscores` array
@@ -12,11 +29,11 @@
 
 ## Release v0.3.0 (2020-12-29)
 
+* 🔥 **Breaking**: Removed class methods that operated directly on an array.
+    They weren't compatible with the performance improvements.
 * ⚡️ Big performance improvements, by converting to a `T_DATA` struct.
 * ♻️  Major refactoring/rewriting of dheap.c
 * ✅ Added benchmark specs
-* 🔥 Removed class methods that operated directly on an array.  They weren't
-    compatible with the performance improvements.
 
 ## Release v0.2.2 (2020-12-27)
 

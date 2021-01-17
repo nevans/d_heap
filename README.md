@@ -44,11 +44,11 @@ Quick reference:
 * `heap.empty?` returns true if the heap is empty.
 * `heap.size` returns the number of items in the heap.
 
-The basic API is `#push` and `pop`.  If your values behave as their own score,
-then you can push with `#<<`.  If the score changes while the object is still in
-the heap, it will not be re-evaluated again.  The score must be `Integer` or
-`Float` or convertable to a `Float` via `Float(score)` (i.e. it should implement
-`#to_f`).
+The basic API is `#push(object, score)` and `pop`.  If your values behave as
+their own score, then you can push with `#<<`.  If the score changes while the
+object is still in the heap, it will not be re-evaluated again.  The score must
+either be `Integer` or `Float` or convertable to a `Float` via `Float(score)`
+(i.e. it should implement `#to_f`).
 
 ```ruby
 require "d_heap"
@@ -66,7 +66,7 @@ heap << t1 << t2
 
 # or push with an explicit score
 heap.push t3, t4.to_f
-heap.push t4, t4 # score will be cast with Float
+heap.push t4, t4 # score can be implicitly cast with Float
 
 # peek and pop
 heap.pop    # => #<struct Task id=4, time=2021-01-17 17:02:22.5574 -0500>
@@ -222,7 +222,7 @@ as an array which only stores values.
 
 _See `bin/benchmarks` and `docs/benchmarks.txt`, as well as `bin/profile` and
 `docs/profile.txt` for more details or updated results. These benchmarks were
-measured with v0.4.0 and ruby 2.7.2 without MJIT enabled._
+measured with v0.5.0 and ruby 2.7.2 without MJIT enabled._
 
 These benchmarks use very simple implementations for a pure-ruby heap and an
 array that is kept sorted using `Array#bsearch_index` and `Array#insert`.  For
@@ -298,12 +298,12 @@ uses `#pop`.
     push + pop (rb_heap):   1845488.7 i/s - 4.80x  slower
 
 At higher values of N, a heaps logarithmic growth leads to only a little
-slowdown of `DHeap#push`, while insert's linear growth causes it to run
-noticably slower and slower.  But because `#pop` is `O(1)` for a sorted array
-and `O(d log n / log d)` for a heap, scenarios involving both `#push` and
-`#pop` remain relatively close, and bsearch + insert still runs faster than a
-pure ruby heap, even up to queues with 10k items.  But as queue size increases
-beyond than that, the linear time compexity to keep a sorted array dominates.
+slowdown of `#push`, while insert's linear growth causes it to run noticably
+slower and slower.  But because `#pop` is `O(1)` for a sorted array and `O(d log
+n / log d)` for a heap, scenarios involving both `#push` and `#pop` remain
+relatively close, and bsearch + insert still runs faster than a pure ruby heap,
+even up to queues with 10k items.  But as queue size increases beyond than that,
+the linear time compexity to keep a sorted array dominates.
 
     == push + pop (rb_heap)
     queue size =    10000:    736618.2 i/s
