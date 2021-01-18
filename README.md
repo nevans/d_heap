@@ -1,4 +1,8 @@
-# DHeap
+# DHeap - Fast d-ary heap for ruby
+
+[![Gem Version](https://badge.fury.io/rb/d_heap.svg)](https://badge.fury.io/rb/d_heap)
+[![Build Status](https://github.com/nevans/d_heap/workflows/CI/badge.svg)](https://github.com/nevans/d_heap/actions?query=workflow%3ACI)
+[![Maintainability](https://api.codeclimate.com/v1/badges/ff274acd0683c99c03e1/maintainability)](https://codeclimate.com/github/nevans/d_heap/maintainability)
 
 A fast [_d_-ary heap][d-ary heap] [priority queue] implementation for ruby,
 implemented as a C extension.
