@@ -11,6 +11,7 @@ gem "rake-compiler"
 gem "rspec", "~> 3.10"
 gem "rubocop", "~> 1.0"
 
+gem "benchmark_driver-output-gruff"
 gem "perf"
 gem "priority_queue_cxx"
 gem "stackprof"

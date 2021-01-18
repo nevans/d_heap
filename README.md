@@ -228,6 +228,8 @@ _See `bin/benchmarks` and `docs/benchmarks.txt`, as well as `bin/profile` and
 `docs/profile.txt` for more details or updated results. These benchmarks were
 measured with v0.5.0 and ruby 2.7.2 without MJIT enabled._
 
+![](./images/push_pop.png)
+
 These benchmarks use very simple implementations for a pure-ruby heap and an
 array that is kept sorted using `Array#bsearch_index` and `Array#insert`.  For
 comparison, an alternate implementation `Array#min` and `Array#delete_at` is
