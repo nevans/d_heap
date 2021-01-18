@@ -101,14 +101,28 @@ module DHeap::Benchmarks
   end
 
   # a very simple pure ruby binary heap
-  # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
   class RbHeap < ExamplePriorityQueue
 
     def <<(value)
       raise ArgumentError unless value
       @a.push(value)
-      # shift up
-      index = @a.size - 1
+      sift_up(@a.size - 1, value)
+    end
+
+    def pop
+      return if @a.empty?
+      popped = @a.first
+      value = @a.pop
+      last_index = @a.size - 1
+      return popped unless 0 <= last_index
+
+      sift_down(0, last_index, value)
+      popped
+    end
+
+    private
+
+    def sift_up(index, value = @a[index])
       while 0 < index # rubocop:disable Style/NumericPredicate
         parent_index = (index - 1) / 2
         parent_value = @a[parent_index]
@@ -117,43 +131,28 @@ module DHeap::Benchmarks
         index = parent_index
       end
       @a[index] = value
-      # dbg "__push__(%p)" % [value]
       # check_heap!(index)
     end
 
-    def pop
-      return if @a.empty?
-      popped = @a.first
-      value = @a.pop
-      last_index = @a.size - 1
+    def sift_down(index, last_index = @a.size - 1, value = @a[index])
       last_parent = (last_index - 1) / 2
-      return popped unless 0 <= last_index
-
-      # sift down from 0
-      index = 0
-      child_index = 1
       while index <= last_parent
-        child_value = @a[child_index]
-        # select min child
-        if child_index < last_index
-          other_child_index = child_index + 1
-          other_child_value = @a[other_child_index]
-          if other_child_value < child_value
-            child_value = other_child_value
-            child_index = other_child_index
-          end
-        end
+        child_index, child_value = select_min_child(index, last_index)
         break if value <= child_value
         @a[index] = child_value
         index = child_index
         child_index = index * 2 + 1
       end
       @a[index] = value
-
-      popped
     end
 
-    private
+    def select_min_child(index, last_index = @a.size - 1)
+      child_index = index * 2 + 1
+      if child_index < last_index && a[child_index + 1] < @a[child_index]
+        child_index += 1
+      end
+      [child_index, @a[child_index]]
+    end
 
     def check_heap!(idx)
       check_heap_up!(idx)
@@ -186,7 +185,6 @@ module DHeap::Benchmarks
     end
 
   end
-  # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
   # minor adjustments to the "priority_queue_cxx" gem, to match the API
   class CppSTL

@@ -39,30 +39,6 @@ module DHeap::Benchmarks
     matcher :perform_at_least do |expected|
       supports_block_expectations
 
-      def __debug__(name, caller_binding)
-        lvars = __debug_lvars__(caller_binding)
-        ivars = __debug_ivars__(caller_binding)
-        puts "%s, locals => %p, ivars => %p" % [name, lvars, ivars]
-      end
-
-      def __debug_lvars__(caller_binding)
-        caller_binding.local_variables.map {|lvar|
-          next if %i[type unit].include?(lvar)
-          next if (val = caller_binding.local_variable_get(lvar)).nil?
-          [lvar, val]
-        }.compact.to_h
-      end
-
-      def __debug_ivars__(caller_binding)
-        instance_variables.map {|ivar|
-          next if %i[@name @actual @expected_as_array @matcher_execution_context
-                     @chained_method_clauses @block_arg]
-            .include?(ivar)
-          next if (val = instance_variable_get(ivar)).nil?
-          [ivar, val]
-        }.compact.to_h
-      end
-
       %i[
         is_at_least
         running_at_most
@@ -70,7 +46,6 @@ module DHeap::Benchmarks
         warmup_at_most
       ].each do |type|
         chain type do |number|
-          # __debug__ "%s(%p)" % [type, number], binding
           reason, value = ___number_reason_and_value___
           if reason || value
             raise "Need to handle unit-less number first: %s(%p)" % [reason, value]
@@ -88,22 +63,15 @@ module DHeap::Benchmarks
         milliseconds
       ].each do |unit|
         chain unit do
-          # __debug__ unit, binding
           reason, value = ___number_reason_and_value___
           raise "No number was specified" unless reason && value
-          case reason
-          when :running_at_most;  apply_max_run unit
-          when :running_at_least; apply_min_run unit
-          when :warmup_at_most;   apply_warmup  unit
-          else raise "%s is incompatible with %s(%p)" % [unit, reason, value]
-          end
+          apply_number_to_reason(reason, value, unit)
           @number_for = @number_val = nil
         end
       end
 
       # TODO: let IPS set time to run instead of iterations to run
       chain :ips do
-        # __debug__ "ips", binding
         reason, value = ___number_reason_and_value___
         raise "'ips' unit is only for assertions" unless reason == :is_at_least
         raise "Already asserting %s ips" % [@expect_ips] if @expect_ips
@@ -115,7 +83,6 @@ module DHeap::Benchmarks
 
       # need to use method because "chain" can't take a block
       def times_faster_than(&other)
-        # __debug__ "times_faster_than"
         reason, value = ___number_reason_and_value___
         raise "'times_faster_than' is only for assertions" unless reason == :is_at_least
         raise "Already asserting %sx comparison" % [@expect_cmp] if @expect_cmp
@@ -174,7 +141,6 @@ module DHeap::Benchmarks
       chain :__convert_expected_to_ivars__ do
         @number_val ||= expected
         @number_for ||= :is_at_least if @number_val
-        # __debug__ "__convert_expected_to_ivars__", binding
         expected = nil
       end
       private :__convert_expected_to_ivars__
@@ -184,30 +150,43 @@ module DHeap::Benchmarks
         [@number_for, @number_val]
       end
 
-      def apply_min_run(unit)
-        case unit
-        when :seconds;      @min_time = Float(@number_val)
-        when :milliseconds; @min_time = Float(@number_val) / 1000.0
-        when :times;        @min_iter = Integer(@number_val)
-        else raise "Invalid unit %s for %s(%p)" % [unit, @number_for, @number_val]
+      def apply_number_to_reason(reason, value, unit)
+        normalized_value, normalized_unit = normalize_unit(unit)
+        case reason
+        when :running_at_most;  apply_max_run normalized_value, normalized_unit
+        when :running_at_least; apply_min_run normalized_value, normalized_unit
+        when :warmup_at_most;   apply_warmup  normalized_value, normalized_unit
+        else raise "%s is incompatible with %s(%p)" % [unit, reason, value]
         end
       end
 
-      def apply_max_run(unit)
+      def normalize_unit(unit)
         case unit
-        when :seconds;      @max_time = Float(@number_val)
-        when :milliseconds; @max_time = Float(@number_val) / 1000.0
-        when :times;        @max_iter = Integer(@number_val)
-        else raise "Invalid unit %s for %s(%p)" % [unit, @number_for, @number_val]
+        when :seconds;      [Float(@number_val),          :seconds]
+        when :milliseconds; [Float(@number_val) / 1000.0, :seconds]
+        when :times;        [Integer(@number_val),        :times]
+        else raise "Invalid unit %s for %s(%p)" % [unit, reason, value]
         end
       end
 
-      def apply_warmup(unit)
+      def apply_min_run(value, unit)
         case unit
-        when :seconds;      @warmup_time = Float(@number_val)
-        when :milliseconds; @warmup_time = Float(@number_val) / 1000.0
-        when :times;        @warmup_iter = Integer(@number_val)
-        else raise "Invalid unit %s for %s(%p)" % [unit, @number_for, @number_val]
+        when :seconds; @min_time = value
+        when :times;   @min_iter = value
+        end
+      end
+
+      def apply_max_run(value, unit)
+        case unit
+        when :seconds; @max_time = value
+        when :times;   @max_iter = value
+        end
+      end
+
+      def apply_warmup(value, unit)
+        case unit
+        when :seconds; @warmup_time = value
+        when :times;   @warmup_iter = value
         end
       end
 
@@ -224,7 +203,6 @@ module DHeap::Benchmarks
 
       def run_measurements
         puts header if loud?
-        # __debug__ "run_measurements", binding
         warmup
         take_measurements
       end
