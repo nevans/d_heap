@@ -135,15 +135,6 @@ optimized_cmp(SCORE a, SCORE b) {
 
 #endif
 
-#define DHEAP_Check_d_size(d) do {                            \
-    if (d < 2) {                                              \
-        rb_raise(rb_eArgError, "DHeap d=%d is too small", d); \
-    }                                                         \
-    if (d > DHEAP_MAX_D) {                                    \
-        rb_raise(rb_eArgError, "DHeap d=%d is too large", d); \
-    }                                                         \
-} while (0)
-
 #ifdef __D_HEAP_DEBUG
 #define ASSERT_DHEAP_INDEX(heap, index) do {                           \
     if (index < 0) {                                                  \
@@ -257,7 +248,7 @@ dheap_ensure_room_for_push(dheap_t *heap, long incr_by)
     long new_size = heap->size + incr_by;
 
     // check for overflow of new_size
-    if (DHEAP_MAX_SIZE - incr_by < heap->size)
+    if (DHEAP_MAX_CAPA - incr_by < heap->size)
         rb_raise(rb_eIndexError, "index %ld too big", new_size);
 
     // if it existing capacity is too small
@@ -267,7 +258,7 @@ dheap_ensure_room_for_push(dheap_t *heap, long incr_by)
         if (DHEAP_CAPA_INCR_MAX < new_size)
             new_size = new_size + DHEAP_CAPA_INCR_MAX;
         // check for overflow of new_capa
-        if (DHEAP_MAX_SIZE / 2 < new_size) new_capa = DHEAP_MAX_SIZE;
+        if (DHEAP_MAX_CAPA / 2 < new_size) new_capa = DHEAP_MAX_CAPA;
         // cap max incr_by
         if (heap->capa + DHEAP_CAPA_INCR_MAX < new_capa)
             new_capa = heap->capa + DHEAP_CAPA_INCR_MAX;
@@ -276,25 +267,44 @@ dheap_ensure_room_for_push(dheap_t *heap, long incr_by)
     }
 }
 
+static inline int
+dheap_value_to_int_d(VALUE num)
+{
+    int d = NUM2INT(num);
+    if (d < 2) {
+        rb_raise(rb_eArgError, "DHeap d=%u is too small", d);
+    }
+    if (d > DHEAP_MAX_D) {
+        rb_raise(rb_eArgError, "DHeap d=%u is too large", d);
+    }
+    return d;
+}
+
+static inline long
+dheap_value_to_long_capa(VALUE num)
+{
+    long capa = NUM2LONG(num);
+    if (capa < 1) {
+        rb_raise(rb_eArgError, "DHeap capa=%lu must be positive", capa);
+    }
+    return capa;
+}
+
 /*
- * @overload initialize(d = DHeap::DEFAULT_D)
- *   Initialize a _d_-ary min-heap.
+ * Initialize a _d_-ary min-heap.
  *
- *   @param d [Integer] maximum number of children per parent
+ *   @param d    [Integer] maximum number of children per parent
+ *   @param capa [Integer] initial capacity of the heap.
  */
 static VALUE
-dheap_initialize(int argc, VALUE *argv, VALUE self) {
-    dheap_t *heap;
-    int d;
+dheap_initialize(VALUE self, VALUE d, VALUE capa) {
+    dheap_t *heap = get_dheap_struct(self);
 
-    rb_check_arity(argc, 0, 1);
-    TypedData_Get_Struct(self, dheap_t, &dheap_data_type, heap);
+    if(heap->entries || heap->size || heap->capa)
+        rb_raise(rb_eScriptError, "DHeap already initialized.");
 
-    d = argc ? NUM2INT(argv[0]) : DHEAP_DEFAULT_D;
-    DHEAP_Check_d_size(d);
-    heap->d = d;
-
-    dheap_set_capa(heap, DHEAP_DEFAULT_SIZE);
+    heap->d = dheap_value_to_int_d(d);
+    dheap_set_capa(heap, dheap_value_to_long_capa(capa));
 
     return self;
 }
@@ -419,17 +429,6 @@ dheap_attr_d(VALUE self)
 {
     dheap_t *heap = get_dheap_struct(self);
     return INT2FIX(heap->d);
-}
-
-/* @!visibility private */
-static VALUE
-dheap_init_clone(VALUE clone, VALUE orig, VALUE kwfreeze)
-{
-    dheap_initialize_copy(clone, orig);
-    if (RTEST(kwfreeze) || (kwfreeze == Qnil && OBJ_FROZEN(orig))) {
-        rb_funcall(clone, rb_intern("freeze"), 0);
-    }
-    return clone;
 }
 
 static inline void
@@ -638,12 +637,28 @@ Init_d_heap(void)
     rb_cDHeap = rb_define_class("DHeap", rb_cObject);
     rb_define_alloc_func(rb_cDHeap, dheap_s_alloc);
 
-    rb_define_const(rb_cDHeap, "MAX_D",     INT2NUM(DHEAP_MAX_D));
-    rb_define_const(rb_cDHeap, "DEFAULT_D", INT2NUM(DHEAP_DEFAULT_D));
+    /*
+     * This is based on INT_MAX. But it is very very unlikely you will want a
+     * large value for d.  The tradeoff is that higher d values give faster push
+     * and slower pop.  If you expect pushes and pops to be balanced, then just
+     * stick with the default.  If you expect more pushes than pops, it might be
+     * worthwhile to increase d.
+     */
+    rb_define_const(rb_cDHeap, "MAX_D",        INT2NUM(DHEAP_MAX_D));
 
-    rb_define_method(rb_cDHeap, "initialize", dheap_initialize, -1);
+    /*
+     * d=4 uses the fewest comparisons for (worst case) insert + delete-min.
+     */
+    rb_define_const(rb_cDHeap, "DEFAULT_D",    INT2NUM(DHEAP_DEFAULT_D));
+
+    /*
+     * The default heap capacity.  The heap grows automatically as necessary, so
+     * you shouldn't need to worry about this.
+     */
+    rb_define_const(rb_cDHeap, "DEFAULT_CAPA", INT2NUM(DHEAP_DEFAULT_CAPA));
+
+    rb_define_private_method(rb_cDHeap, "__init_without_kw__", dheap_initialize, 2);
     rb_define_method(rb_cDHeap, "initialize_copy", dheap_initialize_copy, 1);
-    rb_define_private_method(rb_cDHeap, "__init_clone__", dheap_init_clone, 2);
 
     rb_define_method(rb_cDHeap, "d",       dheap_attr_d, 0);
     rb_define_method(rb_cDHeap, "size",    dheap_size, 0);

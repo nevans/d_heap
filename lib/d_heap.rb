@@ -19,8 +19,7 @@ require "d_heap/version"
 # particular use-case.
 #
 # @example Basic push, peek, and pop
-#     require "d_heap"
-#
+#     # create some example objects to place in our heap
 #     Task = Struct.new(:id, :time) do
 #       def to_f; time.to_f end
 #     end
@@ -28,6 +27,10 @@ require "d_heap/version"
 #     t2 = Task.new(2, Time.now + 50)
 #     t3 = Task.new(3, Time.now + 60)
 #     t4 = Task.new(4, Time.now +  5)
+#
+#     # create the heap
+#     require "d_heap"
+#     heap = DHeap.new
 #
 #     # push with an explicit score (which might be extrinsic to the value)
 #     heap.push t1, t1.to_f
@@ -46,7 +49,7 @@ require "d_heap/version"
 #     heap.peek   # => #<struct Task id=3, time=2021-01-17 17:03:17.5574 -0500>
 #     heap.pop    # => #<struct Task id=3, time=2021-01-17 17:03:17.5574 -0500>
 #
-#     # pop_lte handles the common "h.pop if h.peek < max" pattern
+#     # pop_lte handles the common "h.pop if h.peek_score < max" pattern
 #     heap.pop_lte(Time.now + 65) # => nil
 #
 #     # the heap size can be inspected with size and empty?
@@ -61,19 +64,19 @@ require "d_heap/version"
 #
 class DHeap
   alias deq       pop
-  alias enq       push
-  alias first     peek
+  alias shift     pop
+  alias next      pop
   alias pop_below pop_lt
+
+  alias enq       push
+
+  alias first     peek
 
   alias length    size
   alias count     size
 
-  # ruby 3.0+ (2.x can just use inherited initialize_clone)
-  if Object.instance_method(:initialize_clone).arity == -1
-    # @!visibility private
-    def initialize_clone(other, freeze: nil)
-      __init_clone__(other, freeze ? true : freeze)
-    end
+  def initialize(d: DEFAULT_D, capacity: DEFAULT_CAPA) # rubocop:disable Naming/MethodParameterName
+    __init_without_kw__(d, capacity)
   end
 
   # Consumes the heap by popping each minumum value until it is empty.

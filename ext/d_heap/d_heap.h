@@ -3,13 +3,9 @@
 
 #include "ruby.h"
 
-// d=4 uses the fewest comparisons for insert + delete-min (in the worst case).
 #define DHEAP_DEFAULT_D 4
 
-// This is a somewhat arbitary maximum. But benefits from more leaf nodes
-// are very unlikely to outweigh the increasinly higher number of worst-case
-// comparisons as d gets further from 4.
-#define DHEAP_MAX_D 32
+#define DHEAP_MAX_D INT_MAX
 
 typedef long double SCORE;
 
@@ -18,8 +14,10 @@ typedef struct dheap_entry {
     VALUE value;
 } ENTRY;
 
-#define DHEAP_DEFAULT_SIZE 256
-#define DHEAP_MAX_SIZE (LONG_MAX / (int)sizeof(ENTRY))
+// sizeof(ENTRY) => 32 bytes
+// one kilobyte = 32 * 32 bytes
+#define DHEAP_DEFAULT_CAPA 32
+#define DHEAP_MAX_CAPA (LONG_MAX / (int)sizeof(ENTRY))
 
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 

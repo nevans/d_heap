@@ -25,7 +25,7 @@ RSpec.describe DHeap do
 
   shared_examples "any-size heap" do |dval|
     let(:d) { dval }
-    subject(:heap) { DHeap.new(d) }
+    subject(:heap) { DHeap.new(d: d) }
 
     context "initialization" do
       it { is_expected.to be_empty }

@@ -1,33 +1,40 @@
 # frozen_string_literal: true
 
-RSpec.describe DHeap do
+RSpec.describe DHeap, "d" do
 
-  it "has a DEFAULT_D constant" do
-    expect(DHeap::DEFAULT_D).to eq(4)
+  describe "DHeap::DEFAULT_D" do
+    it { expect(DHeap::DEFAULT_D).to eq(4) }
+
+    it "is used for new DHeaps" do
+      expect(DHeap.new.d).to eq(DHeap::DEFAULT_D)
+    end
   end
 
-  it "uses DEFAULT_D for new DHeaps" do
-    expect(DHeap.new.d).to eq(DHeap::DEFAULT_D)
+  describe "DHeap::MAX_D" do
+    # this will fail on architectures that don't have 32 bit int
+    it { expect(DHeap::MAX_D).to eq(0x7fffffff) }
   end
 
-  it "has a MAX_D constant" do
-    expect(DHeap::DEFAULT_D).to eq(4)
-  end
+  describe "validation" do
 
-  it "doesn't allow construction with d=1 or lower" do
-    expect{ DHeap.new(-1) }.to raise_error(ArgumentError)
-    expect{ DHeap.new(0) }.to  raise_error(ArgumentError)
-    expect{ DHeap.new(1) }.to  raise_error(ArgumentError)
-  end
+    it "isn't allow to use d < 2" do
+      expect{ DHeap.new(d: -1) }.to raise_error(ArgumentError)
+      expect{ DHeap.new(d: 0) }.to  raise_error(ArgumentError)
+      expect{ DHeap.new(d: 1) }.to  raise_error(ArgumentError)
+    end
 
-  it "does allow d=2 or DHeap::MAX_D" do
-    expect(DHeap.new(2).d).to eq(2)
-    expect(DHeap.new.d).to eq(DHeap::DEFAULT_D)
-    expect(DHeap.new(DHeap::MAX_D).d).to eq(DHeap::MAX_D)
-  end
+    it "allows d = 2" do
+      expect(DHeap.new(d: 2).d).to eq(2)
+    end
 
-  it "doesn't allow construction above d=DHeap::MAX_D" do
-    expect{ DHeap.new(DHeap::MAX_D + 1) }.to raise_error(ArgumentError)
+    it "allows d = DHeap::MAX_D" do
+      expect(DHeap.new(d: DHeap::MAX_D).d).to eq(DHeap::MAX_D)
+    end
+
+    it "doesn't allow d >= d=DHeap::MAX_D" do
+      expect{ DHeap.new(d: DHeap::MAX_D + 1) }.to raise_error(RangeError)
+    end
+
   end
 
 end

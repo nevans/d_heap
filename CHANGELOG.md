@@ -1,7 +1,10 @@
 ## Current/Unreleased
 
 * 🔥 **Breaking**: `#initialize` uses a keyword argument for `d`
-* ✨ Added `#initialize(capa))` to replace earlier version of `#push`.
+* ✨ Added `#initialize(capacity: capa)` to set initial capacity.
+* ✨ Added aliases for `shift` and `next`
+* 📈 Added benchmark charts to README, and `bin/bench_charts` to generate them.
+* 📝 Many documentation updates and fixes.
 
 ## Release v0.5.0 (2021-01-17)
 
