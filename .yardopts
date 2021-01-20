@@ -1,0 +1,11 @@
+-o doc
+--embed-mixins
+--hide-void-return
+--no-private
+--asset images:images
+--exclude lib/benchmark_driver
+--exclude lib/d_heap/benchmarks*
+-
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+LICENCE.txt

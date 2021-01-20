@@ -1,5 +1,8 @@
 ## Current/Unreleased
 
+* 🔥 **Breaking**: `#initialize` uses a keyword argument for `d`
+* ✨ Added `#initialize(capa))` to replace earlier version of `#push`.
+
 ## Release v0.5.0 (2021-01-17)
 
 * 🔥 **Breaking**: reversed order of `#push` arguments to `value, score`.
@@ -8,11 +11,11 @@
 * ✨ Added aliases for `deq`, `enq`, `first`, `pop_below`, `length`, and
     `count`, to mimic other classes in ruby's stdlib.
 * ⚡️♻️  More performance improvements:
-  * Created an `ENTRY` struct and store both the score and the value pointer in
-    the same `ENTRY *entries` array.
-  * Reduced unnecessary allocations or copies in both sift loops.  A similar
-    refactoring also sped up the pure ruby benchmark implementation.
-  * Compiling with `-O3`.
+    * Created an `ENTRY` struct and store both the score and the value pointer in
+      the same `ENTRY *entries` array.
+    * Reduced unnecessary allocations or copies in both sift loops.  A similar
+      refactoring also sped up the pure ruby benchmark implementation.
+    * Compiling with `-O3`.
 * 📝 Updated (and in some cases, fixed) yardoc
 * ♻️  Moved aliases and less performance sensitive code into ruby.
 * ♻️  DRY up push/insert methods

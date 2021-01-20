@@ -5,31 +5,48 @@ prelude: |
   include DHeap::Benchmarks
   fill_random_vals
 
-  n = ENV.fetch("BENCH_N", 1000).to_i
+  N = ENV.fetch("BENCH_N", 1000).to_i
+  N2 = N * 2
 
-  i = 0
+  i = j = 0
 
 benchmark:
   - script: &script |
-       while i < n
-         q << random_val
-         i += 1
-       end
-       while 0 < i
-         q.pop
-         i -= 1
-       end
+      if i < N
+        q.clear if __bmdv_i == 0
+        q << random_val
+        i += 1
+
+      elsif j < N
+        q.pop
+        j += 1
+
+      elsif q.empty?
+        i = 1
+        j = 0
+        q.clear
+        q << random_val
+
+      else
+        raise "q not empty!"
+      end
+
     name:    "push N + pop N (findmin)"
     prelude: "q = initq FindMin"
+    loop_count:   200000
   - script: *script
     name:    "push N + pop N (bsearch)"
     prelude: "q = initq BSearch"
+    loop_count:  4000000
   - script: *script
     name:    "push N + pop N (rb_heap)"
     prelude: "q = initq RbHeap"
+    loop_count:  4000000
   - script: *script
     name:    "push N + pop N (c++ stl)"
     prelude: "q = initq CppSTL"
+    loop_count: 16000000
   - script: *script
     name:    "push N + pop N (c_dheap)"
     prelude: "q = initq DHeap"
+    loop_count: 16000000

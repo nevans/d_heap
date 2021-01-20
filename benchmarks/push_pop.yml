@@ -13,15 +13,20 @@ benchmark:
        q.pop
     name:    "push + pop (findmin)"
     prelude: "q = FindMin.new(n) { random_val }"
+    loop_count:   250000
   - script: *script
     name:    "push + pop (bsearch)"
     prelude: "q = BSearch.new(n) { random_val }"
+    loop_count:  5000000
   - script: *script
     name:    "push + pop (rb_heap)"
     prelude: "q = RbHeap.new(n) { random_val }"
+    loop_count:  2000000
   - script: *script
     name:    "push + pop (c++ stl)"
     prelude: "q = initq CppSTL, n"
+    loop_count: 13000000
   - script: *script
     name:    "push + pop (c_dheap)"
     prelude: "q = initq DHeap, n"
+    loop_count: 20000000

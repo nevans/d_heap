@@ -199,6 +199,10 @@ module DHeap::Benchmarks
       @q = FastContainers::PriorityQueue.new(:min)
     end
 
+    def empty?
+      @q.empty?
+    end
+
     def pop
       @q.pop
     rescue RuntimeError
