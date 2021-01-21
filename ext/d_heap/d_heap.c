@@ -3,6 +3,7 @@
 
 ID id_cmp; // <=>
 ID id_abs; // abs
+ID id_unary_minus; // -@
 
 typedef struct dheap_struct {
     int d;
@@ -28,6 +29,30 @@ typedef struct dheap_struct {
 #if LDBL_MANT_DIG < SIZEOF_UNSIGNED_LONG_LONG * 8
 #error 'unsigned long long' should fit into 'long double' mantissa
 #endif
+
+// ruby doesn't have a LDBL2NUM. :(
+// So this only accomplishes a subset of what that ought to do.
+static inline VALUE
+SCORE2NUM(SCORE s)
+{
+    if (floorl((long double) s) == s) {
+        if (s < 0) {
+            unsigned long long ull = (unsigned long long)(-s);
+            return rb_funcall(ULL2NUM(ull), id_unary_minus, 0);
+        }
+        return ULL2NUM((unsigned long long)(s));
+    }
+    return rb_float_new((double)(s));
+}
+
+static inline VALUE
+DHEAP_ENTRY_ARY(dheap_t *heap, long idx)
+{
+    if (idx < 0 || heap->size <= idx) { return Qnil; }
+    return rb_ary_new_from_args(2,
+            DHEAP_VALUE(heap, 0),
+            SCORE2NUM(DHEAP_SCORE(heap, 0)));
+}
 
 // copied and modified from ruby's object.c
 #define FIX2SCORE(x) (long double)FIX2LONG(x)
@@ -290,12 +315,6 @@ dheap_value_to_long_capa(VALUE num)
     return capa;
 }
 
-/*
- * Initialize a _d_-ary min-heap.
- *
- *   @param d    [Integer] maximum number of children per parent
- *   @param capa [Integer] initial capacity of the heap.
- */
 static VALUE
 dheap_initialize(VALUE self, VALUE d, VALUE capa) {
     dheap_t *heap = get_dheap_struct(self);
@@ -521,15 +540,21 @@ dheap_left_shift(VALUE self, VALUE value) {
 
 static const ENTRY EmptyDheapEntry;
 
-static inline VALUE
-dheap_pop0(dheap_t *heap)
+static inline void
+dheap_del0(dheap_t *heap)
 {
-    VALUE popped = DHEAP_VALUE(heap, 0);
     if (0 < --heap->size) {
         heap->entries[0] = heap->entries[heap->size];
         heap->entries[heap->size] = EmptyDheapEntry; // unnecessary to zero?
         dheap_sift_down(heap, 0, heap->size - 1);
     }
+}
+
+static inline VALUE
+dheap_pop0(dheap_t *heap)
+{
+    VALUE popped = DHEAP_VALUE(heap, 0);
+    dheap_del0(heap);
     return popped;
 }
 
@@ -549,10 +574,46 @@ dheap_clear(VALUE self) {
 }
 
 /*
+ * Returns the next value on the heap, and its score, without popping it
+ *
+ * Time complexity: <b>O(1)</b> <i>(worst-case)</i>
+ * @return [nil,Array<(Object, Numeric)>] the next value and its score
+ *
+ * @see #peek
+ * @see #peek_score
+ */
+static VALUE
+dheap_peek_with_score(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    return DHEAP_ENTRY_ARY(heap, 0);
+}
+
+/*
+ * Returns the next score on the heap, without the value and without popping it.
+ *
+ * Time complexity: <b>O(1)</b> <i>(worst-case)</i>
+ * @return [nil, Numeric] the next score, if there is one
+ *
+ * @see #peek
+ * @see #peek_with_score
+ */
+static VALUE
+dheap_peek_score(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    if (DHEAP_IDX_LAST(heap) < 0) return Qnil;
+    return SCORE2NUM(DHEAP_SCORE(heap, 0));
+}
+
+/*
  * Returns the next value on the heap to be popped without popping it.
  *
  * Time complexity: <b>O(1)</b> <i>(worst-case)</i>
- * @return [Object] the next value to be popped without popping it.
+ * @return [nil, Object] the next value to be popped without popping it.
+ *
+ * @see #peek_score
+ * @see #peek_with_score
  */
 static VALUE
 dheap_peek(VALUE self)
@@ -572,6 +633,7 @@ dheap_peek(VALUE self)
  * @see #peek
  * @see #pop_lt
  * @see #pop_lte
+ * @see #pop_with_score
  */
 static VALUE
 dheap_pop(VALUE self)
@@ -580,6 +642,26 @@ dheap_pop(VALUE self)
     rb_check_frozen(self);
     if (DHEAP_SIZE(heap) <= 0) return Qnil;
     return dheap_pop0(heap);
+}
+
+/*
+ * Pops the minimum value from the top of the heap, along with its score.
+ *
+ * Time complexity: <b>O(d log n / log d)</b> <i>(worst-case)</i>
+ *
+ * @return [nil,Array<(Object, Numeric)>] the next value and its score
+ *
+ * @see #pop
+ * @see #peek_with_score
+ */
+static VALUE
+dheap_pop_with_score(VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    VALUE ary = DHEAP_ENTRY_ARY(heap, 0);
+    rb_check_frozen(self);
+    if (ary != Qnil) { dheap_pop0(heap); }
+    return ary;
 }
 
 /*
@@ -633,6 +715,7 @@ Init_d_heap(void)
 {
     id_cmp = rb_intern_const("<=>");
     id_abs = rb_intern_const("abs");
+    id_unary_minus = rb_intern_const("-@");
 
     rb_cDHeap = rb_define_class("DHeap", rb_cObject);
     rb_define_alloc_func(rb_cDHeap, dheap_s_alloc);
@@ -672,4 +755,9 @@ Init_d_heap(void)
     rb_define_method(rb_cDHeap, "pop",     dheap_pop, 0);
     rb_define_method(rb_cDHeap, "pop_lt",  dheap_pop_lt, 1);
     rb_define_method(rb_cDHeap, "pop_lte", dheap_pop_lte, 1);
+
+    rb_define_method(rb_cDHeap, "peek_score",      dheap_peek_score, 0);
+    rb_define_method(rb_cDHeap, "peek_with_score", dheap_peek_with_score, 0);
+    rb_define_method(rb_cDHeap, "pop_with_score",  dheap_pop_with_score, 0);
+
 }

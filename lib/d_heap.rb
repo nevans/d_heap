@@ -75,6 +75,12 @@ class DHeap
   alias length    size
   alias count     size
 
+  # Initialize a _d_-ary min-heap.
+  #
+  # @param d [Integer] Number of children for each parent node.
+  #          Higher values generally speed up push but slow down pop.
+  #          If all pushes are popped, the default is probably best.
+  # @param capacity [Integer] initial capacity of the heap.
   def initialize(d: DEFAULT_D, capacity: DEFAULT_CAPA) # rubocop:disable Naming/MethodParameterName
     __init_without_kw__(d, capacity)
   end
@@ -84,13 +90,20 @@ class DHeap
   # If you want to iterate over the heap without consuming it, you will need to
   # first call +#dup+
   #
+  # @param with_score [Boolean] if scores shoul also be yielded
+  #
   # @yieldparam value [Object] each value that would be popped
+  # @yieldparam score [Numeric] each value's score, if +with_scores+ is true
   #
   # @return [Enumerator] if no block is given
   # @return [nil] if a block is given
-  def each_pop
-    return to_enum(__method__) unless block_given?
-    yield pop until empty?
+  def each_pop(with_scores: false)
+    return to_enum(__method__, with_scores: with_scores) unless block_given?
+    if with_scores
+      yield(*pop_with_score) until empty?
+    else
+      yield pop until empty?
+    end
     nil
   end
 

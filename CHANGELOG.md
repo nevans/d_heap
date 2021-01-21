@@ -2,6 +2,8 @@
 
 * 🔥 **Breaking**: `#initialize` uses a keyword argument for `d`
 * ✨ Added `#initialize(capacity: capa)` to set initial capacity.
+* ✨ Added `peek_with_score` and `peek_score`
+* ✨ Added `pop_with_score` and `each_pop(with_score: true)`
 * ✨ Added aliases for `shift` and `next`
 * 📈 Added benchmark charts to README, and `bin/bench_charts` to generate them.
 * 📝 Many documentation updates and fixes.

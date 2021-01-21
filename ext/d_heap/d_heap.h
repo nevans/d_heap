@@ -7,11 +7,13 @@
 
 #define DHEAP_MAX_D INT_MAX
 
+// TODO: convert SCORE to a union, using a flag in ENTRY to determine its type
 typedef long double SCORE;
 
 typedef struct dheap_entry {
     SCORE score;
     VALUE value;
+    // TODO: score type, eg. long double, uint128_t, etc
 } ENTRY;
 
 // sizeof(ENTRY) => 32 bytes

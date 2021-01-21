@@ -23,5 +23,18 @@ RSpec.describe DHeap do
       expect(heap.size).to eq(3)
     end
 
+    it "can also sends the scores" do
+      a = []
+      b = []
+      heap.clear
+      heap.push(obj1 = Object.new, 1);
+      heap.push(obj2 = Object.new, 2);
+      heap.push(obj3 = Object.new, 3);
+      heap.each_pop(with_scores: true) do |val, score| a << val; b << score end
+      expect(a).to eq([obj1, obj2, obj3])
+      expect(b).to eq([1, 2, 3])
+      expect(heap).to be_empty
+    end
+
   end
 end
