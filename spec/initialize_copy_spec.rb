@@ -1,26 +1,14 @@
 # frozen_string_literal: true
 
 RSpec.describe DHeap do
-  # ruby 3.0+
-  init_clone_kwarg = Object.instance_method(:initialize_clone).arity == -1
 
-  shared_examples "private method defined on DHeap" do |method|
+  describe "#initialize_copy" do
     it "is a private instance method" do
-      expect(DHeap.private_instance_methods).to include(method)
+      expect(DHeap.private_instance_methods).to include(:initialize_copy)
     end
 
     it "is defined on DHeap" do
-      expect(DHeap.instance_method(method).owner).to eq(DHeap)
-    end
-  end
-
-  describe "#initialize_copy" do
-    include_examples "private method defined on DHeap", :initialize_copy
-  end
-
-  if init_clone_kwarg
-    describe "#initialize_clone" do
-      include_examples "private method defined on DHeap", :initialize_clone
+      expect(DHeap.instance_method(:initialize_copy).owner).to eq(DHeap)
     end
   end
 
@@ -71,6 +59,10 @@ RSpec.describe DHeap do
     #   in 2.x: true copies frozen state (like nil in 3.0)
     #   in 3.x: true freezes copy
     context "freeze: true" do
+
+      # ruby 3.0+
+      init_clone_kwarg = Object.instance_method(:initialize_clone).arity == -1
+
       if init_clone_kwarg
         context "with an unfrozen original heap" do
           include_examples("frozen copy",
