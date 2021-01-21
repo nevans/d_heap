@@ -10,6 +10,7 @@
 *.so
 *.o
 *.a
+compile_commands.json
 mkmf.log
 
 # rspec failure tracking

@@ -8,10 +8,9 @@ require "mkmf"
 # $CFLAGS << " -g -ginline-points "
 # $CFLAGS << " -fno-omit-frame-pointer "
 
-# CONFIG["debugflags"] << " -ggdb3 -gstatement-frontiers -ginline-points "
-CONFIG["optflags"]  << " -O3 "
-CONFIG["optflags"]  << " -fno-omit-frame-pointer "
-CONFIG["warnflags"] << " -Werror"
+if enable_config("debug")
+  CONFIG["warnflags"] << " -Werror -Wpedantic "
+end
 
 have_func "rb_gc_mark_movable" # since ruby-2.7
 

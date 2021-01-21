@@ -14,3 +14,6 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 end
+
+# simplifies spec compatibility with ruby 2.4
+FrozenError = RuntimeError unless defined?(FrozenError)

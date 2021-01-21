@@ -1,34 +1,73 @@
 #include <float.h>
-#include "d_heap.h"
+#include <math.h>
+#include "ruby.h"
 
-ID id_cmp; // <=>
-ID id_abs; // abs
-ID id_unary_minus; // -@
+/********************************************************************
+ *
+ * Type definitions
+ *
+ ********************************************************************/
 
-typedef struct dheap_struct {
+typedef struct dheap_struct dheap_t;
+typedef struct dheap_entry ENTRY;
+
+// TODO: convert SCORE to a union, and use an ENTRY flag for its type
+typedef long double SCORE;
+
+#if LDBL_MANT_DIG < SIZEOF_UNSIGNED_LONG_LONG * 8
+#error 'unsigned long long' must fit into 'long double' mantissa
+#endif
+
+// TODO: test this code on a 32 bit system (it MUST have some bugs!)
+#if SIZEOF_UNSIGNED_LONG_LONG * 8 != 64
+#error 'unsigned long long' must be 64bits
+#endif
+
+/********************************************************************
+ *
+ * Struct definitions
+ *
+ ********************************************************************/
+
+struct dheap_struct {
     int d;
     long size;
     long capa;
     ENTRY *entries;
-} dheap_t;
+};
 
-#define DHEAP_SCORE(heap, idx) ((heap)->entries[idx].score)
-#define DHEAP_VALUE(heap, idx) ((heap)->entries[idx].value)
-#define DHEAP_IDX_LAST(heap) (DHEAP_SIZE((heap)) - 1)
-#define DHEAP_IDX_PARENT(heap, idx) (((idx) - 1) / (heap)->d)
-#define DHEAP_IDX_CHILD_0(heap, idx) (((idx) * (heap)->d) + 1)
-#define DHEAP_IDX_CHILD_D(heap, idx) (((idx) * (heap)->d) + (heap)->d)
+struct dheap_entry {
+    SCORE score;
+    VALUE value;
+};
 
-#define DHEAP_SIZE(heap) ((heap)->size)
+/********************************************************************
+ *
+ * Constant definitions
+ *
+ ********************************************************************/
 
-#define CMP_LT(a, b)  ((a) <  (b))
-#define CMP_LTE(a, b) ((a) <= (b))
-#define CMP_GT(a, b)  ((a) >  (b))
-#define CMP_GTE(a, b) ((a) >= (b))
+#define DHEAP_DEFAULT_D 4
+#define DHEAP_MAX_D INT_MAX
 
-#if LDBL_MANT_DIG < SIZEOF_UNSIGNED_LONG_LONG * 8
-#error 'unsigned long long' should fit into 'long double' mantissa
-#endif
+// sizeof(ENTRY) => 32 bytes
+// one kilobyte = 32 * 32 bytes
+#define DHEAP_DEFAULT_CAPA 32
+#define DHEAP_MAX_CAPA (LONG_MAX / (int)sizeof(ENTRY))
+#define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
+
+static ID id_cmp; // <=>
+static ID id_abs; // abs
+static ID id_unary_minus; // -@
+static const ENTRY EmptyDheapEntry; // 0 value for safety overwrite after pop
+static const rb_data_type_t dheap_data_type;
+
+/********************************************************************
+ *
+ * SCORE: casting to and from VALUE
+ *    adapted from similar methods in ruby's object.c
+ *
+ ********************************************************************/
 
 // ruby doesn't have a LDBL2NUM. :(
 // So this only accomplishes a subset of what that ought to do.
@@ -38,24 +77,19 @@ SCORE2NUM(SCORE s)
     if (floorl((long double) s) == s) {
         if (s < 0) {
             unsigned long long ull = (unsigned long long)(-s);
-            return rb_funcall(ULL2NUM(ull), id_unary_minus, 0);
+            return rb_funcall(ULL2NUM(ull), id_unary_minus, 0, Qundef);
         }
         return ULL2NUM((unsigned long long)(s));
     }
     return rb_float_new((double)(s));
 }
 
-static inline VALUE
-DHEAP_ENTRY_ARY(dheap_t *heap, long idx)
+static inline SCORE
+FIX2SCORE(VALUE x)
 {
-    if (idx < 0 || heap->size <= idx) { return Qnil; }
-    return rb_ary_new_from_args(2,
-            DHEAP_VALUE(heap, 0),
-            SCORE2NUM(DHEAP_SCORE(heap, 0)));
+    return (long double)FIX2LONG(x);
 }
 
-// copied and modified from ruby's object.c
-#define FIX2SCORE(x) (long double)FIX2LONG(x)
 // We could translate a much wider range of values to long double by
 // implementing a new `rb_big2ldbl(x)` function. But requires reaching into
 // T_BIGNUM internals.
@@ -68,18 +102,27 @@ BIG2SCORE(VALUE x)
     } else {
         unsigned long long ull;
         long double ldbl;
-        x = rb_funcall(x, id_abs, 0);
+        x = rb_funcall(x, id_abs, 0, Qundef);
         ull  = rb_big2ull(x);
         ldbl = (long double) ull;
         return -ldbl;
     }
 }
-#define INT2SCORE(x) \
-    (FIXNUM_P(x) ? FIX2SCORE(x) : BIG2SCORE(x))
-#define NUM2SCORE(x)                                                     \
-    (FIXNUM_P(x) ? FIX2SCORE(x) :                                        \
-     RB_TYPE_P(x, T_BIGNUM) ? BIG2SCORE(x) :                             \
-     (Check_Type(x, T_FLOAT), (long double)RFLOAT_VALUE(x)))
+
+static inline SCORE
+INT2SCORE(VALUE x)
+{
+    return (FIXNUM_P(x) ? FIX2SCORE(x) : BIG2SCORE(x));
+}
+
+static inline SCORE
+NUM2SCORE(VALUE x)
+{
+    return (FIXNUM_P(x) ? FIX2SCORE(x) :
+            RB_TYPE_P(x, T_BIGNUM) ? BIG2SCORE(x) :
+            (Check_Type(x, T_FLOAT), (long double)RFLOAT_VALUE(x)));
+}
+
 static inline long double
 RAT2SCORE(VALUE x)
 {
@@ -98,14 +141,13 @@ RAT2SCORE(VALUE x)
  * * reduced to long double (should be 80 or 128 bit) if it is Rational
  * * reduced to double precision if the value is convertable by Float(x)
  */
-static inline long double
+static inline SCORE
 VAL2SCORE(VALUE score)
 {
     // assert that long double can hold 'unsigned long long':
     // static_assert(sizeof(unsigned long long) * 8 <= LDBL_MANT_DIG);
     // assert that long double can hold T_FLOAT
     // static_assert(sizeof(double) <= sizeof(long double));
-
     switch (TYPE(score)) {
         case T_FIXNUM:
             return FIX2SCORE(score);
@@ -118,50 +160,37 @@ VAL2SCORE(VALUE score)
     }
 }
 
-#ifdef ORIG_SCORE_CMP_CODE
-
-#define VAL2SCORE(score) (score)
-
-#define CMP_LT(a, b)  (optimized_cmp(a, b) <  0)
-#define CMP_LTE(a, b) (optimized_cmp(a, b) <= 0)
-#define CMP_GT(a, b)  (optimized_cmp(a, b) >  0)
-#define CMP_GTE(a, b) (optimized_cmp(a, b) >= 0)
-
-// from internal/compar.h
-#define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
-/*
- * short-circuit evaluation for a few basic types.
+/********************************************************************
  *
- * Only Integer, Float, and String are optimized,
- * and only when both arguments are the same type.
- */
-static inline int
-optimized_cmp(SCORE a, SCORE b) {
-    if (a == b) // Fixnum equality and object equality
-        return 0;
-    if (FIXNUM_P(a) && FIXNUM_P(b))
-        return (FIX2LONG(a) < FIX2LONG(b)) ? -1 : 1;
-    if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b))
-    {
-        double x, y;
-        x = RFLOAT_VALUE(a);
-        y = RFLOAT_VALUE(b);
-        if (isnan(x) || isnan(y)) rb_cmperr(a, b); // raise ArgumentError
-        return (x < y) ? -1 : ((x == y) ? 0 : 1);
-    }
-    if (RB_TYPE_P(a, T_BIGNUM) && RB_TYPE_P(b, T_BIGNUM))
-        return FIX2INT(rb_big_cmp(a, b));
-    if (STRING_P(a) && STRING_P(b))
-        return rb_str_cmp(a, b);
+ * DHeap ENTRY accessors
+ *
+ ********************************************************************/
 
-    // give up on an optimized version and just call (a <=> b)
-    return rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b);
+#define DHEAP_SCORE(heap, idx) ((heap)->entries[idx].score)
+#define DHEAP_VALUE(heap, idx) ((heap)->entries[idx].value)
+
+static inline VALUE
+DHEAP_ENTRY_ARY(dheap_t *heap, long idx)
+{
+    if (idx < 0 || heap->size <= idx) { return Qnil; }
+    return rb_ary_new_from_args(2,
+            DHEAP_VALUE(heap, 0),
+            SCORE2NUM(DHEAP_SCORE(heap, 0)));
 }
 
-#endif
+/********************************************************************
+ *
+ * DHeap index math
+ *
+ ********************************************************************/
+
+#define DHEAP_IDX_LAST(heap) ((heap)->size - 1)
+#define DHEAP_IDX_PARENT(heap, idx) (((idx) - 1) / (heap)->d)
+#define DHEAP_IDX_CHILD_0(heap, idx) (((idx) * (heap)->d) + 1)
+#define DHEAP_IDX_CHILD_D(heap, idx) (((idx) * (heap)->d) + (heap)->d)
 
 #ifdef __D_HEAP_DEBUG
-#define ASSERT_DHEAP_INDEX(heap, index) do {                           \
+#define ASSERT_DHEAP_IDX_OK(heap, index) do {                          \
     if (index < 0) {                                                  \
         rb_raise(rb_eIndexError, "DHeap index %ld too small", index); \
     }                                                                 \
@@ -170,18 +199,28 @@ optimized_cmp(SCORE a, SCORE b) {
     }                                                                 \
 } while (0)
 #else
-#define ASSERT_DHEAP_INDEX(heap, index)
+#define ASSERT_DHEAP_IDX_OK(heap, index)
 #endif
 
+/********************************************************************
+ *
+ * rb_data_type_t definitions
+ *
+ ********************************************************************/
+
+#ifdef HAVE_RB_GC_MARK_MOVABLE
 static void
 dheap_compact(void *ptr)
 {
     dheap_t *heap = ptr;
     for (long i = 0; i < heap->size; ++i) {
         if (DHEAP_VALUE(heap, i))
-            dheap_gc_location(DHEAP_VALUE(heap, i));
+            rb_gc_location(DHEAP_VALUE(heap, i));
     }
 }
+#else
+#define rb_gc_mark_movable(x) rb_gc_mark(x)
+#endif
 
 static void
 dheap_mark(void *ptr)
@@ -216,17 +255,76 @@ dheap_memsize(const void *ptr)
     return size;
 }
 
+
 static const rb_data_type_t dheap_data_type = {
     "DHeap",
     {
         (void (*)(void*))dheap_mark,
         (void (*)(void*))dheap_free,
         (size_t (*)(const void *))dheap_memsize,
-        dheap_compact_callback(dheap_compact),
+#ifdef HAVE_RB_GC_MARK_MOVABLE
+        (void (*)(void*))dheap_compact, {0}
+#else
+        {0}
+#endif
     },
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
+
+/********************************************************************
+ *
+ * DHeap comparisons
+ * TODO: bring back comparisons for score types other than `long double`.
+ *
+ ********************************************************************/
+
+#define CMP_LT(a, b)  ((a) <  (b))
+#define CMP_LTE(a, b) ((a) <= (b))
+
+/* #ifdef ORIG_SCORE_CMP_CODE */
+
+/* #define CMP_LT(a, b)  (optimized_cmp(a, b) <  0) */
+/* #define CMP_LTE(a, b) (optimized_cmp(a, b) <= 0) */
+
+/* // from internal/compar.h */
+/* #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString) */
+/*
+ * short-circuit evaluation for a few basic types.
+ *
+ * Only Integer, Float, and String are optimized,
+ * and only when both arguments are the same type.
+ */
+/* static inline int */
+/* optimized_cmp(SCORE a, SCORE b) { */
+/*     if (a == b) // Fixnum equality and object equality */
+/*         return 0; */
+/*     if (FIXNUM_P(a) && FIXNUM_P(b)) */
+/*         return (FIX2LONG(a) < FIX2LONG(b)) ? -1 : 1; */
+/*     if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b)) */
+/*     { */
+/*         double x, y; */
+/*         x = RFLOAT_VALUE(a); */
+/*         y = RFLOAT_VALUE(b); */
+/*         if (isnan(x) || isnan(y)) rb_cmperr(a, b); // raise ArgumentError */
+/*         return (x < y) ? -1 : ((x == y) ? 0 : 1); */
+/*     } */
+/*     if (RB_TYPE_P(a, T_BIGNUM) && RB_TYPE_P(b, T_BIGNUM)) */
+/*         return FIX2INT(rb_big_cmp(a, b)); */
+/*     if (STRING_P(a) && STRING_P(b)) */
+/*         return rb_str_cmp(a, b); */
+
+/*     // give up on an optimized version and just call (a <=> b) */
+/*     return rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b); */
+/* } */
+
+/* #endif */
+
+/********************************************************************
+ *
+ * DHeap allocation and initialization and resizing
+ *
+ ********************************************************************/
 
 static VALUE
 dheap_s_alloc(VALUE klass)
@@ -234,7 +332,11 @@ dheap_s_alloc(VALUE klass)
     VALUE obj;
     dheap_t *heap;
 
+// TypedData_Make_Struct uses a non-std "statement expression"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     obj = TypedData_Make_Struct(klass, dheap_t, &dheap_data_type, heap);
+#pragma GCC diagnostic pop
     heap->d = DHEAP_DEFAULT_D;
 
     heap->size = 0;
@@ -348,11 +450,17 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
     return copy;
 }
 
+/********************************************************************
+ *
+ * DHeap sift up/down
+ *
+ ********************************************************************/
+
 VALUE
 dheap_sift_up(dheap_t *heap, long index) {
     ENTRY entry = heap->entries[index];
 
-    ASSERT_DHEAP_INDEX(heap, index);
+    ASSERT_DHEAP_IDX_OK(heap, index);
 
     // sift it up to where it belongs
     for (long parent_index; 0 < index; index = parent_index) {
@@ -399,7 +507,7 @@ dheap_sift_down(dheap_t *heap, long index, long last_index) {
 
         long last_parent = DHEAP_IDX_PARENT(heap, last_index);
 
-        ASSERT_DHEAP_INDEX(heap, index);
+        ASSERT_DHEAP_IDX_OK(heap, index);
 
         // iteratively sift it down to where it belongs
         while (index <= last_parent) {
@@ -418,6 +526,12 @@ dheap_sift_down(dheap_t *heap, long index, long last_index) {
     }
 }
 
+/********************************************************************
+ *
+ * DHeap attributes
+ *
+ ********************************************************************/
+
 /*
  * @return [Integer] the number of elements in the heap
  */
@@ -425,8 +539,7 @@ static VALUE
 dheap_size(VALUE self)
 {
     dheap_t *heap = get_dheap_struct(self);
-    long size = DHEAP_SIZE(heap);
-    return LONG2NUM(size);
+    return LONG2NUM(heap->size);
 }
 
 /*
@@ -436,8 +549,7 @@ static VALUE
 dheap_empty_p(VALUE self)
 {
     dheap_t *heap = get_dheap_struct(self);
-    long size = DHEAP_SIZE(heap);
-    return size == 0 ? Qtrue : Qfalse;
+    return heap->size ? Qfalse : Qtrue;
 }
 
 /*
@@ -449,6 +561,12 @@ dheap_attr_d(VALUE self)
     dheap_t *heap = get_dheap_struct(self);
     return INT2FIX(heap->d);
 }
+
+/********************************************************************
+ *
+ * DHeap push
+ *
+ ********************************************************************/
 
 static inline void
 dheap_push_entry(dheap_t *heap, ENTRY *entry) {
@@ -538,7 +656,11 @@ dheap_left_shift(VALUE self, VALUE value) {
     return self;
 }
 
-static const ENTRY EmptyDheapEntry;
+/********************************************************************
+ *
+ * DHeap pop and peek
+ *
+ ********************************************************************/
 
 static inline void
 dheap_del0(dheap_t *heap)
@@ -556,21 +678,6 @@ dheap_pop0(dheap_t *heap)
     VALUE popped = DHEAP_VALUE(heap, 0);
     dheap_del0(heap);
     return popped;
-}
-
-/*
- * Clears all values from the heap, leaving it empty.
- *
- * @return [self]
- */
-static VALUE
-dheap_clear(VALUE self) {
-    dheap_t *heap = get_dheap_struct(self);
-    rb_check_frozen(self);
-    if (0 < DHEAP_SIZE(heap)) {
-        heap->size = 0;
-    }
-    return self;
 }
 
 /*
@@ -619,8 +726,7 @@ static VALUE
 dheap_peek(VALUE self)
 {
     dheap_t *heap = get_dheap_struct(self);
-    if (DHEAP_IDX_LAST(heap) < 0) return Qnil;
-    return DHEAP_VALUE(heap, 0);
+    return heap->size ? DHEAP_VALUE(heap, 0) : Qnil;
 }
 
 /*
@@ -640,8 +746,7 @@ dheap_pop(VALUE self)
 {
     dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
-    if (DHEAP_SIZE(heap) <= 0) return Qnil;
-    return dheap_pop0(heap);
+    return heap->size ? dheap_pop0(heap) : Qnil;
 }
 
 /*
@@ -682,7 +787,7 @@ dheap_pop_lte(VALUE self, VALUE max_score)
 {
     dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
-    if (DHEAP_SIZE(heap) <= 0) return Qnil;
+    if (heap->size <= 0) return Qnil;
     if (!CMP_LTE(DHEAP_SCORE(heap, 0), VAL2SCORE(max_score))) return Qnil;
     return dheap_pop0(heap);
 }
@@ -705,19 +810,47 @@ dheap_pop_lt(VALUE self, VALUE max_score)
 {
     dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
-    if (DHEAP_SIZE(heap) <= 0) return Qnil;
+    if (heap->size <= 0) return Qnil;
     if (!CMP_LT(DHEAP_SCORE(heap, 0), VAL2SCORE(max_score))) return Qnil;
     return dheap_pop0(heap);
 }
 
+/********************************************************************
+ *
+ * DHeap, misc methods
+ *
+ ********************************************************************/
+
+/*
+ * Clears all values from the heap, leaving it empty.
+ *
+ * @return [self]
+ */
+static VALUE
+dheap_clear(VALUE self) {
+    dheap_t *heap = get_dheap_struct(self);
+    rb_check_frozen(self);
+    if (0 < heap->size) {
+        heap->size = 0;
+    }
+    return self;
+}
+
+/********************************************************************
+ *
+ * DHeap setup
+ *
+ ********************************************************************/
+
 void
 Init_d_heap(void)
 {
+    VALUE rb_cDHeap = rb_define_class("DHeap", rb_cObject);
+
     id_cmp = rb_intern_const("<=>");
     id_abs = rb_intern_const("abs");
     id_unary_minus = rb_intern_const("-@");
 
-    rb_cDHeap = rb_define_class("DHeap", rb_cObject);
     rb_define_alloc_func(rb_cDHeap, dheap_s_alloc);
 
     /*

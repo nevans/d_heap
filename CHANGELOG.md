@@ -6,6 +6,7 @@
 * ✨ Added `pop_with_score` and `each_pop(with_score: true)`
 * ✨ Added aliases for `shift` and `next`
 * 📈 Added benchmark charts to README, and `bin/bench_charts` to generate them.
+    * requires `gruff` which requires `rmagick` which requires `imagemagick`
 * 📝 Many documentation updates and fixes.
 
 ## Release v0.5.0 (2021-01-17)
@@ -27,8 +28,9 @@
 
 ## Release v0.4.0 (2021-01-12)
 
+* 🔥 **Breaking**: Scores must be `Integer` or convertable to `Float`
+    * ⚠️  `Integer` scores must fit in `-ULONG_LONG_MAX` to `+ULONG_LONG_MAX`.
 * ⚡️ Big performance improvements, by using C `long double *cscores` array
-* ⚡️ Scores must be `Integer` in `-uint64..+uint64`, or convertable to `Float`
 * ⚡️ many many (so many) updates to benchmarks
 * ✨ Added `DHeap#clear`
 * 🐛 Fixed `DHeap#initialize_copy` and `#freeze`

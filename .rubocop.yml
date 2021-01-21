@@ -3,7 +3,7 @@ inherit_mode:
     - Exclude
 
 AllCops:
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 2.4
   NewCops: disable
   Exclude:
     - bin/benchmark-driver
