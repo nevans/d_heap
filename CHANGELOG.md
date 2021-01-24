@@ -1,5 +1,7 @@
 ## Current/Unreleased
 
+## Release v0.6.0 (2021-01-24)
+
 * 🔥 **Breaking**: `#initialize` uses a keyword argument for `d`
 * ✨ Added `#initialize(capacity: capa)` to set initial capacity.
 * ✨ Added `peek_with_score` and `peek_score`
