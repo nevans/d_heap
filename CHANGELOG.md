@@ -1,5 +1,9 @@
 ## Current/Unreleased
 
+## Release v0.6.1 (2021-01-24)
+
+* 📝 Fix link to CHANGELOG.md in gemspec
+
 ## Release v0.6.0 (2021-01-24)
 
 * 🔥 **Breaking**: `#initialize` uses a keyword argument for `d`
