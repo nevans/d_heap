@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe DHeap do
-  describe "#each_pop" do
+  describe_any_size_heap "#each_pop" do
 
-    subject(:heap) { DHeap.new << 3 << 2 << 1 }
+    before(:each) do
+      heap << 3 << 2 << 1
+    end
 
     it "iterates through the heap in order" do
       a = []

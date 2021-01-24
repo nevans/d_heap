@@ -4,8 +4,7 @@ require "ostruct"
 
 RSpec.describe DHeap do
 
-  describe "#pop_with_score" do
-    subject(:heap) { DHeap.new }
+  describe_any_size_heap "#pop_with_score" do
 
     it "returns an array with both item and score" do
       t1 = OpenStruct.new(id: 1, to_f: (Time.now + 5 * 60).to_f)

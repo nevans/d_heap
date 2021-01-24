@@ -5,10 +5,6 @@ RSpec.describe DHeap do
     expect(DHeap::VERSION).not_to be nil
   end
 
-  it "defaults to d=4" do
-    expect(DHeap.new.d).to eq(4)
-  end
-
   shared_examples "it pops all elements in order" do |max, order|
     before do
       (0..max).to_a.__send__(order).each do |i| heap << i end
@@ -23,190 +19,112 @@ RSpec.describe DHeap do
     end
   end
 
-  shared_examples "any-size heap" do |dval|
-    let(:d) { dval }
-    subject(:heap) { DHeap.new(d: d) }
+  describe_any_size_heap "pushing" do
 
-    context "initialization" do
-      it { is_expected.to be_empty }
-      it "pops nil" do
-        expect(heap.pop).to be_nil
-      end
-      it "peeks nil" do
-        expect(heap.peek).to be_nil
-      end
-      it "has size of 0" do
-        expect(heap.size).to eq(0)
-      end
-      it "has d=#{dval}" do
-        expect(heap.d).to eq(d)
-      end
+    it "retains min peek for one element" do
+      t = Time.now
+      heap.push(t)
+      expect(heap).to_not be_empty
+      expect(heap.peek).to eq(t)
+      expect(heap.size).to eq(1)
     end
 
-    context "pushing" do
-
-      it "retains min peek for one element" do
-        t = Time.now
-        heap.push(t)
-        expect(heap).to_not be_empty
-        expect(heap.peek).to eq(t)
-        expect(heap.size).to eq(1)
-      end
-
-      it "retains min peek for two elements in-order" do
-        t0 = Time.now
-        t1 = Time.now + 0.001
-        heap.push(t0)
-        heap.push(t1)
-        expect(heap.peek).to eq(t0)
-        expect(heap.size).to eq(2)
-      end
-
-      it "retains min peek for two elements reversed" do
-        t0 = Time.now
-        t1 = Time.now + 0.001
-        heap.push(t1)
-        heap.push(t0)
-        expect(heap.peek).to eq(t0)
-        expect(heap.size).to eq(2)
-      end
-
-      it "retains min peek for three elements in-order" do
-        t0 = Time.now
-        t1 = Time.now + 0.001
-        t2 = Time.now + 0.002
-        heap.push(t0)
-        heap.push(t1)
-        heap.push(t2)
-        expect(heap.peek).to eq(t0)
-        expect(heap.size).to eq(3)
-      end
-
-      it "retains min peek for three elements reversed" do
-        t0 = Time.now
-        t1 = Time.now + 0.001
-        t2 = Time.now + 0.002
-        heap.push(t2)
-        heap.push(t1)
-        heap.push(t0)
-        expect(heap.peek).to eq(t0)
-        expect(heap.size).to eq(3)
-      end
-
-      # rubocop:disable Layout/IndentationWidth
-      unless /darwin/ =~ RUBY_PLATFORM
-      it "retains min peek for many elements in random order" do
-        1000.times do heap.push(rand(1..9999)) end
-        heap.push(-1)
-        1000.times do heap.push(rand(1..9999)) end
-        expect(heap.size).to eq(2001)
-        expect(heap.peek).to eq(-1)
-      end
-      end
-      # rubocop:enable Layout/IndentationWidth
-
-      it "can insert a value with a score" do
-        heap.insert(0.0, obj0 = Object.new)
-        heap.insert(0.1, Object.new)
-        heap.insert(0.2, Object.new)
-        expect(heap.peek).to eq(obj0)
-      end
-
-      it "can push a score with a related value" do
-        heap.push(obj0 = Object.new, 0.0)
-        heap.push(Object.new, 0.1)
-        heap.push(Object.new, 0.2)
-        expect(heap.peek).to eq(obj0)
-      end
-
-      it "can enq a score with a related value" do
-        heap.enq(obj0 = Object.new, 0.0)
-        heap.enq(Object.new, 0.1)
-        heap.enq(Object.new, 0.2)
-        expect(heap.peek).to eq(obj0)
-      end
-
-      it "can push any value that returns a float from #to_f" do
-        klass = Struct.new(:to_f)
-        heap << 1
-        heap << (obj = klass.new(-99.999))
-        heap << (t = Time.now)
-        heap << "1.2"
-        expect { heap << klass.new("not a float") }.to raise_error(TypeError)
-        expect { heap << "not a float" }.to raise_error(ArgumentError)
-        expect(heap.pop).to equal(obj)
-        expect(heap.pop).to equal(1)
-        expect(heap.pop).to equal("1.2")
-        expect(heap.pop).to equal(t)
-      end
-
+    it "retains min peek for two elements in-order" do
+      t0 = Time.now
+      t1 = Time.now + 0.001
+      heap.push(t0)
+      heap.push(t1)
+      expect(heap.peek).to eq(t0)
+      expect(heap.size).to eq(2)
     end
 
-    describe "#pop" do
-      context "with elements inserted in order" do
-        include_examples "it pops all elements in order", 10, :sort
-      end
-
-      context "with elements inserted in reverse" do
-        include_examples "it pops all elements in order", 100, :reverse
-      end
-
-      # rubocop:disable Layout/IndentationWidth
-      unless /darwin/ =~ RUBY_PLATFORM
-      context "with many elements inserted randomly" do
-        include_examples "it pops all elements in order", 9999, :shuffle
-      end
-      end
-      # rubocop:enable Layout/IndentationWidth
+    it "retains min peek for two elements reversed" do
+      t0 = Time.now
+      t1 = Time.now + 0.001
+      heap.push(t1)
+      heap.push(t0)
+      expect(heap.peek).to eq(t0)
+      expect(heap.size).to eq(2)
     end
 
-    describe "#pop_lte(n)" do
-      it "pops only the elements that are compare as <= n" do
-        (0..20).to_a.shuffle.each do |i| heap.insert i, {i: i} end
-        expect(heap.pop_lte(-1)).to eq(nil)
-        expect(heap.pop_lte(4)).to eq({i: 0})
-        expect(heap.pop_lte(4)).to eq({i: 1})
-        expect(heap.pop_lte(4)).to eq({i: 2})
-        expect(heap.pop_lte(4)).to eq({i: 3})
-        expect(heap.pop_lte(4)).to eq({i: 4})
-        expect(heap.pop_lte(4)).to eq(nil)
-      end
+    it "retains min peek for three elements in-order" do
+      t0 = Time.now
+      t1 = Time.now + 0.001
+      t2 = Time.now + 0.002
+      heap.push(t0)
+      heap.push(t1)
+      heap.push(t2)
+      expect(heap.peek).to eq(t0)
+      expect(heap.size).to eq(3)
     end
 
-    describe "#pop_lt(n)" do
-      it "pops only the elements that are compare as < n" do
-        (0..20).to_a.shuffle.each do |i| heap.insert i, {i: i} end
-        expect(heap.pop_lt(-1)).to eq(nil)
-        expect(heap.pop_lt(5)).to eq({i: 0})
-        expect(heap.pop_lt(5)).to eq({i: 1})
-        expect(heap.pop_lt(5)).to eq({i: 2})
-        expect(heap.pop_lt(5)).to eq({i: 3})
-        expect(heap.pop_lt(5)).to eq({i: 4})
-        expect(heap.pop_lt(5)).to eq(nil)
-      end
+    it "retains min peek for three elements reversed" do
+      t0 = Time.now
+      t1 = Time.now + 0.001
+      t2 = Time.now + 0.002
+      heap.push(t2)
+      heap.push(t1)
+      heap.push(t0)
+      expect(heap.peek).to eq(t0)
+      expect(heap.size).to eq(3)
     end
 
-    describe "#clear" do
-      it "returns self" do
-        expect(heap.clear).to eq(heap)
-      end
+    it "retains min peek for many elements in random order" do
+      1000.times do heap.push(rand(1..9999)) end
+      heap.push(-1)
+      1000.times do heap.push(rand(1..9999)) end
+      expect(heap.size).to eq(2001)
+      expect(heap.peek).to eq(-1)
+    end
 
-      it "resets size to zero" do
-        heap.clear
-        expect(heap.size).to eq(0)
-      end
+    it "can insert a value with a score" do
+      heap.insert(0.0, obj0 = Object.new)
+      heap.insert(0.1, Object.new)
+      heap.insert(0.2, Object.new)
+      expect(heap.peek).to eq(obj0)
+    end
 
-      it "clears the heap so peek returns nil" do
-        heap.clear
-        expect(heap.peek).to be_nil
-      end
+    it "can push a score with a related value" do
+      heap.push(obj0 = Object.new, 0.0)
+      heap.push(Object.new, 0.1)
+      heap.push(Object.new, 0.2)
+      expect(heap.peek).to eq(obj0)
+    end
+
+    it "can enq a score with a related value" do
+      heap.enq(obj0 = Object.new, 0.0)
+      heap.enq(Object.new, 0.1)
+      heap.enq(Object.new, 0.2)
+      expect(heap.peek).to eq(obj0)
+    end
+
+    it "can push any value that returns a float from #to_f" do
+      klass = Struct.new(:to_f)
+      heap << 1
+      heap << (obj = klass.new(-99.999))
+      heap << (t = Time.now)
+      heap << "1.2"
+      expect { heap << klass.new("not a float") }.to raise_error(TypeError)
+      expect { heap << "not a float" }.to raise_error(ArgumentError)
+      expect(heap.pop).to equal(obj)
+      expect(heap.pop).to equal(1)
+      expect(heap.pop).to equal("1.2")
+      expect(heap.pop).to equal(t)
     end
 
   end
 
-  [2, 3, 4, 5, 6].each do |d|
-    context "heap with d=#{d}" do
-      include_examples "any-size heap", d
+  describe_any_size_heap "#pop" do
+    context "with elements inserted in order" do
+      include_examples "it pops all elements in order", 10, :sort
+    end
+
+    context "with elements inserted in reverse" do
+      include_examples "it pops all elements in order", 100, :reverse
+    end
+
+    context "with many elements inserted randomly" do
+      include_examples "it pops all elements in order", 9999, :shuffle
     end
   end
 

@@ -17,3 +17,29 @@ end
 
 # simplifies spec compatibility with ruby 2.4
 FrozenError = RuntimeError unless defined?(FrozenError)
+
+module SpecHelper
+
+  def describe_any_size_heap(name, &block) # rubocop:disable Metrics/MethodLength
+    describe name do
+
+      shared_examples(name) do |dval|
+        let(:d) { dval }
+        subject(:heap) { DHeap.new(d: d) }
+        instance_exec(dval, &block)
+      end
+
+      [2, 3, 4, 5, 8, 16].each do |d|
+        context "heap with d=#{d}" do
+          include_examples name, d
+        end
+      end
+
+    end
+  end
+
+end
+
+RSpec.configure do |config|
+  config.extend SpecHelper
+end
