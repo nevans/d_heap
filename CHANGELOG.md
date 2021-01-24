@@ -4,6 +4,7 @@
 * ✨ Added `#initialize(capacity: capa)` to set initial capacity.
 * ✨ Added `peek_with_score` and `peek_score`
 * ✨ Added `pop_with_score` and `each_pop(with_score: true)`
+* ✨ Added `pop_all_below(max_score, array = [])`
 * ✨ Added aliases for `shift` and `next`
 * 📈 Added benchmark charts to README, and `bin/bench_charts` to generate them.
     * requires `gruff` which requires `rmagick` which requires `imagemagick`

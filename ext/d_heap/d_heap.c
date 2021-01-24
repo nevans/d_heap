@@ -58,6 +58,7 @@ struct dheap_entry {
 
 static ID id_cmp; // <=>
 static ID id_abs; // abs
+static ID id_lshift; // <<
 static ID id_unary_minus; // -@
 static const ENTRY EmptyDheapEntry; // 0 value for safety overwrite after pop
 static const rb_data_type_t dheap_data_type;
@@ -781,6 +782,7 @@ dheap_pop_with_score(VALUE self)
  * @see #peek
  * @see #pop
  * @see #pop_lt
+ * @see #pop_all_below
  */
 static VALUE
 dheap_pop_lte(VALUE self, VALUE max_score)
@@ -804,6 +806,7 @@ dheap_pop_lte(VALUE self, VALUE max_score)
  * @see #peek
  * @see #pop
  * @see #pop_lte
+ * @see #pop_all_below
  */
 static VALUE
 dheap_pop_lt(VALUE self, VALUE max_score)
@@ -813,6 +816,58 @@ dheap_pop_lt(VALUE self, VALUE max_score)
     if (heap->size <= 0) return Qnil;
     if (!CMP_LT(DHEAP_SCORE(heap, 0), VAL2SCORE(max_score))) return Qnil;
     return dheap_pop0(heap);
+}
+
+#define DHEAP_PEEK_LT_P(heap, max_score) \
+    (heap->size && CMP_LT(DHEAP_SCORE(heap, 0), max_score))
+
+static VALUE
+dheap_pop_all_below0(dheap_t *heap, SCORE max_score, VALUE array)
+{
+    if (!RTEST(array)) { array = rb_ary_new(); }
+    if (RB_TYPE_P(array, T_ARRAY)) {
+        while (DHEAP_PEEK_LT_P(heap, max_score)) {
+            rb_ary_push(array, dheap_pop0(heap));
+        }
+    } else {
+        while (DHEAP_PEEK_LT_P(heap, max_score)) {
+            rb_funcall(array, id_lshift, 1, dheap_pop0(heap));
+        }
+    }
+    return array;
+}
+
+/*
+ * @overload pop_all_below(max_score, receiver = [])
+ *
+ * Pops all value with score less than max score.
+ *
+ * Time complexity: <b>O(m * d log n / log d)</b>, <i>m = number popped</i>
+ *
+ * @param max_score [Integer,#to_f] the maximum score to be popped
+ * @param receiver  [Array,#<<] object onto which the values will be pushed,
+ *                              in order by score.
+ *
+ * @return [Object] the object onto which the values were pushed
+ *
+ * @see #pop
+ * @see #pop_lt
+ */
+static VALUE
+dheap_pop_all_below(int argc, VALUE *argv, VALUE self)
+{
+    dheap_t *heap = get_dheap_struct(self);
+    SCORE max_score;
+    VALUE array;
+    rb_check_frozen(self);
+    rb_check_arity(argc, 1, 2);
+    max_score = VAL2SCORE(argv[0]);
+    if (argc == 1) {
+        array = rb_ary_new();
+    } else {
+        array = argv[1];
+    }
+    return dheap_pop_all_below0(heap, max_score, array);
 }
 
 /********************************************************************
@@ -827,7 +882,8 @@ dheap_pop_lt(VALUE self, VALUE max_score)
  * @return [self]
  */
 static VALUE
-dheap_clear(VALUE self) {
+dheap_clear(VALUE self)
+{
     dheap_t *heap = get_dheap_struct(self);
     rb_check_frozen(self);
     if (0 < heap->size) {
@@ -849,6 +905,7 @@ Init_d_heap(void)
 
     id_cmp = rb_intern_const("<=>");
     id_abs = rb_intern_const("abs");
+    id_lshift = rb_intern_const("<<");
     id_unary_minus = rb_intern_const("-@");
 
     rb_define_alloc_func(rb_cDHeap, dheap_s_alloc);
@@ -886,8 +943,10 @@ Init_d_heap(void)
     rb_define_method(rb_cDHeap, "push",    dheap_push, -1);
     rb_define_method(rb_cDHeap, "<<",      dheap_left_shift, 1);
     rb_define_method(rb_cDHeap, "pop",     dheap_pop, 0);
-    rb_define_method(rb_cDHeap, "pop_lt",  dheap_pop_lt, 1);
-    rb_define_method(rb_cDHeap, "pop_lte", dheap_pop_lte, 1);
+
+    rb_define_method(rb_cDHeap, "pop_lt",        dheap_pop_lt, 1);
+    rb_define_method(rb_cDHeap, "pop_lte",       dheap_pop_lte, 1);
+    rb_define_method(rb_cDHeap, "pop_all_below", dheap_pop_all_below, -1);
 
     rb_define_method(rb_cDHeap, "peek_score",      dheap_peek_score, 0);
     rb_define_method(rb_cDHeap, "peek_with_score", dheap_peek_with_score, 0);

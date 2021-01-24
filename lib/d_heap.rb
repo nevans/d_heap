@@ -63,17 +63,18 @@ require "d_heap/version"
 #     heap.pop    # => nil
 #
 class DHeap
-  alias deq       pop
-  alias shift     pop
-  alias next      pop
-  alias pop_below pop_lt
+  alias deq        pop
+  alias shift      pop
+  alias next       pop
+  alias pop_all_lt pop_all_below
+  alias pop_below  pop_lt
 
-  alias enq       push
+  alias enq        push
 
-  alias first     peek
+  alias first      peek
 
-  alias length    size
-  alias count     size
+  alias length     size
+  alias count      size
 
   # Initialize a _d_-ary min-heap.
   #
