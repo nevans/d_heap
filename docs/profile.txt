@@ -1,100 +1,28 @@
-Profiling run at 2021-01-10 21:34:56 -0500
-ruby v2.7.2, DHeap v0.3.0
+Profiling run at 2021-02-01 00:43:34 -0500
+ruby v2.7.2, DHeap v0.6.1
 
 ~~~~~~ filling @dheap_bm_random_vals with 1.0M ~~~~~~
 ########################################################################
-# Profile w/ N=5 (i=1000000)
+# Profile w/ N=10 (i=1000000)
 # (n.b. RubyProf & tracepoint can change relative performance.
 #       A sampling profiler can provide more accurate relative metrics.
 ########################################################################
 
-Filling    push and resort ---------------------------
-Profiling  push and resort ---------------------------
-Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 2.639873
-Sort by: self_time
-
- %self      total      self      wait     child     calls  name                           location
- 31.49      2.640     0.831     0.000     1.808        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 25.69      1.219     0.678     0.000     0.541  1000000   DHeap::Benchmarks::Sorting#<<  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:35
- 15.00      0.396     0.396     0.000     0.000  1000000   Array#sort!                    
- 12.38      0.462     0.327     0.000     0.136  1000000   DHeap::Benchmarks::Sorting#pop /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:42
-  5.50      0.145     0.145     0.000     0.000  1000000   Array#push                     
-  5.13      0.136     0.136     0.000     0.000  1000000   Array#shift                    
-  4.81      0.127     0.127     0.000     0.000  1000000   Array#fetch                    
-
-* recursively called methods
-
-Columns are:
-
-  %self     - The percentage of time spent in this method, derived from self_time/total_time.
-  total     - The time spent in this method and its children.
-  self      - The time spent in this method.
-  wait      - The amount of time this method waited for other threads.
-  child     - The time spent in this method's children.
-  calls     - The number of times this method was called.
-  name      - The name of the method.
-  location  - The location of the method.
-
-The interpretation of method names is:
-
-  * MyObject#test - An instance method "test" of the class "MyObject"
-  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
-
-Filling   bsearch + insert ---------------------------
-Profiling bsearch + insert ---------------------------
-Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 2.634233
-Sort by: self_time
-
- %self      total      self      wait     child     calls  name                           location
- 30.73      2.634     0.810     0.000     1.825        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 25.94      1.228     0.683     0.000     0.545  1000000   DHeap::Benchmarks::BSearch#<<  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:61
- 14.83      0.391     0.391     0.000     0.000  1000000   Array#bsearch_index            
- 12.79      0.462     0.337     0.000     0.125  1000000   DHeap::Benchmarks::BSearch#pop /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:70
-  5.85      0.154     0.154     0.000     0.000  1000000   Array#insert                   
-  5.10      0.134     0.134     0.000     0.000  1000000   Array#fetch                    
-  4.76      0.125     0.125     0.000     0.000  1000000   Array#pop                      
-
-* recursively called methods
-
-Columns are:
-
-  %self     - The percentage of time spent in this method, derived from self_time/total_time.
-  total     - The time spent in this method and its children.
-  self      - The time spent in this method.
-  wait      - The amount of time this method waited for other threads.
-  child     - The time spent in this method's children.
-  calls     - The number of times this method was called.
-  name      - The name of the method.
-  location  - The location of the method.
-
-The interpretation of method names is:
-
-  * MyObject#test - An instance method "test" of the class "MyObject"
-  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
-
 Filling   ruby binary heap ---------------------------
 Profiling ruby binary heap ---------------------------
 Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 4.940103
+Thread ID: 1400
+Fiber ID: 1380
+Total: 5.194751
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 37.38      1.973     1.846     0.000     0.126  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:80
- 33.66      2.042     1.663     0.000     0.380  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:96
- 16.10      4.940     0.795     0.000     4.145        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
-  2.64      0.130     0.130     0.000     0.000  1000000   Array#pop                      
-  2.63      0.130     0.130     0.000     0.000  1000000   Array#first                    
-  2.62      0.130     0.130     0.000     0.000  1000000   Array#fetch                    
-  2.56      0.126     0.126     0.000     0.000  1000000   Array#push                     
-  2.43      0.120     0.120     0.000     0.000  1000000   Array#last                     
+ 41.50      2.156     2.156     0.000     0.000  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:107
+ 36.37      2.137     1.889     0.000     0.247  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:121
+ 14.92      5.195     0.775     0.000     4.420        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+  2.46      0.128     0.128     0.000     0.000  1000000   Array#fetch
+  2.41      0.125     0.125     0.000     0.000  1000000   Array#pop
+  2.35      0.122     0.122     0.000     0.000  1000000   Array#first
 
 * recursively called methods
 
@@ -117,16 +45,16 @@ The interpretation of method names is:
 Filling   quaternary DHeap ---------------------------
 Profiling quaternary DHeap ---------------------------
 Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 1.231464
+Thread ID: 1400
+Fiber ID: 1380
+Total: 1.103473
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 60.13      1.231     0.741     0.000     0.491        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 16.72      0.206     0.206     0.000     0.000  1000000   DHeap#<<                       
- 12.85      0.158     0.158     0.000     0.000  1000000   DHeap#pop                      
- 10.30      0.127     0.127     0.000     0.000  1000000   Array#fetch                    
+ 64.92      1.103     0.716     0.000     0.387        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+ 12.09      0.133     0.133     0.000     0.000  1000000   DHeap#<<
+ 11.82      0.130     0.130     0.000     0.000  1000000   DHeap#pop
+ 11.16      0.123     0.123     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 
@@ -147,94 +75,26 @@ The interpretation of method names is:
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
 ########################################################################
-# Profile w/ N=1365 (i=1000000)
+# Profile w/ N=100 (i=1000000)
 # (n.b. RubyProf & tracepoint can change relative performance.
 #       A sampling profiler can provide more accurate relative metrics.
 ########################################################################
 
-Filling    push and resort ---------------------------
-Profiling  push and resort ---------------------------
-Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 41.950612
-Sort by: self_time
-
- %self      total      self      wait     child     calls  name                           location
- 94.10     39.478    39.478     0.000     0.000  1000000   Array#sort!                    
-  2.11     41.951     0.884     0.000    41.066        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
-  1.68     40.328     0.707     0.000    39.621  1000000   DHeap::Benchmarks::Sorting#<<  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:35
-
-* recursively called methods
-
-Columns are:
-
-  %self     - The percentage of time spent in this method, derived from self_time/total_time.
-  total     - The time spent in this method and its children.
-  self      - The time spent in this method.
-  wait      - The amount of time this method waited for other threads.
-  child     - The time spent in this method's children.
-  calls     - The number of times this method was called.
-  name      - The name of the method.
-  location  - The location of the method.
-
-The interpretation of method names is:
-
-  * MyObject#test - An instance method "test" of the class "MyObject"
-  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
-
-Filling   bsearch + insert ---------------------------
-Profiling bsearch + insert ---------------------------
-Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 3.559064
-Sort by: self_time
-
- %self      total      self      wait     child     calls  name                           location
- 37.92      1.349     1.349     0.000     0.000  1000000   Array#bsearch_index            
- 22.76      3.559     0.810     0.000     2.749        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 18.47      2.157     0.657     0.000     1.499  1000000   DHeap::Benchmarks::BSearch#<<  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:61
-  9.45      0.462     0.336     0.000     0.125  1000000   DHeap::Benchmarks::BSearch#pop /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:70
-  4.21      0.150     0.150     0.000     0.000  1000000   Array#insert                   
-  3.67      0.131     0.131     0.000     0.000  1000000   Array#fetch                    
-  3.53      0.125     0.125     0.000     0.000  1000000   Array#pop                      
-
-* recursively called methods
-
-Columns are:
-
-  %self     - The percentage of time spent in this method, derived from self_time/total_time.
-  total     - The time spent in this method and its children.
-  self      - The time spent in this method.
-  wait      - The amount of time this method waited for other threads.
-  child     - The time spent in this method's children.
-  calls     - The number of times this method was called.
-  name      - The name of the method.
-  location  - The location of the method.
-
-The interpretation of method names is:
-
-  * MyObject#test - An instance method "test" of the class "MyObject"
-  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
-
 Filling   ruby binary heap ---------------------------
 Profiling ruby binary heap ---------------------------
 Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 11.581886
+Thread ID: 1400
+Fiber ID: 1380
+Total: 7.422039
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 52.04      6.160     6.027     0.000     0.132  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:80
- 35.10      4.453     4.065     0.000     0.388  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:96
-  7.21     11.582     0.835     0.000    10.747        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
-  1.16      0.134     0.134     0.000     0.000  1000000   Array#fetch                    
-  1.14      0.132     0.132     0.000     0.000  1000000   Array#push                     
-  1.14      0.132     0.132     0.000     0.000  1000000   Array#pop                      
-  1.13      0.131     0.131     0.000     0.000  1000000   Array#first                    
-  1.08      0.125     0.125     0.000     0.000  1000000   Array#last                     
+ 47.72      3.542     3.542     0.000     0.000  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:107
+ 36.82      2.984     2.733     0.000     0.251  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:121
+ 10.39      7.422     0.771     0.000     6.651        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+  1.71      0.127     0.127     0.000     0.000  1000000   Array#pop
+  1.69      0.125     0.125     0.000     0.000  1000000   Array#fetch
+  1.67      0.124     0.124     0.000     0.000  1000000   Array#first
 
 * recursively called methods
 
@@ -257,16 +117,16 @@ The interpretation of method names is:
 Filling   quaternary DHeap ---------------------------
 Profiling quaternary DHeap ---------------------------
 Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 1.431426
+Thread ID: 1400
+Fiber ID: 1380
+Total: 1.163539
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 50.61      1.431     0.724     0.000     0.707        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 21.61      0.309     0.309     0.000     0.000  1000000   DHeap#<<                       
- 19.18      0.275     0.275     0.000     0.000  1000000   DHeap#pop                      
-  8.59      0.123     0.123     0.000     0.000  1000000   Array#fetch                    
+ 64.38      1.164     0.749     0.000     0.414        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+ 12.52      0.146     0.146     0.000     0.000  1000000   DHeap#<<
+ 12.43      0.145     0.145     0.000     0.000  1000000   DHeap#pop
+ 10.67      0.124     0.124     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 
@@ -287,58 +147,26 @@ The interpretation of method names is:
   * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
 
 ########################################################################
-# Profile w/ N=87381 (i=1000000)
+# Profile w/ N=1000 (i=1000000)
 # (n.b. RubyProf & tracepoint can change relative performance.
 #       A sampling profiler can provide more accurate relative metrics.
 ########################################################################
 
-Filling   bsearch + insert ---------------------------
-Profiling bsearch + insert ---------------------------
-Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 5.894803
-Sort by: self_time
-
- %self      total      self      wait     child     calls  name                           location
- 34.53      2.035     2.035     0.000     0.000  1000000   Array#bsearch_index            
- 30.22      1.782     1.782     0.000     0.000  1000000   Array#insert                   
- 13.74      5.895     0.810     0.000     5.085        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 11.52      4.496     0.679     0.000     3.817  1000000   DHeap::Benchmarks::BSearch#<<  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:61
-  5.70      0.459     0.336     0.000     0.124  1000000   DHeap::Benchmarks::BSearch#pop /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:70
-  2.20      0.130     0.130     0.000     0.000  1000000   Array#fetch                    
-  2.10      0.124     0.124     0.000     0.000  1000000   Array#pop                      
-
-* recursively called methods
-
-Columns are:
-
-  %self     - The percentage of time spent in this method, derived from self_time/total_time.
-  total     - The time spent in this method and its children.
-  self      - The time spent in this method.
-  wait      - The amount of time this method waited for other threads.
-  child     - The time spent in this method's children.
-  calls     - The number of times this method was called.
-  name      - The name of the method.
-  location  - The location of the method.
-
-The interpretation of method names is:
-
-  * MyObject#test - An instance method "test" of the class "MyObject"
-  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
-
 Filling   ruby binary heap ---------------------------
 Profiling ruby binary heap ---------------------------
 Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 16.514635
+Thread ID: 1400
+Fiber ID: 1380
+Total: 9.693127
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 45.67      7.926     7.542     0.000     0.384  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:96
- 45.43      7.630     7.502     0.000     0.128  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:80
-  5.00     16.515     0.826     0.000    15.688        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+ 52.28      5.068     5.068     0.000     0.000  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:107
+ 35.52      3.702     3.443     0.000     0.259  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:121
+  8.18      9.693     0.793     0.000     8.900        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+  1.36      0.131     0.131     0.000     0.000  1000000   Array#pop
+  1.35      0.131     0.131     0.000     0.000  1000000   Array#fetch
+  1.32      0.128     0.128     0.000     0.000  1000000   Array#first
 
 * recursively called methods
 
@@ -361,16 +189,154 @@ The interpretation of method names is:
 Filling   quaternary DHeap ---------------------------
 Profiling quaternary DHeap ---------------------------
 Measure Mode: wall_time
-Thread ID: 1360
-Fiber ID: 1340
-Total: 1.622729
+Thread ID: 1400
+Fiber ID: 1380
+Total: 1.125575
 Sort by: self_time
 
  %self      total      self      wait     child     calls  name                           location
- 44.66      1.623     0.725     0.000     0.898        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
- 27.42      0.445     0.445     0.000     0.000  1000000   DHeap#pop                      
- 20.41      0.331     0.331     0.000     0.000  1000000   DHeap#<<                       
-  7.51      0.122     0.122     0.000     0.000  1000000   Array#fetch                    
+ 64.22      1.126     0.723     0.000     0.403        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+ 13.16      0.148     0.148     0.000     0.000  1000000   DHeap#<<
+ 12.01      0.135     0.135     0.000     0.000  1000000   DHeap#pop
+ 10.62      0.119     0.119     0.000     0.000  1000000   Array#fetch
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+########################################################################
+# Profile w/ N=10000 (i=1000000)
+# (n.b. RubyProf & tracepoint can change relative performance.
+#       A sampling profiler can provide more accurate relative metrics.
+########################################################################
+
+Filling   ruby binary heap ---------------------------
+Profiling ruby binary heap ---------------------------
+Measure Mode: wall_time
+Thread ID: 1400
+Fiber ID: 1380
+Total: 13.737007
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 49.46      6.794     6.794     0.000     0.000  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:107
+ 41.97      6.017     5.765     0.000     0.251  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:121
+  5.80     13.737     0.796     0.000    12.941        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+Filling   quaternary DHeap ---------------------------
+Profiling quaternary DHeap ---------------------------
+Measure Mode: wall_time
+Thread ID: 1400
+Fiber ID: 1380
+Total: 1.179968
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 62.48      1.180     0.737     0.000     0.443        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+ 13.86      0.164     0.164     0.000     0.000  1000000   DHeap#<<
+ 13.46      0.159     0.159     0.000     0.000  1000000   DHeap#pop
+ 10.20      0.120     0.120     0.000     0.000  1000000   Array#fetch
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+########################################################################
+# Profile w/ N=100000 (i=1000000)
+# (n.b. RubyProf & tracepoint can change relative performance.
+#       A sampling profiler can provide more accurate relative metrics.
+########################################################################
+
+Filling   ruby binary heap ---------------------------
+Profiling ruby binary heap ---------------------------
+Measure Mode: wall_time
+Thread ID: 1400
+Fiber ID: 1380
+Total: 16.425915
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 50.99      8.623     8.376     0.000     0.247  1000000   DHeap::Benchmarks::RbHeap#pop  /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:121
+ 41.82      6.869     6.869     0.000     0.000  1000000   DHeap::Benchmarks::RbHeap#<<   /home/nick/src/d_heap/lib/d_heap/benchmarks/implementations.rb:107
+  4.89     16.426     0.803     0.000    15.623        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+
+* recursively called methods
+
+Columns are:
+
+  %self     - The percentage of time spent in this method, derived from self_time/total_time.
+  total     - The time spent in this method and its children.
+  self      - The time spent in this method.
+  wait      - The amount of time this method waited for other threads.
+  child     - The time spent in this method's children.
+  calls     - The number of times this method was called.
+  name      - The name of the method.
+  location  - The location of the method.
+
+The interpretation of method names is:
+
+  * MyObject#test - An instance method "test" of the class "MyObject"
+  * <Object:MyObject>#test - The <> characters indicate a method on a singleton class.
+
+Filling   quaternary DHeap ---------------------------
+Profiling quaternary DHeap ---------------------------
+Measure Mode: wall_time
+Thread ID: 1400
+Fiber ID: 1380
+Total: 1.205573
+Sort by: self_time
+
+ %self      total      self      wait     child     calls  name                           location
+ 59.14      1.206     0.713     0.000     0.493        1   DHeap::Benchmarks::Scenarios#repeated_push_pop /home/nick/src/d_heap/lib/d_heap/benchmarks.rb:81
+ 16.93      0.204     0.204     0.000     0.000  1000000   DHeap#pop
+ 13.88      0.167     0.167     0.000     0.000  1000000   DHeap#<<
+ 10.05      0.121     0.121     0.000     0.000  1000000   Array#fetch
 
 * recursively called methods
 

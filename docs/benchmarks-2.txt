@@ -1,75 +1,93 @@
+Benchmarking run at 2021-01-25 23:31:48 -0500
+ruby v2.7.2, DHeap v0.6.1
+
 Warming up --------------------------------------
-push + pop (findmin)             136.044 i/s -     140.000 times in 1.029078s (7.35ms/i)
-push + pop (bsearch)              5.700k i/s -      5.984k times in 1.049902s (175.45μs/i)
-push + pop (rb_heap)            466.447k i/s -    496.977k times in 1.065453s (2.14μs/i)
-push + pop (c++ stl)              3.023M i/s -      3.038M times in 1.004830s (330.81ns/i, 794clocks/i)
-push + pop (c_dheap)              3.579M i/s -      3.620M times in 1.011429s (279.40ns/i, 785clocks/i)
+push + pop (findmin)    135.463 i/s -     686.000 times in 5.064119s (7.38ms/i)
+push + pop (bsearch)     5.453k i/s -     27.489k times in 5.040925s (183.38μs/i)
+push + pop (rb_heap)   647.863k i/s -      3.270M times in 5.048030s (1.54μs/i)
+push + pop (c++ stl)     3.923M i/s -     19.658M times in 5.011369s (254.93ns/i, 587clocks/i)
+push + pop (c_dheap)     5.613M i/s -     28.125M times in 5.010621s (178.16ns/i, 450clocks/i)
 Calculating -------------------------------------
-                     bin/bench_n 1000000  bin/bench_n 10000  bin/bench_n 25000  bin/bench_n 50000  bin/bench_n 100000  bin/bench_n 250000  bin/bench_n 500000  bin/bench_n 10000000  bin/bench_n 2500000  bin/bench_n 5000000
-push + pop (findmin)             136.690            11.014k             4.426k             2.178k              1.084k             408.671             215.680                13.169               52.037               26.307 i/s -     408.000 times in 2.984861s 0.037045s 0.092186s 0.187334s 0.376306s 0.998359s 1.891687s 30.981982s 7.840594s 15.509132s
-push + pop (bsearch)              5.639k           786.334k           364.964k           200.521k             88.607k             34.530k             17.965k               288.811               1.302k              592.009 i/s -     17.098k times in 3.032244s 0.021744s 0.046848s 0.085268s 0.192965s 0.495157s 0.951721s 59.201408s 13.131805s 28.881310s
-push + pop (rb_heap)            513.523k           736.618k           670.187k           618.157k            579.251k            572.795k            543.648k              423.119k             460.849k             445.235k i/s -      1.399M times in 2.724978s 1.899681s 2.087985s 2.263730s 2.415776s 2.443003s 2.573980s 3.307202s 3.036440s 3.142928s
-push + pop (c++ stl)              3.396M             4.902M             4.794M             4.532M              4.316M              4.204M              3.903M                2.022M               2.659M               2.347M i/s -      9.069M times in 2.670712s 1.850114s 1.891786s 2.001185s 2.101354s 2.157093s 2.323676s 4.484351s 3.410224s 3.864573s
-push + pop (c_dheap)              4.403M             7.311M             6.407M             6.738M              6.254M              5.918M              5.126M                2.138M               3.304M               2.665M i/s -     10.737M times in 2.438365s 1.468580s 1.675785s 1.593589s 1.716764s 1.814447s 2.094553s 5.022305s 3.249709s 4.029170s
+                      N 1000000  N 10000000   N 3162278    N 316228    N 100000     N 31623     N 10000      N 3162      N 1000       N 316       N 100        N 32        N 10
+push + pop (findmin)    135.943      12.869      41.182     343.249      1.097k      3.587k     12.631k     50.336k    224.814k    948.877k      2.595M      4.202M      5.480M i/s -      2.031k times in 14.940053s 157.815976s 49.317074s 5.916981s 1.850898s 0.566265s 0.160799s 0.040349s 0.009034s 0.002140s 0.000783s 0.000483s 0.000371s
+push + pop (bsearch)     5.356k     281.895     971.955     26.362k     81.121k    412.392k      1.210M      1.829M      2.203M      2.396M      2.904M      3.214M      3.931M i/s -     81.797k times in 15.271966s 290.167837s 84.157151s 3.102831s 1.008328s 0.198348s 0.067624s 0.044714s 0.037127s 0.034134s 0.028165s 0.025451s 0.020806s
+push + pop (rb_heap)   673.578k    467.512k    465.936k    718.419k    732.549k    943.118k    950.389k      1.062M      1.263M      1.356M      1.604M      1.857M      2.326M i/s -      9.718M times in 14.427345s 20.786487s 20.856821s 13.526848s 13.265927s 10.304049s 10.225219s 9.152454s 7.697285s 7.165792s 6.060302s 5.233045s 4.178291s
+push + pop (c++ stl)     4.171M      2.737M      3.458M      4.402M      4.842M      5.503M      5.731M      6.319M      6.899M      7.084M      7.393M      7.772M      7.707M i/s -     58.839M times in 14.106950s 21.496544s 17.014548s 13.366627s 12.150850s 10.692853s 10.266595s 9.311420s 8.528926s 8.305938s 7.958634s 7.570905s 7.634693s
+push + pop (c_dheap)     6.490M      3.735M      5.231M      7.280M      7.150M      7.670M      8.045M      8.704M      9.340M      9.688M      9.669M      9.921M     10.196M i/s -     84.195M times in 12.972480s 22.542978s 16.096451s 11.564531s 11.775039s 10.976519s 10.465346s 9.673356s 9.014859s 8.690250s 8.707992s 8.486921s 8.257262s
 
 Comparison:
              push + pop (findmin)
-   bin/bench_n 10000:     11013.7 i/s
-   bin/bench_n 25000:      4425.8 i/s - 2.49x  slower
-   bin/bench_n 50000:      2177.9 i/s - 5.06x  slower
-  bin/bench_n 100000:      1084.2 i/s - 10.16x  slower
-  bin/bench_n 250000:       408.7 i/s - 26.95x  slower
-  bin/bench_n 500000:       215.7 i/s - 51.06x  slower
- bin/bench_n 1000000:       136.7 i/s - 80.57x  slower
- bin/bench_n 2500000:        52.0 i/s - 211.65x  slower
- bin/bench_n 5000000:        26.3 i/s - 418.66x  slower
-bin/bench_n 10000000:        13.2 i/s - 836.34x  slower
+                N 10:   5480288.0 i/s
+                N 32:   4202409.8 i/s - 1.30x  slower
+               N 100:   2595178.8 i/s - 2.11x  slower
+               N 316:    948876.5 i/s - 5.78x  slower
+              N 1000:    224813.9 i/s - 24.38x  slower
+              N 3162:     50336.4 i/s - 108.87x  slower
+             N 10000:     12630.7 i/s - 433.89x  slower
+             N 31623:      3586.7 i/s - 1527.96x  slower
+            N 100000:      1097.3 i/s - 4994.31x  slower
+            N 316228:       343.2 i/s - 15965.91x  slower
+           N 1000000:       135.9 i/s - 40313.05x  slower
+           N 3162278:        41.2 i/s - 133073.25x  slower
+          N 10000000:        12.9 i/s - 425838.01x  slower
 
              push + pop (bsearch)
-   bin/bench_n 10000:    786334.2 i/s
-   bin/bench_n 25000:    364963.8 i/s - 2.15x  slower
-   bin/bench_n 50000:    200520.6 i/s - 3.92x  slower
-  bin/bench_n 100000:     88607.0 i/s - 8.87x  slower
-  bin/bench_n 250000:     34530.5 i/s - 22.77x  slower
-  bin/bench_n 500000:     17965.4 i/s - 43.77x  slower
- bin/bench_n 1000000:      5638.7 i/s - 139.45x  slower
- bin/bench_n 2500000:      1302.0 i/s - 603.93x  slower
- bin/bench_n 5000000:       592.0 i/s - 1328.25x  slower
-bin/bench_n 10000000:       288.8 i/s - 2722.66x  slower
+                N 10:   3931408.4 i/s
+                N 32:   3213952.9 i/s - 1.22x  slower
+               N 100:   2904181.8 i/s - 1.35x  slower
+               N 316:   2396374.2 i/s - 1.64x  slower
+              N 1000:   2203157.1 i/s - 1.78x  slower
+              N 3162:   1829352.1 i/s - 2.15x  slower
+             N 10000:   1209584.9 i/s - 3.25x  slower
+             N 31623:    412392.2 i/s - 9.53x  slower
+            N 100000:     81121.4 i/s - 48.46x  slower
+            N 316228:     26362.1 i/s - 149.13x  slower
+           N 1000000:      5356.0 i/s - 734.02x  slower
+           N 3162278:       972.0 i/s - 4044.84x  slower
+          N 10000000:       281.9 i/s - 13946.33x  slower
 
              push + pop (rb_heap)
-   bin/bench_n 10000:    736618.2 i/s
-   bin/bench_n 25000:    670186.8 i/s - 1.10x  slower
-   bin/bench_n 50000:    618156.7 i/s - 1.19x  slower
-  bin/bench_n 100000:    579250.7 i/s - 1.27x  slower
-  bin/bench_n 250000:    572795.0 i/s - 1.29x  slower
-  bin/bench_n 500000:    543648.3 i/s - 1.35x  slower
- bin/bench_n 1000000:    513523.4 i/s - 1.43x  slower
- bin/bench_n 2500000:    460848.9 i/s - 1.60x  slower
- bin/bench_n 5000000:    445234.5 i/s - 1.65x  slower
-bin/bench_n 10000000:    423119.0 i/s - 1.74x  slower
+                N 10:   2325816.5 i/s
+                N 32:   1857033.5 i/s - 1.25x  slower
+               N 100:   1603540.3 i/s - 1.45x  slower
+               N 316:   1356156.9 i/s - 1.72x  slower
+              N 1000:   1262515.2 i/s - 1.84x  slower
+              N 3162:   1061785.1 i/s - 2.19x  slower
+             N 10000:    950389.3 i/s - 2.45x  slower
+             N 31623:    943118.5 i/s - 2.47x  slower
+            N 100000:    732548.8 i/s - 3.17x  slower
+            N 316228:    718418.6 i/s - 3.24x  slower
+           N 1000000:    673577.8 i/s - 3.45x  slower
+          N 10000000:    467512.3 i/s - 4.97x  slower
+           N 3162278:    465935.8 i/s - 4.99x  slower
 
              push + pop (c++ stl)
-   bin/bench_n 10000:   4901711.5 i/s
-   bin/bench_n 25000:   4793735.8 i/s - 1.02x  slower
-   bin/bench_n 50000:   4531675.9 i/s - 1.08x  slower
-  bin/bench_n 100000:   4315657.8 i/s - 1.14x  slower
-  bin/bench_n 250000:   4204141.1 i/s - 1.17x  slower
-  bin/bench_n 500000:   3902748.9 i/s - 1.26x  slower
- bin/bench_n 1000000:   3395620.2 i/s - 1.44x  slower
- bin/bench_n 2500000:   2659274.8 i/s - 1.84x  slower
- bin/bench_n 5000000:   2346630.0 i/s - 2.09x  slower
-bin/bench_n 10000000:   2022304.5 i/s - 2.42x  slower
+                N 32:   7771751.1 i/s
+                N 10:   7706818.6 i/s - 1.01x  slower
+               N 100:   7393127.3 i/s - 1.05x  slower
+               N 316:   7083991.6 i/s - 1.10x  slower
+              N 1000:   6898781.3 i/s - 1.13x  slower
+              N 3162:   6319035.6 i/s - 1.23x  slower
+             N 10000:   5731130.5 i/s - 1.36x  slower
+             N 31623:   5502665.3 i/s - 1.41x  slower
+            N 100000:   4842393.2 i/s - 1.60x  slower
+            N 316228:   4401947.6 i/s - 1.77x  slower
+           N 1000000:   4170936.4 i/s - 1.86x  slower
+           N 3162278:   3458169.7 i/s - 2.25x  slower
+          N 10000000:   2737146.6 i/s - 2.84x  slower
 
              push + pop (c_dheap)
-   bin/bench_n 10000:   7311366.6 i/s
-   bin/bench_n 50000:   6737824.5 i/s - 1.09x  slower
-   bin/bench_n 25000:   6407340.6 i/s - 1.14x  slower
-  bin/bench_n 100000:   6254396.3 i/s - 1.17x  slower
-  bin/bench_n 250000:   5917684.5 i/s - 1.24x  slower
-  bin/bench_n 500000:   5126307.6 i/s - 1.43x  slower
- bin/bench_n 1000000:   4403494.1 i/s - 1.66x  slower
- bin/bench_n 2500000:   3304088.2 i/s - 2.21x  slower
- bin/bench_n 5000000:   2664897.7 i/s - 2.74x  slower
-bin/bench_n 10000000:   2137927.6 i/s - 3.42x  slower
+                N 10:  10196454.1 i/s
+                N 32:   9920533.6 i/s - 1.03x  slower
+               N 316:   9688419.5 i/s - 1.05x  slower
+               N 100:   9668679.8 i/s - 1.05x  slower
+              N 1000:   9339557.0 i/s - 1.09x  slower
+              N 3162:   8703782.7 i/s - 1.17x  slower
+             N 10000:   8045103.0 i/s - 1.27x  slower
+             N 31623:   7670445.6 i/s - 1.33x  slower
+            N 316228:   7280432.6 i/s - 1.40x  slower
+            N 100000:   7150276.7 i/s - 1.43x  slower
+           N 1000000:   6490261.6 i/s - 1.57x  slower
+           N 3162278:   5230642.9 i/s - 1.95x  slower
+          N 10000000:   3734856.5 i/s - 2.73x  slower
 

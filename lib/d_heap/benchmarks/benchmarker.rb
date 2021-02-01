@@ -12,45 +12,74 @@ module DHeap::Benchmarks
     include Randomness
     include Scenarios
 
-    N_COUNTS = [
-      5,      # 1 + 4
-      21,     # 1 + 4 + 16
-      85,     # 1 + 4 + 16 + 64
-      341,    # 1 + 4 + 16 + 64 + 256
-      1365,   # 1 + 4 + 16 + 64 + 256 + 1024
-      5461,   # 1 + 4 + 16 + 64 + 256 + 1024 + 4096
-      21_845, # 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384
-      87_381, # 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384 + 65536
+    # approximation for multiples of sqrt(10)
+    PUSH_POP_HEAP_SIZES = [
+      10,
+      32,
+      100,
+      316,
+      1000,
+      3162,
+      10_000,
+      31_623,
+      100_000,
+      316_228,
+      1_000_000,
+      3_162_278,
+      10_000_000,
     ].freeze
 
-    attr_reader :time
+    # slightly off approximation for multiples of sqrt(10)
+    # hard-coded "loop_count" (in yml file) must be cleanly divisible by N.
+    PUSH_N_COUNTS = [
+      10,
+      30,
+      100,
+      300,
+      1000,
+      3000,
+      1_000,
+      3_000,
+      10_000,
+      30_000,
+      100_000,
+      300_000,
+      1_000_000,
+      3_000_000,
+    ].freeze
+
+    COMBO_SIZES = (PUSH_N_COUNTS + PUSH_POP_HEAP_SIZES).sort.uniq.freeze
+
+    attr_reader :count
     attr_reader :iterations_for_push_pop
     attr_reader :io
 
     def initialize(
-      time: Integer(ENV.fetch("BENCHMARK_TIME", 10)),
+      count: Integer(ENV.fetch("BENCHMARK_REPEATS", 4)),
       iterations_for_push_pop: 10_000,
       io: $stdout
     )
-      @time = time
+      @count = count
       @iterations_for_push_pop = Integer(iterations_for_push_pop)
       @io = io
     end
 
-    def call(queue_size: ENV.fetch("BENCHMARK_QUEUE_SIZE", :unset))
+    def call
       DHeap::Benchmarks.puts_version_info("Benchmarking")
-      sizes = (queue_size == :unset) ? N_COUNTS : [Integer(queue_size)]
-      sizes.each do |size|
-        benchmark_size(size)
+      COMBO_SIZES.each do |size|
+        benchmarks_for_n(size)
       end
     end
 
-    def benchmark_size(size)
-      sep "#", "Benchmarks with N=#{size} (t=#{time}sec/benchmark)", big: true
-      io.puts
-      benchmark_push_n            size
-      benchmark_push_n_then_pop_n size
-      benchmark_repeated_push_pop size
+    def benchmarks_for_n(size)
+      sep_big "#", "Benchmarks with N=#{format_num size}"
+      if PUSH_N_COUNTS.include?(size)
+        benchmark_push_n            size
+        benchmark_push_n_then_pop_n size
+      end
+      if PUSH_POP_HEAP_SIZES.include?(size)
+        benchmark_repeated_push_pop size
+      end
     end
 
     def benchmark_push_n(queue_size)
@@ -74,22 +103,10 @@ module DHeap::Benchmarks
       impl.klass == DHeap::Benchmarks::PushAndResort && 10_000 < queue_size
     end
 
-    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-
     def benchmarking(name, file, size)
       Bundler.with_unbundled_env do
         sep "==", "#{name} (N=#{size})"
-        cmd = %W[
-          bin/benchmark-driver
-          --bundler
-          --run-duration 6
-          --timeout 15
-          --runner ips_zero_fail
-          benchmarks/#{file}.yml
-        ]
-        if file == "push_n"
-          cmd << "--filter" << /dheap|\bstl\b|\bbsearch\b|\brb_heap\b/.to_s
-        end
+        cmd = benchmark_cmd(file, size)
         env = ENV.to_h.merge(
           "BENCH_N" => size.to_s,
           "RUBYLIB" => File.expand_path("../..", __dir__),
@@ -98,19 +115,56 @@ module DHeap::Benchmarks
       end
     end
 
-    def sep(sep, msg = "", width: 80, big: false)
-      txt = String.new
-      txt += "#{sep * (width / sep.length)}\n" if big
-      txt += sep
-      txt += " #{msg}" if msg && !msg.empty?
-      txt += " " unless big
-      txt += sep * ((width - txt.length) / sep.length) unless big
-      txt += "\n"
-      txt += "#{sep * (width / sep.length)}\n" if big
-      io.print txt
+    def benchmark_cmd(file, size)
+      cmd = %W[bin/benchmark-driver --bundler --repeat-count #{count}]
+      add_filter(file, size, cmd)
+      cmd << "benchmarks/#{file}.yml"
     end
 
-    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+    def add_filter(file, size, cmd)
+      case file
+      when "push_n"
+        add_push_n_filter(size, cmd)
+      when "push_n_pop_n"
+        add_push_n_pop_n_filter(size, cmd)
+      end
+    end
+
+    def format_num(number)
+      number.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+    end
+
+    def add_push_n_filter(size, cmd)
+      if 300_000 <= size
+        cmd << "--filter" << /dheap|stl|rb_heap|findmin/.to_s
+      end
+    end
+
+    def add_push_n_pop_n_filter(size, cmd)
+      if 300_000 <= size
+        cmd << "--filter" << /dheap|stl|rb_heap/.to_s
+      elsif 3_000 <= size
+        cmd << "--filter" << /dheap|stl|rb_heap|bsearch/.to_s
+      end
+    end
+
+    def sep(sepstr, msg = "", width: 80)
+      txt = String.new
+      txt += sepstr
+      txt += " #{msg} " if msg && !msg.empty?
+      txt += sepstr * ((width - txt.length) / sepstr.length)
+      io.puts txt
+    end
+
+    def sep_big(sepstr, msg = "", width: 80)
+      txt = String.new
+      txt += "#{sepstr * (width / sepstr.length)}\n"
+      txt += sepstr
+      txt += " #{msg}" if msg && !msg.empty?
+      txt += "\n#{sepstr * (width / sepstr.length)}\n"
+      io.puts txt
+      io.puts
+    end
 
   end
 end

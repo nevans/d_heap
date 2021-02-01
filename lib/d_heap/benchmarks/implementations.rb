@@ -16,13 +16,9 @@ module DHeap::Benchmarks
       @a.sort!
     end
 
-    def clear
-      @a.clear
-    end
-
-    def empty?
-      @a.empty?
-    end
+    def clear; @a.clear end
+    def empty?; @a.empty? end
+    def size; @a.size end
 
     if ENV["LOG_LEVEL"] == "debug"
       def dbg(msg)
@@ -103,10 +99,23 @@ module DHeap::Benchmarks
   # a very simple pure ruby binary heap
   class RbHeap < ExamplePriorityQueue
 
+    # huge speedup from inlining the sift methods.
+    # (no speedup from partial unrolling of the loops.)
+    #
+    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+
     def <<(value)
       raise ArgumentError unless value
-      @a.push(value)
-      sift_up(@a.size - 1, value)
+      index = @a.size
+      while 0 < index # rubocop:disable Style/NumericPredicate
+        parent_index = (index - 1) / 2
+        parent_value = @a[parent_index]
+        break if parent_value <= value
+        @a[index] = parent_value
+        index = parent_index
+      end
+      @a[index] = value
+      self
     end
 
     def pop
@@ -116,43 +125,28 @@ module DHeap::Benchmarks
       last_index = @a.size - 1
       return popped unless 0 <= last_index
 
-      sift_down(0, last_index, value)
-      popped
-    end
-
-    private
-
-    def sift_up(index, value = @a[index])
-      while 0 < index # rubocop:disable Style/NumericPredicate
-        parent_index = (index - 1) / 2
-        parent_value = @a[parent_index]
-        break if parent_value <= value
-        @a[index] = parent_value
-        index = parent_index
-      end
-      @a[index] = value
-      # check_heap!(index)
-    end
-
-    def sift_down(index, last_index = @a.size - 1, value = @a[index])
       last_parent = (last_index - 1) / 2
+      index = 0
+
+      child_index = 1
       while index <= last_parent
-        child_index, child_value = select_min_child(index, last_index)
+        child_value = @a[child_index]
+        if child_index < last_index && @a[child_index + 1] < child_value
+          child_index += 1
+          child_value = @a[child_index]
+        end
         break if value <= child_value
         @a[index] = child_value
         index = child_index
         child_index = index * 2 + 1
       end
       @a[index] = value
+      popped
     end
 
-    def select_min_child(index, last_index = @a.size - 1)
-      child_index = index * 2 + 1
-      if child_index < last_index && a[child_index + 1] < @a[child_index]
-        child_index += 1
-      end
-      [child_index, @a[child_index]]
-    end
+    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+    private
 
     def check_heap!(idx)
       check_heap_up!(idx)
@@ -199,9 +193,8 @@ module DHeap::Benchmarks
       @q = FastContainers::PriorityQueue.new(:min)
     end
 
-    def empty?
-      @q.empty?
-    end
+    def empty?; @q.empty? end
+    def size;   @q.size   end
 
     def pop
       @q.pop

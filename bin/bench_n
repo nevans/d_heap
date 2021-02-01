@@ -1,7 +1,47 @@
-#!/bin/sh
+#!/bin/bash
 set -eu
 
-export BENCH_N="$1"
-shift
+bin/rake clean compile > /dev/null 2>&1
 
-exec ruby "$@"
+ruby -r bundler/setup -r d_heap/benchmarks/benchmarker \
+  -e 'DHeap::Benchmarks.puts_version_info("Benchmarking")'
+
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+PUSH_POP_HEAP_SIZES=(
+  "N 1000000"
+  "N 10000000"
+  "N 3162278"
+  "N 316228"
+  "N 100000"
+  "N 31623"
+  "N 10000"
+  "N 3162"
+  "N 1000"
+  "N 316"
+  "N 100"
+  "N 32"
+  "N 10"
+)
+
+# run-duration is used for the *first* executable and used during warmup to
+# determine a loop count that will be identical for all runs.
+#
+# If we run the largest N first, we expect all later runs to be faster.  For
+# algorithms with high time complexity, the later runs will be so much faster
+# that they may not run enough iterations to get a good measurement.
+#
+# If we run the slowest N first, we expect all later runs to be slower.  For
+# algorithms with high time complexity, the later runs will be so much slower
+# that they may take hours to complete.
+#
+# I'm splitting the difference and calculate the loop count from 1/10 of max N.
+#
+# TODO: create a new benchmark_driver/runner class that targets a different loop
+# count for each executable, since they could have wildly divergent ips.
+
+bin/benchmark-driver --bundle \
+  -e "$(join_by ";" "${PUSH_POP_HEAP_SIZES[@]}")" \
+  --repeat-count 4 \
+  benchmarks/push_pop.yml \
+  "$@"

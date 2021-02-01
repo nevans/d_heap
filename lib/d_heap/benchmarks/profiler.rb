@@ -11,9 +11,11 @@ module DHeap::Benchmarks
     include Scenarios
 
     N_COUNTS = [
-      5,      # 1 + 4
-      1365,   # 1 + 4 + 16 + 64 + 256 + 1024
-      87_381, # 1 + 4 + 16 + 64 + 256 + 1024 + 4096 + 16384 + 65536
+      10,
+      100,
+      1_000,
+      10_000,
+      100_000,
     ].freeze
 
     def call(
@@ -37,9 +39,9 @@ module DHeap::Benchmarks
         ########################################################################
 
       TEXT
-      DHeap::Benchmarks::IMPLEMENTATIONS.each do |impl|
-        profile_one(impl, queue_size, iterations, io: io)
-      end
+      DHeap::Benchmarks::IMPLEMENTATIONS
+        .select {|impl| [DHeap, RbHeap].include?(impl.klass) }
+        .each do |impl| profile_one(impl, queue_size, iterations, io: io) end
     end
 
     # TODO: move somewhere else...

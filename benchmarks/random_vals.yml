@@ -1,0 +1,53 @@
+---
+prelude: "val = nil"
+teardown: "puts val" # ensure it is used and not somehow optimized away
+
+benchmark:
+
+  - name: "random_val"
+    prelude: |
+      require "d_heap/benchmarks"
+      include DHeap::Benchmarks
+      fill_random_vals
+    script: "random_val"
+
+  - name:   "inline random_vals.fetch"
+    prelude: |
+      random_idx  = -1
+      random_len  = 1_000_000
+      random_vals = Array.new(random_len) { rand(0..10_000) }
+    script: |
+      random_idx = ((random_idx + 1) % random_len)
+      val = random_vals.fetch((random_idx + 1) % random_len)
+
+  - name:   "inline random_vals[]"
+    prelude: |
+      random_idx  = -1
+      random_len  = 1_000_000
+      random_vals = Array.new(random_len) { rand(0..10_000) }
+    script: |
+      random_idx = ((random_idx + 1) % random_len)
+      val = random_vals.fetch((random_idx + 1) % random_len)
+
+  - name: "rand(range)"
+    prelude: "range = 0..10_000"
+    script: "val = rand(range)"
+
+  - name: "rand(0..10_000)"
+    script: "val = rand(0..10_000)"
+
+  # - name:   "just a method call"
+  #   prelude: |
+  #     def random_val; 1 end
+  #   script: |
+  #     val = random_val
+  # - name:   "just increment"
+  #   prelude: |
+  #     i = 0
+  #   script: |
+  #     i += 1
+  #     val = i
+  # - name:   "just assign a constant"
+  #   script: "val = 1"
+  # - name:   "noop"
+  #   script: "val"

@@ -3,30 +3,56 @@ prelude: |
   system("#{RbConfig.ruby} bin/rake compile", err: :out, exception: true)
   require "d_heap/benchmarks"
   include DHeap::Benchmarks
-  fill_random_vals
 
-  n = ENV.fetch("BENCH_N", 1000).to_i
+  # this is >4x faster than calling Kernel#rand (see random_vals.yml)
+  random_idx  = -1
+  random_len  = 1_000_000
+  random_vals = Array.new(random_len) { rand(0..10_000) }
+
+  N = ENV.fetch("BENCH_N", 10_000).to_i
 
 benchmark:
   - script: &script |
-       q << random_val
-       q.pop
+      random_idx = ((random_idx + 1) % random_len)
+      q << random_vals.fetch((random_idx + 1) % random_len)
+      q.pop
     name:    "push + pop (findmin)"
-    prelude: "q = FindMin.new(n) { random_val }"
-    loop_count:   250000
+    prelude: |
+      q = FindMin.new(N) {
+        random_idx = ((random_idx + 1) % random_len)
+        random_vals.fetch((random_idx + 1) % random_len)
+      }
+
   - script: *script
     name:    "push + pop (bsearch)"
-    prelude: "q = BSearch.new(n) { random_val }"
-    loop_count:  5000000
+    prelude: |
+      q = BSearch.new(N) {
+        random_idx = ((random_idx + 1) % random_len)
+        random_vals.fetch((random_idx + 1) % random_len)
+      }
+
   - script: *script
     name:    "push + pop (rb_heap)"
-    prelude: "q = RbHeap.new(n) { random_val }"
-    loop_count:  2000000
+    prelude: |
+      q = RbHeap.new(N) {
+        random_idx = ((random_idx + 1) % random_len)
+        random_vals.fetch((random_idx + 1) % random_len)
+      }
+
   - script: *script
-    name:    "push + pop (c++ stl)"
-    prelude: "q = initq CppSTL, n"
-    loop_count: 13000000
+    name: "push + pop (c++ stl)"
+    prelude: |
+      q = CppSTL.new
+      N.times do
+        random_idx = ((random_idx + 1) % random_len)
+        q << random_vals.fetch((random_idx + 1) % random_len)
+      end
+
   - script: *script
-    name:    "push + pop (c_dheap)"
-    prelude: "q = initq DHeap, n"
-    loop_count: 20000000
+    name: "push + pop (c_dheap)"
+    prelude: |
+      q = DHeap.new
+      N.times do
+        random_idx = ((random_idx + 1) % random_len)
+        q << random_vals.fetch((random_idx + 1) % random_len)
+      end

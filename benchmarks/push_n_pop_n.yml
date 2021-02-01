@@ -3,18 +3,28 @@ prelude: |
   system("#{RbConfig.ruby} bin/rake compile", err: :out, exception: true)
   require "d_heap/benchmarks"
   include DHeap::Benchmarks
-  fill_random_vals
 
-  N = ENV.fetch("BENCH_N", 1000).to_i
+  # this is >4x faster than calling Kernel#rand (see random_vals.yml)
+  random_idx  = -1
+  random_len  = 1_000_000
+  random_vals = Array.new(random_len) { rand(0..10_000) }
+
+  N = ENV.fetch("BENCH_N", 100_000).to_i
   N2 = N * 2
 
   i = j = 0
+
+teardown: |
+  puts "teardown: size: %p, N: %p, i: %p, j: %p, __bmdv_i: %p" % [
+    q.size, N, i, j, __bmdv_i
+  ]
 
 benchmark:
   - script: &script |
       if i < N
         q.clear if __bmdv_i == 0
-        q << random_val
+        random_idx = ((random_idx + 1) % random_len)
+        q << random_vals.fetch((random_idx + 1) % random_len)
         i += 1
 
       elsif j < N
@@ -22,31 +32,33 @@ benchmark:
         j += 1
 
       elsif q.empty?
-        i = 1
         j = 0
-        q.clear
-        q << random_val
+        random_idx = ((random_idx + 1) % random_len)
+        q << random_vals.fetch((random_idx + 1) % random_len)
+        i = 1
 
       else
-        raise "q not empty!"
+        raise "q not empty! size: %p, N: %p, i: %p, j: %p, __bmdv_i: %p" % [
+          q.size, N, i, j, __bmdv_i
+        ]
       end
 
     name:    "push N + pop N (findmin)"
-    prelude: "q = initq FindMin"
-    loop_count:   200000
+    prelude: "q = FindMin.new"
+    loop_count:    300_000  # MAX:     3_000 * 2
   - script: *script
     name:    "push N + pop N (bsearch)"
-    prelude: "q = initq BSearch"
-    loop_count:  4000000
+    prelude: "q = BSearch.new"
+    loop_count:  1_200_000  # MAX:   300_000 * 2
   - script: *script
     name:    "push N + pop N (rb_heap)"
-    prelude: "q = initq RbHeap"
-    loop_count:  4000000
+    prelude: "q = RbHeap.new"
+    loop_count:  6_000_000  # MAX: 3_000_000 * 2
   - script: *script
     name:    "push N + pop N (c++ stl)"
-    prelude: "q = initq CppSTL"
-    loop_count: 16000000
+    prelude: "q = CppSTL.new"
+    loop_count: 18_000_000  # MAX: 3_000_000 * 2
   - script: *script
     name:    "push N + pop N (c_dheap)"
-    prelude: "q = initq DHeap"
-    loop_count: 16000000
+    prelude: "q = DHeap.new"
+    loop_count: 18_000_000  # MAX: 3_000_000 * 2

@@ -4,10 +4,19 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null; pwd -P)
 PROJECT_DIR=$(cd "$SCRIPT_DIR" > /dev/null; cd .. > /dev/null; pwd -P)
 cd "$PROJECT_DIR"
 
-opts=( --bundle -e 'N 100000;N 10000;N 1000;N 100;N 10' -o gruff )
+opts=( --bundle --repeat-count 4 -o gruff )
 
-for bm in push_n push_n_pop_n push_pop; do
-  bin/benchmark-driver "${opts[@]}" "benchmarks/${bm}.yml"
-  mv graph.png "images/${bm}.png"
-done
+ bm=push_n
+ n_values='N 300000;N 100000;N 30000;N 10000;N 3000;N 1000;N 300;N 100;N 30;N 10'
+ bin/benchmark-driver "${opts[@]}" -e "$n_values" "benchmarks/${bm}.yml"
+ mv graph.png "images/${bm}.png"
 
+ bm=push_n_pop_n
+ n_values='N 100000;N 30000;N 10000;N 3000;N 1000;N 300;N 100;N 30;N 10'
+ bin/benchmark-driver "${opts[@]}" -e "$n_values" "benchmarks/${bm}.yml"
+ mv graph.png "images/${bm}.png"
+
+bm=push_pop
+n_values='N 10_000_000;N 3_162_278;N 1_000_00;N 316_228;N 100_000;N 31_623;N 10_000;N 3162;N 1000;N 316;N 100;N 32;N 10'
+bin/benchmark-driver "${opts[@]}" -e "$n_values" "benchmarks/${bm}.yml"
+mv graph.png "images/${bm}.png"
