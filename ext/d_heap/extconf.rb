@@ -14,8 +14,10 @@ if enable_config("debug") || ENV["EXTCONF_DEBUG"] == "1"
     << " -Wall " \
     << " -ggdb" \
     << " -Wpedantic" \
-    << " -Werror" \
     << " -DDEBUG"
+  unless RbConfig::CONFIG["target_os"] =~ /darwin/
+    CONFIG["warnflags"] << " -Werror"
+  end
 end
 
 have_func "rb_gc_mark_movable" # since ruby-2.7
