@@ -8,8 +8,14 @@ require "mkmf"
 # $CFLAGS << " -g -ginline-points "
 # $CFLAGS << " -fno-omit-frame-pointer "
 
-if enable_config("debug")
-  CONFIG["warnflags"] << " -Werror -Wpedantic "
+if enable_config("debug") || ENV["EXTCONF_DEBUG"] == "1"
+  $stderr.puts "Building in debug mode." # rubocop:disable Style/StderrPuts
+  CONFIG["warnflags"] \
+    << " -Wall " \
+    << " -ggdb" \
+    << " -Wpedantic" \
+    << " -Werror" \
+    << " -DDEBUG"
 end
 
 have_func "rb_gc_mark_movable" # since ruby-2.7
@@ -17,6 +23,11 @@ have_func "rb_gc_mark_movable" # since ruby-2.7
 check_sizeof("long")
 check_sizeof("unsigned long long")
 check_sizeof("long double")
-have_macro("LDBL_MANT_DIG", "float.h")
+check_sizeof("double")
 
+unless have_macro("LDBL_MANT_DIG", "float.h")
+  raise NotImplementedError, "Missing LDBL_MANT_DIG."
+end
+
+create_header
 create_makefile("d_heap/d_heap")
