@@ -119,12 +119,6 @@ BIG2SCORE(VALUE x)
 }
 
 static inline SCORE
-INT2SCORE(VALUE x)
-{
-    return (FIXNUM_P(x) ? FIX2SCORE(x) : BIG2SCORE(x));
-}
-
-static inline SCORE
 NUM2SCORE(VALUE x)
 {
     return (FIXNUM_P(x) ? FIX2SCORE(x)
