@@ -15,4 +15,7 @@ AllowShortIfStatementsOnASingleLine: WithoutElse
 
 IndentCaseLabels: false
 IndentPPDirectives: AfterHash
+
+ForEachMacros:
+  - WHILE_PEEK_LT_P
 ...

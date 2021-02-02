@@ -83,7 +83,7 @@ class DHeap
   #          If all pushes are popped, the default is probably best.
   # @param capacity [Integer] initial capacity of the heap.
   def initialize(d: DEFAULT_D, capacity: DEFAULT_CAPA) # rubocop:disable Naming/MethodParameterName
-    __init_without_kw__(d, capacity)
+    __init_without_kw__(d, capacity, false)
   end
 
   # Consumes the heap by popping each minumum value until it is empty.
@@ -106,6 +106,30 @@ class DHeap
       yield pop until empty?
     end
     nil
+  end
+
+  if defined?(Map)
+
+    # Unlike {DHeap}, an object can only be added into a {DHeap::Map} once.  Any
+    # subsequent addition simply rescores the already existing member.  Objects
+    # are identified by their {#hash} value, just like with Hash.
+    class Map
+      alias score   :[]
+      alias rescore :[]=
+      alias update  :[]=
+
+      # Initialize a _d_-ary min-heap which can map objects to scores.
+      #
+      # @param d [Integer] Number of children for each parent node.
+      #          Higher values generally speed up push but slow down pop.
+      #          If all pushes are popped, the default is probably best.
+      # @param capacity [Integer] initial capacity of the heap.
+      def initialize(d: DEFAULT_D, capacity: DEFAULT_CAPA) # rubocop:disable Naming/MethodParameterName
+        __init_without_kw__(d, capacity, true)
+      end
+
+    end
+
   end
 
 end

@@ -8,16 +8,34 @@ require "mkmf"
 # $CFLAGS << " -g -ginline-points "
 # $CFLAGS << " -fno-omit-frame-pointer "
 
-if enable_config("debug") || ENV["EXTCONF_DEBUG"] == "1"
+# Use `rake compile -- --enable-debug`
+debug_mode = enable_config("debug", ENV["EXTCONF_DEBUG"] == "1")
+
+# Use `rake compile -- --enable-development`
+devel_mode = enable_config("development") || debug_mode
+
+if debug_mode
   $stderr.puts "Building in debug mode." # rubocop:disable Style/StderrPuts
   CONFIG["warnflags"] \
-    << " -Wall " \
     << " -ggdb" \
-    << " -Wpedantic" \
     << " -DDEBUG"
+end
+
+if devel_mode
+  $stderr.puts "Building in development mode." # rubocop:disable Style/StderrPuts
+  CONFIG["warnflags"] \
+    << " -Wall " \
+    << " -Wpedantic" \
+  # There are warnings on MacOS that are annoying to debug (I don't have a Mac).
   unless RbConfig::CONFIG["target_os"] =~ /darwin/
     CONFIG["warnflags"] << " -Werror"
   end
+end
+
+# Use `rake compile -- --enable-heapmap`
+if enable_config("heapmap", true)
+  $stderr.puts "Building with DHeap::Map support." # rubocop:disable Style/StderrPuts
+  $defs.push "-DDHEAP_MAP"
 end
 
 have_func "rb_gc_mark_movable" # since ruby-2.7

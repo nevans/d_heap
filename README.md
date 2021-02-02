@@ -77,21 +77,6 @@ Quick reference for the most common methods:
 * `heap.empty?` returns true if the heap is empty.
 * `heap.size` returns the number of items in the heap.
 
-If a score changes while the object is still in the heap, it will not be
-re-evaluated again.
-
-Constraining scores to numeric values gives more than 50% speedup under some
-benchmarks!  _n.b._ `Integer` _scores must have an absolute value that fits
-into_ `unsigned long long`. This is compiler and architecture dependant but with
-gcc on an IA-64 system it's 64 bits, which gives a range of
--18,446,744,073,709,551,615 to +18,446,744,073,709,551,615, which is more than
-enough to accurately store e.g. POSIX time since the epoch in nanoseconds.
-
-_Comparing arbitary objects via_ `a <=> b` _was the original design and may be
-added back in a future version,_ if (and only if) _it can be done without
-impacting the speed of numeric comparisons. The speedup from this constraint is
-huge!_
-
 ### Examples
 
 ```ruby
@@ -142,6 +127,37 @@ heap.pop    # => nil
 Please see the [full documentation] for more methods and more examples.
 
 [full documentation]: https://rubydoc.info/gems/d_heap/DHeap
+
+### DHeap::Map
+
+`DHeap::Map` augments the heap with an internal `Hash`, mapping objects to their
+index in the heap.  For simple push/pop this a bit slower than a normal `DHeap`
+heap, but it can enable huge speed-ups for algorithms that need to adjust scores
+after they've been added, e.g.  [Dijkstra's algorithm].  It adds the following:
+
+* a uniqueness constraint, by `#hash` value
+* `#[obj] # => score` or `#score(obj)` in `O(1)`
+* `#[obj] = new_score` or `#rescore(obj, score)` in `O(d log n / log d)`
+* TODO:
+  * optionally unique by object identity
+  * `#delete(obj)` in `O(d log n / log d)` (TODO)
+
+## Scores
+
+If a score changes while the object is still in the heap, it will not be
+re-evaluated again.
+
+Constraining scores to numeric values gives more than 50% speedup under some
+benchmarks!  _n.b._ `Integer` _scores must have an absolute value that fits
+into_ `unsigned long long`. This is compiler and architecture dependant but with
+gcc on an IA-64 system it's 64 bits, which gives a range of
+-18,446,744,073,709,551,615 to +18,446,744,073,709,551,615, which is more than
+enough to accurately store e.g. POSIX time since the epoch in nanoseconds.
+
+_Comparing arbitary objects via_ `a <=> b` _was the original design and may be
+added back in a future version,_ if (and only if) _it can be done without
+impacting the speed of numeric comparisons. The speedup from this constraint is
+huge!_
 
 ## Thread safety
 
@@ -194,8 +210,9 @@ were measured with v0.5.0 and ruby 2.7.2 without MJIT enabled._
 
 ### Scenarios
 
-Each benchmark increases N exponentially, some by 10 at each step and some by
-&radic;<span style="text-decoration: overline">10</span>.
+Each benchmark increases N exponentially, either by √1̅0̅ or approximating
+(alternating between x3 and x3.333) in order to simplify keeping loop counts
+evenly divisible by N.
 
 #### push N items
 
@@ -402,21 +419,13 @@ only 64-bit Linux and Mac OS with CRuby 2.4-3.0 are supported.
 
 ## Caveats and TODOs (PRs welcome!)
 
-Add `DHeap::Map`, which augments the heap with an internal `Hash`, mapping
-objects to their index in the heap.  This is expected to be a little bit slower
-than the hash-less heap, but it's needed for [Dijkstra's algorithm].
-
-* a uniqueness constraint (either by `#hash` value or by object identity)
-* `#[obj] # => score` or `#score(obj)` in `O(1)`
-* `#[obj] = new_score` or `#rescore(obj, score)` in `O(d log n / log d)`
-* `#delete(obj)` in `O(d log n / log d)`
-
 A `DHeap`'s internal array grows but never shrinks.  At the very least, there
 should be a `#compact` or `#shrink` method and during `#freeze`.  It might make
 sense to automatically shrink (to no more than 2x the current size) during GC's
 compact phase.
 
-Benchmark sift-down min-child comparisons using SSE, AVX2, and AVX512F.
+Benchmark sift-down min-child comparisons using SSE, AVX2, and AVX512F.  This
+might lead to a different default `d` value (maybe 16 or 24?).
 
 Shrink scores to 64-bits: either store a type flag with each entry (this could
 be used to support non-numeric scores) or require users to choose between

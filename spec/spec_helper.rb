@@ -20,12 +20,12 @@ FrozenError = RuntimeError unless defined?(FrozenError)
 
 module SpecHelper
 
-  def describe_any_size_heap(name, &block) # rubocop:disable Metrics/MethodLength
+  def describe_any_size_heap(name, klass = DHeap, &block) # rubocop:disable Metrics/MethodLength
     describe name do
 
       shared_examples(name) do |dval|
         let(:d) { dval }
-        subject(:heap) { DHeap.new(d: d) }
+        subject(:heap) { klass.new(d: d) }
         instance_exec(dval, &block)
       end
 

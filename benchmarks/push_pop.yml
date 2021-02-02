@@ -17,9 +17,17 @@ benchmark:
       random_idx += 1
       q << random_vals.fetch(random_idx % random_len)
       q.pop
-    name:    "push + pop (findmin)"
+    name:    "push + pop (amindel)"
     prelude: |
       q = FindMin.new(N) {
+        random_idx += 1
+        random_vals.fetch(random_idx % random_len)
+      }
+
+  - script: *script
+    name:    "push + pop (hmindel)"
+    prelude: |
+      q = FindHash.new(N) {
         random_idx += 1
         random_vals.fetch(random_idx % random_len)
       }
@@ -57,3 +65,15 @@ benchmark:
         random_idx += 1
         q << random_vals.fetch(random_idx % random_len)
       end
+
+  - name: "push + pop (heapmap)"
+    prelude: |
+      q = DHeap::Map.new(d: D)
+      N.times do
+        random_idx += 1
+        q[random_idx] = random_vals.fetch(random_idx % random_len)
+      end
+    script: |
+      random_idx += 1
+      q[random_idx] = random_vals.fetch(random_idx % random_len)
+      q.pop

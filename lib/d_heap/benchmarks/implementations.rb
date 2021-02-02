@@ -9,10 +9,10 @@ module DHeap::Benchmarks
     attr_reader :a
 
     # quick initialization by simply sorting the array once.
-    def initialize(count = nil, &block)
+    def initialize(count = nil)
       @a = []
       return unless count
-      count.times {|i| @a << block.call(i) }
+      count.times {|i| @a << yield(i) }
       @a.sort!
     end
 
@@ -33,6 +33,12 @@ module DHeap::Benchmarks
   # The most naive approach--completely unsorted!--is ironically not the worst.
   class FindMin < ExamplePriorityQueue
 
+    def initialize(count = nil) # rubocop:disable Lint/MissingSuper
+      @a = []
+      return unless count
+      count.times {|i| @a << yield(i) }
+    end
+
     # O(1)
     def <<(score)
       raise ArgumentError unless score
@@ -45,6 +51,31 @@ module DHeap::Benchmarks
       index = @a.rindex(score)
       @a.delete_at(index)
       score
+    end
+
+  end
+
+  # The most naive approach--completely unsorted!--is ironically not the worst.
+  class FindHash < ExamplePriorityQueue
+
+    def initialize(count = nil) # rubocop:disable Lint/MissingSuper
+      @a = Hash.new(0)
+      return unless count
+      count.times {|i| @a[yield i] += 1 }
+    end
+
+    # O(1)
+    def <<(score)
+      raise ArgumentError unless score
+      @a[score] += 1
+    end
+
+    # O(n)
+    def pop
+      return unless (obj = @a.keys.min)
+      count = @a[obj] -= 1
+      @a.delete(obj) if count <= 0
+      obj
     end
 
   end
@@ -207,7 +238,8 @@ module DHeap::Benchmarks
   # Different duck-typed priority queue implemenations
   IMPLEMENTATIONS = [
     OpenStruct.new(name: " push and resort", klass: Sorting).freeze,
-    OpenStruct.new(name: "  find min + del", klass: FindMin).freeze,
+    OpenStruct.new(name: "find+del in array", klass: FindMin).freeze,
+    OpenStruct.new(name: "find+del in hash", klass: FindHash).freeze,
     OpenStruct.new(name: "bsearch + insert", klass: BSearch).freeze,
     OpenStruct.new(name: "ruby binary heap", klass: RbHeap).freeze,
     OpenStruct.new(name: "C++STL PriorityQ", klass: CppSTL).freeze,

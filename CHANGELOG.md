@@ -1,5 +1,10 @@
 ## Current/Unreleased
 
+* ✨ Added `DHeap::Map` for ensuring values can only be added once, by `#hash`.
+    * Adding again will update the score.
+    * Adds `DHeap::Map#[]` for quick lookup of existing scores
+    * Adds `DHeap::Map#[]=` for adjustments of existing scores
+
 ## Release v0.6.1 (2021-01-24)
 
 * 📝 Fix link to CHANGELOG.md in gemspec

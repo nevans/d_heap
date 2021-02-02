@@ -1,0 +1,7 @@
+---
+inherit_from:
+  - "../../.rubocop.yml"
+
+Style/GlobalVars:
+  AllowedVariables:
+    - "$defs"
