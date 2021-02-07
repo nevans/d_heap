@@ -27,28 +27,28 @@ RSpec.describe DHeap do
 
     let(:max_dbl_mantissa) { (1 << 53) - 1 }
 
-    it "returns whole number scores > double mantissa (53 bits) as Integer" do
+    it "returns whole number scores > double mantissa (53 bits) as Float" do
       obj1 = Object.new
       obj2 = Object.new
       heap.push obj1, max_dbl_mantissa + 1
       heap.push obj2, -(max_dbl_mantissa + 1)
       expect(heap.peek_with_score).to eq([obj2, -(max_dbl_mantissa + 1)])
-      expect(heap.peek_with_score[1]).to be_an_instance_of(Integer)
+      expect(heap.peek_with_score[1]).to be_an_instance_of(Float)
       heap.pop
       expect(heap.peek_with_score).to eq([obj1, max_dbl_mantissa + 1])
-      expect(heap.peek_with_score[1]).to be_an_instance_of(Integer)
+      expect(heap.peek_with_score[1]).to be_an_instance_of(Float)
     end
 
-    it "returns whole number scores <= double mantissa (53 bits) as Integer" do
+    it "returns whole number scores <= double mantissa (53 bits) as Float" do
       obj1 = Object.new
       obj2 = Object.new
       heap.push obj1, max_dbl_mantissa.to_f
       heap.push obj2, (max_dbl_mantissa - 1).to_f
       expect(heap.peek_with_score).to eq([obj2, max_dbl_mantissa - 1])
-      expect(heap.peek_with_score[1]).to be_an_instance_of(Integer)
+      expect(heap.peek_with_score[1]).to be_an_instance_of(Float)
       heap.pop
       expect(heap.peek_with_score).to eq([obj1, max_dbl_mantissa])
-      expect(heap.peek_with_score[1]).to be_an_instance_of(Integer)
+      expect(heap.peek_with_score[1]).to be_an_instance_of(Float)
     end
 
   end

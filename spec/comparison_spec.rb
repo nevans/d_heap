@@ -52,8 +52,6 @@ RSpec.describe DHeap, "comparisons" do
       heap = DHeap.new
       heap << char_max
       heap << char_min
-      heap << llong_max
-      heap << llong_min
       heap << long_max
       heap << long_min
       heap << short_max
@@ -64,35 +62,43 @@ RSpec.describe DHeap, "comparisons" do
       heap << -uchar_max
       heap << -ushort_max
       heap << -ulong_max
-      heap << fixnum_min
-      heap << fixnum_max
       # floating point mantissas
       heap <<  flo_mantissa
       heap << -flo_mantissa
       heap <<  dbl_mantissa
       heap << -dbl_mantissa
-      # push the *real* boundaries
-      heap << -ullong_max
-      heap << llong_max + 1
       heap << 0.0.next_float
       heap << 0
       heap << 0.0.prev_float
+
+      # automatically convert Integer outside dbl_mantissa: will lose precision
+      heap << -ullong_max
+      heap << llong_max + 1
+      heap << llong_max
+      heap << llong_min
+      heap << fixnum_min
+      heap << fixnum_max
+      heap << ullong_max + 1
+      heap << -ullong_max - 1
       heap << llong_min - 1
       heap << ullong_max
-      # don't automatically convert Integer outside ullong_max
-      expect { heap << ullong_max + 1 }.to raise_error(RangeError)
-      expect { heap << -ullong_max - 1 }.to raise_error(RangeError)
-      # but floats are allowed, because you've already sacrificed precision
       heap <<  ullong_max + 2.0
       heap << -ullong_max - 2.0
       heap <<  (2**129).to_f
       heap << -(2**129).to_f
 
       expect(heap.pop).to eq(-(2**129).to_f)
-      expect(heap.pop).to eq(-ullong_max - 2.0)
-      expect(heap.pop).to eq(-ullong_max)
-      expect(heap.pop).to eq(llong_min - 1)
-      expect(heap.pop).to eq(llong_min)
+      ambiguous = Array.new(3) { heap.pop }
+      expect(ambiguous).to contain_exactly(
+        -ullong_max - 2.0,
+        -ullong_max - 1,
+        -ullong_max,
+      )
+      ambiguous = Array.new(2) { heap.pop }
+      expect(ambiguous).to contain_exactly(
+        llong_min - 1,
+        llong_min,
+      )
       expect(heap.pop).to eq(fixnum_min)
       expect(heap.pop).to eq(-dbl_mantissa)
       expect(heap.pop).to eq(-ulong_max)
@@ -114,10 +120,17 @@ RSpec.describe DHeap, "comparisons" do
       expect(heap.pop).to eq(ulong_max)
       expect(heap.pop).to eq(dbl_mantissa)
       expect(heap.pop).to eq(fixnum_max)
-      expect(heap.pop).to eq(llong_max)
-      expect(heap.pop).to eq(llong_max + 1)
-      expect(heap.pop).to eq(ullong_max)
-      expect(heap.pop).to eq(ullong_max + 2.0)
+      ambiguous = Array.new(2) { heap.pop }
+      expect(ambiguous).to contain_exactly(
+        llong_max,
+        llong_max + 1,
+      )
+      ambiguous = Array.new(3) { heap.pop }
+      expect(ambiguous).to contain_exactly(
+        ullong_max,
+        ullong_max + 1,
+        ullong_max + 2.0,
+      )
       expect(heap.pop).to eq((2**129).to_f)
       expect(heap).to be_empty
     end

@@ -25,8 +25,7 @@
 typedef struct dheap_struct dheap_t;
 typedef struct dheap_entry  ENTRY;
 
-// TODO: convert SCORE to a union, and use an ENTRY flag for its type
-typedef long double SCORE;
+typedef double SCORE;
 
 /********************************************************************
  *
@@ -114,91 +113,10 @@ static const rb_data_type_t dheap_data_type;
  *
  ********************************************************************/
 
-// ruby doesn't have a LDBL2NUM. :(
-// So this only accomplishes a subset of what that ought to do.
-static inline VALUE
-SCORE2NUM(SCORE s)
-{
-    if (roundl(s) == s) {
-        if (s < 0) {
-            unsigned long long ull = (unsigned long long)(-s);
-            return rb_funcall(ULL2NUM(ull), id_uminus, 0, Qundef);
-        }
-        return ULL2NUM((unsigned long long)(s));
-    }
-    return rb_float_new((double)(s));
-}
-
-static inline SCORE
-FIX2SCORE(VALUE x)
-{
-    return (long double)FIX2LONG(x);
-}
-
-// We could translate a much wider range of values to long double by
-// implementing a new `rb_big2ldbl(x)` function. But requires reaching into
-// T_BIGNUM internals.
-static inline long double
-BIG2SCORE(VALUE x)
-{
-    if (RBIGNUM_POSITIVE_P(x)) {
-        unsigned long long ull = rb_big2ull(x);
-        return (long double)ull;
-    } else {
-        unsigned long long ull;
-        long double        ldbl;
-        x    = rb_funcall(x, id_abs, 0, Qundef);
-        ull  = rb_big2ull(x);
-        ldbl = (long double)ull;
-        return -ldbl;
-    }
-}
-
-static inline SCORE
-NUM2SCORE(VALUE x)
-{
-    return (FIXNUM_P(x) ? FIX2SCORE(x)
-            : RB_TYPE_P(x, T_BIGNUM)
-              ? BIG2SCORE(x)
-              : (Check_Type(x, T_FLOAT), (long double)RFLOAT_VALUE(x)));
-}
-
-static inline long double
-RAT2SCORE(VALUE x)
-{
-    VALUE num = rb_rational_num(x);
-    VALUE den = rb_rational_den(x);
-    return NUM2SCORE(num) / NUM2SCORE(den);
-}
-
-/*
- * Convert both T_FIXNUM and T_FLOAT (and sometimes T_BIGNUM, T_RATIONAL,
- * String, etc) to SCORE
- * * with no loss of precision (where possible for Integer and Float),
- * * raises an exception if
- *   * a positive integer is too large for unsigned long long (should be 64bit)
- *   * a negative integer is too small for   signed long long (should be 64bit)
- * * reduced to long double (should be 80 or 128 bit) if it is Rational
- * * reduced to double precision if the value is convertable by Float(x)
- */
-static inline SCORE
-VAL2SCORE(VALUE score)
-{
-    // assert that long double can hold 'unsigned long long':
-    // static_assert(sizeof(unsigned long long) * 8 <= LDBL_MANT_DIG);
-    // assert that long double can hold T_FLOAT
-    // static_assert(sizeof(double) <= sizeof(long double));
-    switch (TYPE(score)) {
-    case T_FIXNUM:
-        return FIX2SCORE(score);
-    case T_BIGNUM:
-        return BIG2SCORE(score);
-    case T_RATIONAL:
-        return RAT2SCORE(score);
-    default:
-        return (long double)(NUM2DBL(rb_Float(score)));
-    }
-}
+#define SCORE2NUM(score) rb_float_new(score)
+#define VAL2SCORE(val)   NUM2DBL(RB_FLOAT_TYPE_P(val) ? val : rb_Float(val))
+#define CMP_LT(a, b)     ((a) < (b))
+#define CMP_LTE(a, b)    ((a) <= (b))
 
 /********************************************************************
  *
@@ -335,51 +253,8 @@ static const rb_data_type_t dheap_data_type = {
 /********************************************************************
  *
  * DHeap comparisons
- * TODO: bring back comparisons for score types other than `long double`.
  *
  ********************************************************************/
-
-#define CMP_LT(a, b)  ((a) < (b))
-#define CMP_LTE(a, b) ((a) <= (b))
-
-/* #ifdef ORIG_SCORE_CMP_CODE */
-
-/* #define CMP_LT(a, b)  (optimized_cmp(a, b) <  0) */
-/* #define CMP_LTE(a, b) (optimized_cmp(a, b) <= 0) */
-
-/* // from internal/compar.h */
-/* #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
- */
-/*
- * short-circuit evaluation for a few basic types.
- *
- * Only Integer, Float, and String are optimized,
- * and only when both arguments are the same type.
- */
-/* static inline int */
-/* optimized_cmp(SCORE a, SCORE b) { */
-/*     if (a == b) // Fixnum equality and object equality */
-/*         return 0; */
-/*     if (FIXNUM_P(a) && FIXNUM_P(b)) */
-/*         return (FIX2LONG(a) < FIX2LONG(b)) ? -1 : 1; */
-/*     if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b)) */
-/*     { */
-/*         double x, y; */
-/*         x = RFLOAT_VALUE(a); */
-/*         y = RFLOAT_VALUE(b); */
-/*         if (isnan(x) || isnan(y)) rb_cmperr(a, b); // raise ArgumentError */
-/*         return (x < y) ? -1 : ((x == y) ? 0 : 1); */
-/*     } */
-/*     if (RB_TYPE_P(a, T_BIGNUM) && RB_TYPE_P(b, T_BIGNUM)) */
-/*         return FIX2INT(rb_big_cmp(a, b)); */
-/*     if (STRING_P(a) && STRING_P(b)) */
-/*         return rb_str_cmp(a, b); */
-
-/*     // give up on an optimized version and just call (a <=> b) */
-/*     return rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b); */
-/* } */
-
-/* #endif */
 
 /********************************************************************
  *

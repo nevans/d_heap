@@ -63,8 +63,8 @@ Or install it yourself as:
 ## Usage
 
 The basic API is `#push(object, score)` and `#pop`.  Please read the [full
-documentation] for more details.  The score must be `Integer` or `Float` or
-convertable to a `Float` via `Float(score)` (i.e. it should implement `#to_f`).
+documentation] for more details.  The score must be convertable to a `Float` via
+`Float(score)` (i.e. it should properly implement `#to_f`).
 
 Quick reference for the most common methods:
 
@@ -147,17 +147,17 @@ after they've been added, e.g.  [Dijkstra's algorithm].  It adds the following:
 If a score changes while the object is still in the heap, it will not be
 re-evaluated again.
 
-Constraining scores to numeric values gives more than 50% speedup under some
-benchmarks!  _n.b._ `Integer` _scores must have an absolute value that fits
-into_ `unsigned long long`. This is compiler and architecture dependant but with
-gcc on an IA-64 system it's 64 bits, which gives a range of
--18,446,744,073,709,551,615 to +18,446,744,073,709,551,615, which is more than
-enough to accurately store e.g. POSIX time since the epoch in nanoseconds.
+Constraining scores to `Float` gives enormous performance benefits.  n.b.
+very large `Integer` values will lose precision when converted to `Float`.  This
+is compiler and architecture dependant but with gcc on an IA-64 system, `Float`
+is 64 bits with a 53-bit mantissa, which gives a range of -9,007,199,254,740,991
+to +9,007,199,254,740,991, which is _not_ enough to store the precise POSIX
+time since the epoch in nanoseconds.  This can be worked around by adding a
+bias, but probably it's good enough for most usage.
 
 _Comparing arbitary objects via_ `a <=> b` _was the original design and may be
 added back in a future version,_ if (and only if) _it can be done without
-impacting the speed of numeric comparisons. The speedup from this constraint is
-huge!_
+impacting the speed of numeric comparisons._
 
 ## Thread safety
 
@@ -358,6 +358,13 @@ fewest comparisons for a combined push and pop:
 
 See https://en.wikipedia.org/wiki/D-ary_heap#Analysis for deeper analysis.
 
+However, what this simple count of comparisons misses is the extent to which
+modern compilers can optimize code (e.g. by unrolling the comparison loop to
+execute on registers) and more importantly how well modern processors are at
+pipelined speculative execution using branch prediction, etc.  Benchmarks should
+be run on the _exact same_ hardware platform that production code will use,
+as the sift-down operation is especially sensitive to good pipelining.
+
 ## Comparison performance
 
 It is often useful to use external scores for otherwise uncomparable values.
@@ -366,15 +373,10 @@ And casting an item or score (via `to_f`) can also be time consuming.  So
 compared directly without needing any further lookup.
 
 Numeric values can be compared _much_ faster than other ruby objects, even if
-those objects simply delegate comparison to internal Numeric values.  So scores
-are (currently) restricted to Integer or Float values.
-
+those objects simply delegate comparison to internal Numeric values.
 Additionally, native C integers or floats can be compared _much_ faster than
-ruby `Numeric` objects.  For simplicity, all scores are stored as the same type:
-`long double`, which uses 128-bits in an [LP64 64-bit system].  This is used
-because a 64-bit `double` (which ruby uses for `Float`) with its 53 bit mantissa
-isn't able to represent the integer number of nanoseconds since the epoch
-without a loss of precision.
+ruby `Numeric` objects.  So scores are converted to Float and stored as
+`double`, which is 64 bits on an [LP64 64-bit system].
 
 [LP64 64-bit system]: https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models
 
@@ -413,9 +415,8 @@ See the [CI workflow] for all supported platforms.
 
 [CI workflow]: https://github.com/nevans/d_heap/actions?query=workflow%3ACI
 
-`d_heap` will not compile unless the `long double` mantissa is at least as large
-as `long long`, and it may have contain other bugs on 32-bit systems.  Currently
-only 64-bit Linux and Mac OS with CRuby 2.4-3.0 are supported.
+`d_heap` may contain bugs on 32-bit systems.  Currently, `d_heap` is only tested
+on 64-bit x86 CRuby 2.4-3.0 under Linux and Mac OS.
 
 ## Caveats and TODOs (PRs welcome!)
 
