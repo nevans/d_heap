@@ -431,7 +431,7 @@ dheap_min_child(dheap_t *heap, long parent, long last_index)
 }
 
 #define DHEAP_CAN_SIFT_DOWN(heap, index, last_index)                           \
-    (LIKELY(1 <= last_index || index <= DHEAP_IDX_PARENT(heap, last_index)))
+    (LIKELY(1 <= last_index && index <= DHEAP_IDX_PARENT(heap, last_index)))
 
 #define DHEAP_SIFT_DOWN(T, heap, i)                                            \
     do {                                                                       \
