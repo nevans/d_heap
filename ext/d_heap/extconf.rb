@@ -38,6 +38,12 @@ if enable_config("heapmap", true)
   $defs.push "-DDHEAP_MAP"
 end
 
+if enable_config("dheapsimd", true)
+  $stderr.puts "Enabled native arch support, including SSE & AVX." # rubocop:disable Style/StderrPuts
+  $CFLAGS << " -march=native "
+  $CFLAGS << " -DDHEAP_SIMD_ENABLED"
+end
+
 have_func "rb_gc_mark_movable" # since ruby-2.7
 
 check_sizeof("long")

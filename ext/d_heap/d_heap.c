@@ -2,6 +2,10 @@
 #include <float.h>
 #include <math.h>
 
+#ifdef DHEAP_SIMD_ENABLED
+#    include <immintrin.h>
+#endif
+
 #if CHAR_BIT != 8
 #    error "DHeap assumes 8-bit bytes"
 #endif
@@ -426,11 +430,90 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
         DHEAP_SET(T, heap, sift_idx, entry);                                   \
     } while (0)
 
+#ifdef DHEAP_SIMD_ENABLED
+
+#    define SCORE_AT(i) DHEAP_SCORE(heap, i)
+
+#    define MINIDX2(aget, i, j) (aget(i) < aget(j) ? i : j)
+#    define MINIDX3(aget, i, j, k)                                             \
+        (aget(i) < aget(j) ? MINIDX2(aget, i, k) : MINIDX2(aget, j, k))
+
+static inline size_t
+min_index_sse(dheap_t *heap, size_t idx, const size_t last)
+{
+    /* printf("min_index_sse(#<DHeap d=%d size=%zd>, idx=%zd, last=%zd>\n", */
+    /*        heap->d, */
+    /*        heap->size, */
+    /*        idx, */
+    /*        last); */
+#    ifdef DEBUG
+    if (UNLIKELY(last - idx < 3))
+        rb_raise(rb_eException, "too small for min_index_sse");
+#    endif
+    {
+        // setup initial vars
+        const __m128i incr_by = _mm_set1_epi64x(2L);
+        __m128i       indices = _mm_set_epi64x(idx + 1, idx);
+        __m128i       minidxs = indices;
+        __m128d       minvals = _mm_set_pd(SCORE_AT(idx + 1), SCORE_AT(idx));
+
+        for (idx += 2; idx < last; idx += 2) {
+            const __m128d values = _mm_set_pd(SCORE_AT(idx + 1), SCORE_AT(idx));
+            const __m128d ltmask = _mm_cmplt_pd(values, minvals);
+
+            indices = _mm_add_epi32(indices, incr_by);
+            minidxs = _mm_blendv_epi8(minidxs, indices, (__m128i)ltmask);
+            minvals = _mm_min_pd(values, minvals);
+        }
+
+        double   ary_vals[2];
+        uint32_t ary_idxs[4];
+        _mm_storeu_pd(ary_vals, minvals);
+        _mm_storeu_si128((__m128i *)ary_idxs, minidxs);
+
+        size_t minidx = ((ary_vals[0] < ary_vals[1]) ? (size_t)ary_idxs[0]
+                                                     : (size_t)ary_idxs[2]);
+        if (last == idx) {
+            return MINIDX2(SCORE_AT, minidx, last);
+#    ifdef DEBUG
+        } else if (UNLIKELY((idx - 1) != last)) {
+            rb_raise(rb_eException, "Buggy min_index_sse");
+#    endif
+        } else {
+            return minidx;
+        }
+    }
+}
+
+static inline size_t
+dheap_min_child(dheap_t *heap, const size_t parent, const size_t last_index)
+{
+    const size_t idx0 = DHEAP_IDX_CHILD_0(heap, parent);
+    const size_t idxd = DHEAP_IDX_CHILD_D(heap, parent);
+    const size_t last = (LIKELY(idxd <= last_index)) ? idxd : last_index;
+    const size_t size = (last - idx0 + 1);
+
+    // short-circuit the small cases
+    switch (size) { // clang-format off
+    case 3: return MINIDX3(SCORE_AT, idx0, idx0 + 1, idx0 + 2);
+    case 2: return MINIDX2(SCORE_AT, idx0, idx0 + 1);
+    case 1: return idx0;
+    case 0: rb_raise(rb_eException, "invalid min_index_simd size: 0");
+    } // clang-format on
+
+    // 4 or more, use SSE
+    return min_index_sse(heap, idx0, last);
+}
+
+#    undef SCORE_AT
+
+#else
+
 static inline size_t
 dheap_min_child(dheap_t *heap, size_t parent, size_t last_index)
 {
     size_t min_child = DHEAP_IDX_CHILD_0(heap, parent);
-    size_t last_sib  = DHEAP_IDX_CHILD_D(heap, parent);
+    size_t last_sib = DHEAP_IDX_CHILD_D(heap, parent);
     if (UNLIKELY(last_index < last_sib)) last_sib = last_index;
 
     for (size_t sibidx = min_child + 1; sibidx <= last_sib; ++sibidx) {
@@ -440,6 +523,8 @@ dheap_min_child(dheap_t *heap, size_t parent, size_t last_index)
     }
     return min_child;
 }
+
+#endif
 
 #define DHEAP_CAN_SIFT_DOWN(heap, index, last_index)                           \
     (LIKELY(1 <= last_index && index <= DHEAP_IDX_PARENT(heap, last_index)))

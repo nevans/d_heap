@@ -5,3 +5,4 @@ inherit_from:
 Style/GlobalVars:
   AllowedVariables:
     - "$defs"
+    - "$CFLAGS"
