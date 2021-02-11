@@ -45,21 +45,21 @@ benchmark:
   - name: "d=8"
     prelude: "q = prefill[8]"
     script: *script
-  - name: "d=9"
-    prelude: "q = prefill[9]"
-    script: *script
   - name: "d=10"
     prelude: "q = prefill[10]"
     script: *script
-  - name: "d=11"
-    prelude: "q = prefill[11]"
-    script: *script
   - name: "d=12"
     prelude: "q = prefill[12]"
+    script: *script
+  - name: "d=14"
+    prelude: "q = prefill[11]"
     script: *script
   - name: "d=16"
     prelude: "q = prefill[16]"
     script: *script
   - name: "d=24"
     prelude: "q = prefill[24]"
+    script: *script
+  - name: "d=32"
+    prelude: "q = prefill[32]"
     script: *script

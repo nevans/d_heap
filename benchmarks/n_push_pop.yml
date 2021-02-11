@@ -1,0 +1,65 @@
+---
+prelude: |
+  system("#{RbConfig.ruby} bin/rake compile", err: :out, exception: true)
+  require "d_heap/benchmarks"
+  include DHeap::Benchmarks
+
+  # this is >4x faster than calling Kernel#rand (see random_vals.yml)
+  random_idx  = -1
+  random_len  = 1_000_000
+  random_vals = Array.new(random_len) { rand(0..10_000) }
+
+  D = ENV.fetch("BENCH_D", 100_000).to_i
+
+  prefill = -> (n) {
+    q = DHeap.new(d: D)
+    n.times do
+      random_idx += 1
+      q << random_vals.fetch(random_idx % random_len)
+    end
+    q
+  }
+
+benchmark:
+  - name: "N=10"
+    prelude: "q = prefill[10]"
+    script: &script |
+      random_idx += 1
+      q << random_vals.fetch(random_idx % random_len)
+      q.pop
+  - name: "N=32"
+    prelude: "q = prefill[32]"
+    script: *script
+  - name: "N=100"
+    prelude: "q = prefill[100]"
+    script: *script
+  - name: "N=316"
+    prelude: "q = prefill[316]"
+    script: *script
+  - name: "N=1,000"
+    prelude: "q = prefill[1000]"
+    script: *script
+  - name: "N=3,162"
+    prelude: "q = prefill[3162]"
+    script: *script
+  - name: "N=10,000"
+    prelude: "q = prefill[10_000]"
+    script: *script
+  - name: "N=31,623"
+    prelude: "q = prefill[31_623]"
+    script: *script
+  - name: "N=100,000"
+    prelude: "q = prefill[100_000]"
+    script: *script
+  - name: "N=316,228"
+    prelude: "q = prefill[316_228]"
+    script: *script
+  - name: "N=1,000,000"
+    prelude: "q = prefill[1_000_000]"
+    script: *script
+  - name: "N=3,162,278"
+    prelude: "q = prefill[3_162_278]"
+    script: *script
+  - name: "N=10,000,000"
+    prelude: "q = prefill[10_000_000]"
+    script: *script

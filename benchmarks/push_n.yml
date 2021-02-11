@@ -14,8 +14,8 @@ prelude: |
 benchmark:
   - script: &script |
       q.clear if __bmdv_i % N == 0
-      random_idx = ((random_idx + 1) % random_len)
-      q << random_vals.fetch((random_idx + 1) % random_len)
+      random_idx += 1
+      q << random_vals.fetch(random_idx % random_len)
     name:    "push N (findmin)"
     prelude: "q = FindMin.new"
     loop_count: 30_000_000
