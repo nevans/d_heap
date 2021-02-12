@@ -432,58 +432,303 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
 
 #ifdef DHEAP_SIMD_ENABLED
 
-#    define SCORE_AT(i) DHEAP_SCORE(heap, i)
+#    ifdef DEBUG
 
-#    define MINIDX2(aget, i, j) (aget(i) < aget(j) ? i : j)
-#    define MINIDX3(aget, i, j, k)                                             \
-        (aget(i) < aget(j) ? MINIDX2(aget, i, k) : MINIDX2(aget, j, k))
+void
+debug_print_m128i64(const char *const label, const __m128i vector)
+{
+    uint64_t val[2];
+    memcpy(val, &vector, sizeof(val));
+    printf("%s: %5ld %5ld\n", label, val[0], val[1]);
+}
+
+void
+debug_print_m256i64(const char *const label, const __m256i vector)
+{
+    uint64_t val[4];
+    memcpy(val, &vector, sizeof(val));
+    printf("%s: %5ld %5ld %5ld %5ld\n", label, val[0], val[1], val[2], val[3]);
+}
+
+void
+debug_print_m128_pd(const char *const label, const __m128d vector)
+{
+    double val[2];
+    memcpy(val, &vector, sizeof(val));
+    printf("%s: %5g %5g\n", label, val[0], val[1]);
+}
+
+void
+debug_print_m256_pd(const char *const label, const __m256d vector)
+{
+    double val[4];
+    memcpy(val, &vector, sizeof(val));
+    printf("%s: %5g %5g %5g %5g\n", label, val[0], val[1], val[2], val[3]);
+}
+
+void
+debug_print_dheap(const dheap_t *const heap, int inspect)
+{
+    printf("#<DHeap d=%d size=%zd", heap->d, heap->size);
+    if (inspect) {
+        for (size_t i = 0; i < (size_t)heap->size; i++) {
+            if (i % heap->d == 1)
+                printf("   (p=%zd)", DHEAP_IDX_PARENT(heap, i));
+            printf(" [%zd]=%g", i, DHEAP_SCORE(heap, i));
+            if (DHEAP_SCORE(heap, i) <
+                DHEAP_SCORE(heap, DHEAP_IDX_PARENT(heap, i)))
+                printf("<-!!!!!!!!!");
+        }
+    }
+    printf(">");
+}
+
+#    endif
+
+#    define _MM512_LOAD_SCORES(entries, idx)                                   \
+        _mm512_set_pd(entries[idx + 7].score,                                  \
+                      entries[idx + 6].score,                                  \
+                      entries[idx + 5].score,                                  \
+                      entries[idx + 4].score,                                  \
+                      entries[idx + 3].score,                                  \
+                      entries[idx + 2].score,                                  \
+                      entries[idx + 1].score,                                  \
+                      entries[idx].score)
+
+#    define _MM256_LOAD_SCORES(entries, idx)                                   \
+        _mm256_set_pd(entries[idx + 3].score,                                  \
+                      entries[idx + 2].score,                                  \
+                      entries[idx + 1].score,                                  \
+                      entries[idx].score)
+
+#    define _MM128_LOAD_SCORES(entries, idx)                                   \
+        _mm_set_pd((entries)[idx + 1].score, (entries)[idx].score)
+
+static inline __m512i
+_mm512_setr_indexes(size_t idx)
+{
+    const __m512i idx64x8 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L);
+    return _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
+}
+
+static inline __m256i
+_mm256_setr_indexes(size_t idx)
+{
+    const __m256i idx64x4 = _mm256_setr_epi64x(0L, 1L, 2L, 3L);
+    return _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
+}
+
+#    define _MM512_REDUCE_MIN(val0, idx0, val1, idx1)                          \
+        do {                                                                   \
+            const __mmask8 ltmask8 = _mm512_cmplt_pd_mask(cmpval8, minval8);   \
+            idx0 = _mm512_mask_blend_epi64(ltmask8, idx0, idx1);               \
+            val0 = _mm512_min_pd(val1, val0);                                  \
+        } while (0)
+
+#    define _MM256_REDUCE_MIN(val0, idx0, val1, idx1)                          \
+        do {                                                                   \
+            const __m256d ltmask4 = _mm256_cmp_pd(val1, val0, _CMP_LT_OS);     \
+            idx0 = _mm256_blendv_epi8(idx0, idx1, (__m256i)ltmask4);           \
+            val0 = _mm256_min_pd(val1, val0);                                  \
+        } while (0)
+
+#    define _MM128_REDUCE_MIN(val0, idx0, val1, idx1)                          \
+        do {                                                                   \
+            const __m128d ltmask2 = _mm_cmplt_pd(val1, val0);                  \
+            idx0 = _mm_blendv_epi8(idx0, idx1, _mm_castpd_si128(ltmask2));     \
+            val0 = _mm_min_pd(val1, val0);                                     \
+        } while (0)
+
+#    define REDUCE_MIN_64X8_WITH_REMAINDER_AND_RETURN()                        \
+        do {                                                                   \
+            __m256d minval4 = _mm512_extractf64x4_pd(minval8, 0);              \
+            __m256d cmpval4 = _mm512_extractf64x4_pd(minval8, 1);              \
+            __m256i minidx4 = _mm512_extracti64x4_epi64(minidx8, 0);           \
+            __m256i cmpidx4 = _mm512_extracti64x4_epi64(minidx8, 1);           \
+            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
+            if (idx < last - 2) {                                              \
+                cmpval4 = _MM256_LOAD_SCORES(entries, idx);                    \
+                cmpidx4 = _mm256_setr_indexes(idx);                            \
+                _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
+                idx += 4;                                                      \
+            }                                                                  \
+            REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN();                       \
+        } while (0)
+
+#    define REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN()                        \
+        do {                                                                   \
+            __m128d minval2 = _mm256_extractf128_pd(minval4, 0);               \
+            __m128d cmpval2 = _mm256_extractf128_pd(minval4, 1);               \
+            __m128i minidx2 = _mm256_extracti128_si256(minidx4, 0);            \
+            __m128i cmpidx2 = _mm256_extracti128_si256(minidx4, 1);            \
+            _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);             \
+            if (idx < last) {                                                  \
+                cmpval2 = _MM128_LOAD_SCORES(entries, idx);                    \
+                cmpidx2 = _mm_set_epi64x(idx + 1, idx);                        \
+                _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);         \
+                idx += 2;                                                      \
+            }                                                                  \
+            REDUCE_MIN_64X2_WITH_REMAINDER_AND_RETURN();                       \
+        } while (0);
+
+#    define REDUCE_MIN_64X2_WITH_REMAINDER_AND_RETURN()                        \
+        do {                                                                   \
+            double minvals[2];                                                 \
+            _mm_storeu_pd(minvals, minval2);                                   \
+            size_t minidx =                                                    \
+              ((minvals[0] < minvals[1]) ? _mm_extract_epi64(minidx2, 0)       \
+                                         : _mm_extract_epi64(minidx2, 1));     \
+            return (last < idx)                                                \
+                     ? minidx                                                  \
+                     : ((entries[minidx].score < entries[last].score) ? minidx \
+                                                                      : last); \
+        } while (0)
 
 static inline size_t
-min_index_sse(dheap_t *heap, size_t idx, const size_t last)
+min_index_avx512(const ENTRY entries[], size_t idx, const size_t last)
 {
-    /* printf("min_index_sse(#<DHeap d=%d size=%zd>, idx=%zd, last=%zd>\n", */
-    /*        heap->d, */
-    /*        heap->size, */
-    /*        idx, */
-    /*        last); */
+#    ifdef DEBUG
+    if (UNLIKELY(last - idx < 15))
+        rb_raise(rb_eException, "too small for min_index_avx512");
+#    endif
+
+    // setup initial vars
+    __m512i minidx8 = _mm512_setr_indexes(idx);
+    __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);
+
+    // compare with eight at a time, using AVX2
+    // bias idx ahead by six, to simplify comparison with last
+    const __m512i incrby8 = _mm512_set1_epi64(8L);
+    __m512i       cmpidx8 = minidx8;
+    for (idx += 14; idx < last; idx += 8) {
+        const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx - 6);
+        cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);
+        _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);
+    }
+    idx -= 6; // undo bias, to point at next unprocessed value
+
+    // reduce the resulting __m512 mins to __m256
+    REDUCE_MIN_64X8_WITH_REMAINDER_AND_RETURN();
+}
+
+static inline size_t
+min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
+{
+#    ifdef DEBUG
+    if (UNLIKELY(last - idx < 7))
+        rb_raise(rb_eException, "too small for min_index_avx2");
+#    endif
+
+    // setup initial vars
+    __m256i minidx4 = _mm256_setr_indexes(idx);
+    __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);
+
+    // compare with four at a time, using AVX2
+    // bias idx ahead by two, to simplify comparison with last
+    const __m256i incrby4 = _mm256_set1_epi64x(4L);
+    __m256i       cmpidx4 = minidx4;
+    for (idx += 6; idx < last; idx += 4) {
+        const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx - 2);
+        cmpidx4               = _mm256_add_epi64(cmpidx4, incrby4);
+        _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);
+    }
+    idx -= 2; // undo bias, to point at next unprocessed value
+
+    // reduce the resulting __m256 mins to __m128
+    REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN();
+}
+
+static inline size_t
+min_index_sse(const ENTRY entries[], size_t idx, const size_t last)
+{
 #    ifdef DEBUG
     if (UNLIKELY(last - idx < 3))
         rb_raise(rb_eException, "too small for min_index_sse");
 #    endif
-    {
-        // setup initial vars
-        const __m128i incr_by = _mm_set1_epi64x(2L);
-        __m128i       indices = _mm_set_epi64x(idx + 1, idx);
-        __m128i       minidxs = indices;
-        __m128d       minvals = _mm_set_pd(SCORE_AT(idx + 1), SCORE_AT(idx));
 
-        for (idx += 2; idx < last; idx += 2) {
-            const __m128d values = _mm_set_pd(SCORE_AT(idx + 1), SCORE_AT(idx));
-            const __m128d ltmask = _mm_cmplt_pd(values, minvals);
+    // setup initial vars
+    __m128i minidx2 = _mm_set_epi64x(idx + 1, idx);
+    __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);
 
-            indices = _mm_add_epi32(indices, incr_by);
-            minidxs = _mm_blendv_epi8(minidxs, indices, (__m128i)ltmask);
-            minvals = _mm_min_pd(values, minvals);
-        }
+    // compare with two at a time
+    const __m128i incrby2 = _mm_set1_epi64x(2L);
+    __m128i       cmpidx2 = minidx2;
+    for (idx += 2; idx < last; idx += 2) {
+        const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);
+        cmpidx2               = _mm_add_epi32(cmpidx2, incrby2);
+        _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);
+    }
 
-        double   ary_vals[2];
-        uint32_t ary_idxs[4];
-        _mm_storeu_pd(ary_vals, minvals);
-        _mm_storeu_si128((__m128i *)ary_idxs, minidxs);
+    // reduce the resulting __m128 mins to size_t
+    REDUCE_MIN_64X2_WITH_REMAINDER_AND_RETURN();
+}
 
-        size_t minidx = ((ary_vals[0] < ary_vals[1]) ? (size_t)ary_idxs[0]
-                                                     : (size_t)ary_idxs[2]);
-        if (last == idx) {
-            return MINIDX2(SCORE_AT, minidx, last);
-#    ifdef DEBUG
-        } else if (UNLIKELY((idx - 1) != last)) {
-            rb_raise(rb_eException, "Buggy min_index_sse");
-#    endif
-        } else {
-            return minidx;
+#    define SCORE_AT(i)   DHEAP_SCORE(heap, i)
+#    define MINIDX2(i, j) (SCORE_AT(i) < SCORE_AT(j) ? i : j)
+#    define MINIDX3(i, j, k)                                                   \
+        (SCORE_AT(i) < SCORE_AT(j) ? MINIDX2(SCORE_AT, i, k)                   \
+                                   : MINIDX2(SCORE_AT, j, k))
+
+static inline size_t
+min_index_simd(dheap_t *heap, size_t idx0, const size_t last)
+{
+    const ENTRY *entries = heap->entries;
+
+    switch (last - idx0) {
+    case 14:
+    case 13:
+    case 12:
+    case 11:
+    case 10:
+    case 9:
+    case 8:
+    case 7:
+        return min_index_avx2(entries, idx0, last);
+    case 6:
+    case 5:
+    case 4:
+    case 3:
+        return min_index_sse(entries, idx0, last);
+    case 2:
+        return (
+          entries[idx0].score < entries[idx0 + 1].score
+            ? (entries[idx0].score < entries[idx0 + 2].score ? idx0 : idx0 + 2)
+            : (entries[idx0 + 1].score < entries[idx0 + 2].score ? idx0 + 1
+                                                                 : idx0 + 2));
+    case 1:
+        return entries[idx0].score < entries[idx0 + 1].score ? idx0 : idx0 + 1;
+    case 0:
+        return idx0;
+    default:
+        return min_index_avx512(entries, idx0, last);
+    }
+
+    // // 16 or more, use AVX512 to process 8 at a time
+    // if (16 <= size) return min_index_avx512(entries, idx0, last);
+    // if (8 <= size) return min_index_avx2(entries, idx0, last);
+    // if (4 <= size) return min_index_sse(entries, idx0, last);
+    // if (size <= 0)
+    //     rb_raise(rb_eException, "invalid dheap_min_child size: %zd", size);
+    // return min_index_loop(entries, idx0, last);
+}
+
+#    undef MINIDX2
+#    undef MINIDX3
+
+#else
+
+static inline size_t
+min_index_loop(ENTRY entries[], size_t idx0, size_t last)
+{
+    for (size_t idx = idx0 + 1; idx <= last; idx++) {
+        if (entries[idx].score < entries[idx0].score) {
+            idx0 = idx;
         }
     }
+    return idx0;
 }
+
+#endif
 
 static inline size_t
 dheap_min_child(dheap_t *heap, const size_t parent, const size_t last_index)
@@ -491,40 +736,13 @@ dheap_min_child(dheap_t *heap, const size_t parent, const size_t last_index)
     const size_t idx0 = DHEAP_IDX_CHILD_0(heap, parent);
     const size_t idxd = DHEAP_IDX_CHILD_D(heap, parent);
     const size_t last = (LIKELY(idxd <= last_index)) ? idxd : last_index;
-    const size_t size = (last - idx0 + 1);
 
-    // short-circuit the small cases
-    switch (size) { // clang-format off
-    case 3: return MINIDX3(SCORE_AT, idx0, idx0 + 1, idx0 + 2);
-    case 2: return MINIDX2(SCORE_AT, idx0, idx0 + 1);
-    case 1: return idx0;
-    case 0: rb_raise(rb_eException, "invalid min_index_simd size: 0");
-    } // clang-format on
-
-    // 4 or more, use SSE
-    return min_index_sse(heap, idx0, last);
-}
-
-#    undef SCORE_AT
-
+#ifdef DHEAP_SIMD_ENABLED
+    return min_index_simd(heap, idx0, last);
 #else
-
-static inline size_t
-dheap_min_child(dheap_t *heap, size_t parent, size_t last_index)
-{
-    size_t min_child = DHEAP_IDX_CHILD_0(heap, parent);
-    size_t last_sib = DHEAP_IDX_CHILD_D(heap, parent);
-    if (UNLIKELY(last_index < last_sib)) last_sib = last_index;
-
-    for (size_t sibidx = min_child + 1; sibidx <= last_sib; ++sibidx) {
-        if (CMP_LT(DHEAP_SCORE(heap, sibidx), DHEAP_SCORE(heap, min_child))) {
-            min_child = sibidx;
-        }
-    }
-    return min_child;
-}
-
+    return min_index_loop(heap->entries, idx0, last);
 #endif
+}
 
 #define DHEAP_CAN_SIFT_DOWN(heap, index, last_index)                           \
     (LIKELY(1 <= last_index && index <= DHEAP_IDX_PARENT(heap, last_index)))
@@ -640,7 +858,8 @@ dheapmap_push_entry(VALUE self, ENTRY *entry)
  *
  * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
- * @param score [Integer,Float,#to_f] a score to compare against other scores.
+ * @param score [Integer,Float,#to_f] a score to compare against other
+ * scores.
  * @param value [Object] an object that is associated with the score.
  *
  * @return [self]
@@ -687,7 +906,8 @@ dheap_push_args_to_entry(int argc, VALUE *argv)
  * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
  * @param value [Object] an object that is associated with the score.
- * @param score [Integer,Float,#to_f] a score to compare against other scores.
+ * @param score [Integer,Float,#to_f] a score to compare against other
+ * scores.
  *
  * @return [self]
  */
@@ -713,8 +933,8 @@ dheapmap_push(int argc, VALUE *argv, VALUE self)
 /*
  * Pushes a value onto the heap.
  *
- * The score will be derived from the value, by using the value itself if it is
- * an Integer, otherwise by casting it with +Float(value)+.
+ * The score will be derived from the value, by using the value itself if it
+ * is an Integer, otherwise by casting it with +Float(value)+.
  *
  * Time complexity: <b>O(log n / log d)</b> <i>(worst-case)</i>
  *
@@ -1094,7 +1314,8 @@ dheapmap_aref(VALUE self, VALUE object)
 }
 
 /*
- * Assign a score to an object, adding it to the heap or updating as necessary.
+ * Assign a score to an object, adding it to the heap or updating as
+ * necessary.
  *
  * Time complexity: <b>O(log n)</b> (score decrease will be faster than
  * score increase)
@@ -1143,11 +1364,11 @@ Init_d_heap(void)
 #endif
 
     /*
-     * This is based on INT_MAX. But it is very very unlikely you will want a
-     * large value for d.  The tradeoff is that higher d values give faster push
-     * and slower pop.  If you expect pushes and pops to be balanced, then just
-     * stick with the default.  If you expect more pushes than pops, it might be
-     * worthwhile to increase d.
+     * This is based on INT_MAX. But it is very very unlikely you will want
+     * a large value for d.  The tradeoff is that higher d values give
+     * faster push and slower pop.  If you expect pushes and pops to be
+     * balanced, then just stick with the default.  If you expect more
+     * pushes than pops, it might be worthwhile to increase d.
      */
     rb_define_const(rb_cDHeap, "MAX_D", INT2NUM(DHEAP_MAX_D));
 
@@ -1157,8 +1378,8 @@ Init_d_heap(void)
     rb_define_const(rb_cDHeap, "DEFAULT_D", INT2NUM(DHEAP_DEFAULT_D));
 
     /*
-     * The default heap capacity.  The heap grows automatically as necessary, so
-     * you shouldn't need to worry about this.
+     * The default heap capacity.  The heap grows automatically as
+     * necessary, so you shouldn't need to worry about this.
      */
     rb_define_const(rb_cDHeap, "DEFAULT_CAPA", INT2NUM(DHEAP_DEFAULT_CAPA));
 

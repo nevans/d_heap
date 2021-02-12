@@ -108,6 +108,12 @@ class DHeap
     nil
   end
 
+  def inspect
+    "#<%s:0x%x d=%d size=%d min: %f => %p>" % [
+      self.class, __id__, d, size, peek_score, peek,
+    ]
+  end
+
   if defined?(Map)
 
     # Unlike {DHeap}, an object can only be added into a {DHeap::Map} once.  Any

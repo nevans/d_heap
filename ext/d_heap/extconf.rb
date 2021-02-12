@@ -16,19 +16,19 @@ devel_mode = enable_config("development") || debug_mode
 
 if debug_mode
   $stderr.puts "Building in debug mode." # rubocop:disable Style/StderrPuts
-  CONFIG["warnflags"] \
-    << " -ggdb" \
-    << " -DDEBUG"
+  $CFLAGS << " -ggdb "
+  $CFLAGS << " -DDEBUG "
+  $CFLAGS << " -save-temps "
+  # $CFLAGS << " -DVERBOSE_DEBUG "
 end
 
 if devel_mode
   $stderr.puts "Building in development mode." # rubocop:disable Style/StderrPuts
-  CONFIG["warnflags"] \
-    << " -Wall " \
-    << " -Wpedantic" \
+  CONFIG["warnflags"] << " -Wall "
+  CONFIG["warnflags"] << " -Wpedantic "
   # There are warnings on MacOS that are annoying to debug (I don't have a Mac).
   unless RbConfig::CONFIG["target_os"] =~ /darwin/
-    CONFIG["warnflags"] << " -Werror"
+    CONFIG["warnflags"] << " -Werror "
   end
 end
 
@@ -38,10 +38,29 @@ if enable_config("heapmap", true)
   $defs.push "-DDHEAP_MAP"
 end
 
-if enable_config("dheapsimd", true)
-  $stderr.puts "Enabled native arch support, including SSE & AVX." # rubocop:disable Style/StderrPuts
+if enable_config("dheapsimd", true) || enable_config("dheapavx512", true)
+  $stderr.puts "Enabled native arch support, including SSE & AVX2 & AVX512." # rubocop:disable Style/StderrPuts
   $CFLAGS << " -march=native "
   $CFLAGS << " -DDHEAP_SIMD_ENABLED"
+  $CFLAGS << " -DDHEAP_AVX512_ENABLED"
+  $CFLAGS << " -DDHEAP_AVX2_ENABLED"
+  $CFLAGS << " -DDHEAP_SSE_ENABLED"
+end
+if enable_config("dheapavx2", true)
+  $stderr.puts "Enabled native arch support, including SSE & AVX2." # rubocop:disable Style/StderrPuts
+  $CFLAGS << " -march=native "
+  $CFLAGS << " -DDHEAP_SIMD_ENABLED"
+  $CFLAGS << " -DDHEAP_AVX2_ENABLED"
+  $CFLAGS << " -DDHEAP_SSE_ENABLED"
+end
+if enable_config("dheapsse", true)
+  $stderr.puts "Enabled native arch support, including SSE." # rubocop:disable Style/StderrPuts
+  $CFLAGS << " -march=native "
+  $CFLAGS << " -DDHEAP_SIMD_ENABLED"
+  $CFLAGS << " -DDHEAP_SSE_ENABLED"
+end
+if enable_config("funroll", false)
+  $CFLAGS << " -funroll-loops "
 end
 
 have_func "rb_gc_mark_movable" # since ruby-2.7
