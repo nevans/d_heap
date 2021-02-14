@@ -8,9 +8,8 @@ prelude: |
   random_len  = 1_000_000
   random_vals = Array.new(random_len) { rand(0..100_000_000) }
 
-  N = ENV.fetch("BENCH_N", 100_000).to_i
-  N2 = N * 2
-
+  D = ENV.fetch("BENCH_D", 10).to_i
+  q = DHeap.new(d: D)
   i = j = 0
 
 teardown: |
@@ -21,8 +20,8 @@ teardown: |
 benchmark:
 
   - &benchmark
-    name: "d=2"
-    prelude: "q = DHeap.new(d: 2)"
+    name: "N=10"
+    prelude: "N = 10; N2 = N * 2"
     loop_count: 18_000_000  # MAX: 3_000_000 * 2
     script: |
       if i < N
@@ -47,44 +46,40 @@ benchmark:
         ]
       end
   - <<: *benchmark
-    name: "d=3"
-    prelude: "q = DHeap.new(d: 3)"
+    name: "N=30"
+    prelude: "N = 30; N2 = N * 2"
 
   - <<: *benchmark
-    name: "d=4"
-    prelude: "q = DHeap.new(d: 4)"
+    name: "N=100"
+    prelude: "N = 100; N2 = N * 2"
   - <<: *benchmark
-    name: "d=5"
-    prelude: "q = DHeap.new(d: 5)"
-  - <<: *benchmark
-    name: "d=6"
-    prelude: "q = DHeap.new(d: 6)"
-  - <<: *benchmark
-    name: "d=7"
-    prelude: "q = DHeap.new(d: 7)"
+    name: "N=300"
+    prelude: "N = 300; N2 = N * 2"
 
   - <<: *benchmark
-    name: "d=8"
-    prelude: "q = DHeap.new(d: 8)"
+    name: "N=1,000"
+    prelude: "N = 1_000; N2 = N * 2"
   - <<: *benchmark
-    name: "d=10"
-    prelude: "q = DHeap.new(d: 10)"
-  - <<: *benchmark
-    name: "d=12"
-    prelude: "q = DHeap.new(d: 12)"
-  - <<: *benchmark
-    name: "d=14"
-    prelude: "q = DHeap.new(d: 14)"
+    name: "N=3,000"
+    prelude: "N = 3_000; N2 = N * 2"
 
   - <<: *benchmark
-    name: "d=16"
-    prelude: "q = DHeap.new(d: 16)"
+    name: "N=10,000"
+    prelude: "N = 10_000; N2 = N * 2"
   - <<: *benchmark
-    name: "d=24"
-    prelude: "q = DHeap.new(d: 24)"
+    name: "N=30,000"
+    prelude: "N = 30_000; N2 = N * 2"
+
   - <<: *benchmark
-    name: "d=32"
-    prelude: "q = DHeap.new(d: 32)"
+    name: "N=100,000"
+    prelude: "N = 100_000; N2 = N * 2"
   - <<: *benchmark
-    name: "d=40"
-    prelude: "q = DHeap.new(d: 32)"
+    name: "N=300,000"
+    prelude: "N = 300_000; N2 = N * 2"
+
+  - <<: *benchmark
+    name: "N=1,000,000"
+    prelude: "N = 1_000_000; N2 = N * 2"
+  - <<: *benchmark
+    name: "N=3,000,000"
+    prelude: "N = 3_000_000; N2 = N * 2"

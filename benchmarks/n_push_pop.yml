@@ -1,15 +1,14 @@
 ---
 prelude: |
   system("#{RbConfig.ruby} bin/rake compile", err: :out, exception: true)
-  require "d_heap/benchmarks"
-  include DHeap::Benchmarks
+  require "d_heap"
 
   # this is >4x faster than calling Kernel#rand (see random_vals.yml)
   random_idx  = -1
   random_len  = 1_000_000
-  random_vals = Array.new(random_len) { rand(0..10_000) }
+  random_vals = Array.new(random_len) { rand(0..100_000_000) }
 
-  D = ENV.fetch("BENCH_D", 100_000).to_i
+  D = ENV.fetch("BENCH_D", 10).to_i
 
   prefill = -> (n) {
     q = DHeap.new(d: D)
@@ -20,6 +19,7 @@ prelude: |
     q
   }
 
+# grows N exponentially by sqrt(10) per level
 benchmark:
   - name: "N=10"
     prelude: "q = prefill[10]"

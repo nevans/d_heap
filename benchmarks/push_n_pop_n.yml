@@ -7,8 +7,9 @@ prelude: |
   # this is >4x faster than calling Kernel#rand (see random_vals.yml)
   random_idx  = -1
   random_len  = 1_000_000
-  random_vals = Array.new(random_len) { rand(0..10_000) }
+  random_vals = Array.new(random_len) { rand(0..100_000_000) }
 
+  D = ENV.fetch("BENCH_D", 10).to_i
   N = ENV.fetch("BENCH_N", 100_000).to_i
   N2 = N * 2
 
@@ -58,7 +59,8 @@ benchmark:
     name:    "push N + pop N (c++ stl)"
     prelude: "q = CppSTL.new"
     loop_count: 18_000_000  # MAX: 3_000_000 * 2
+
   - script: *script
     name:    "push N + pop N (c_dheap)"
-    prelude: "q = DHeap.new"
+    prelude: "q = DHeap.new(d: D)"
     loop_count: 18_000_000  # MAX: 3_000_000 * 2

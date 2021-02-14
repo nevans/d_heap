@@ -1,0 +1,144 @@
+#!/bin/bash
+# TODO: replace this entire file with rake!
+
+set -Eeuo pipefail
+shopt -s inherit_errexit
+SCRIPTNAME=$(readlink -e "${BASH_SOURCE[0]}")
+SCRIPTPATH=$(cd "$(dirname "$SCRIPTNAME")" > /dev/null; pwd -P)
+PROJECTDIR=$(cd "$SCRIPTPATH" > /dev/null; cd .. > /dev/null; pwd -P)
+cd "$PROJECTDIR"
+
+OUTPUT_DIR="${1:-benchmarks/output}"
+if (( 0 < "$#" )); then
+  shift
+fi
+
+bmdriver_args=( --bundle --output record --repeat-count 8 --run-duration 2 )
+
+while (( 0 < $# )); do
+  opt="$1"
+  shift
+  if [[ "$opt" = "--" ]]; then
+    break
+  fi
+  bmdriver_args+=( "$opt" )
+done
+unset opt
+
+rake_args=( "$@" )
+
+function join {
+  local d="$1"; shift
+  local f="$1"; shift
+  printf "%s" "$f" "${@/#/$d}"
+}
+
+D_VALS=(
+   2  3  4  6
+   8 10 12 14
+  16 24 32 40
+)
+
+DIVISIBLE_N_VALS=(
+  300_000
+  100_000
+   30_000
+   10_000
+    3_000
+    1_000
+      300
+      100
+       30
+       10
+)
+
+POWER_10_VALS=(
+  10_000_000
+   1_000_000
+     100_000
+      10_000
+        1000
+         100
+          10
+)
+
+SQRT_10_VALS=(
+  10_000_000
+   3_162_278
+   1_000_000
+     316_228
+     100_000
+      31_623
+      10_000
+        3162
+        1000
+         316
+         100
+          32
+          10
+)
+
+function bm_exes {
+  local cmd="$1"
+  shift
+  echo -nE "${cmd} $(join ";${cmd} " "$@" )"
+}
+
+function run_bm {
+  local bm="$1"
+  shift
+  local bmdir="$OUTPUT_DIR/$bm"
+  declare -p bmdir
+  local bm_result="$bmdir/results.yml"
+  if [[ -f "$bmdir/skip" ]]; then
+    echo "####### Skipping Benchmark: $bm.yml (skip file exists) #######"
+  else
+    if ! [[ -f "$bm_result" ]]; then
+      echo "####### Running benchmark: $bm.yml #######"
+      echo "###        using opts: " "$@"
+      mkdir -p "$bmdir"
+      bin/benchmark-driver "${bmdriver_args[@]}" "$@" "benchmarks/${bm}.yml"
+      mv benchmark_driver.record.yml "$bm_result"
+    fi
+    echo "####### Benchmark done. Compiling results..."
+    if ! [[ -f "$bmdir/results.txt" ]]; then
+      bin/benchmark-driver "$bm_result" -o compare  | tee "$bmdir/results.txt"
+    fi
+    if ! [[ -f "$bmdir/results.md" ]]; then
+      bin/benchmark-driver "$bm_result" -o markdown | tee "$bmdir/results.md"
+    fi
+    if ! [[ -f "$bmdir/results.png" ]]; then
+      bin/benchmark-driver "$bm_result" -o gruff
+      mv graph.png "$bmdir/results.png"
+    fi
+  fi
+}
+
+N_EXECS_DIVISIBLE=$(bm_exes N "${DIVISIBLE_N_VALS[@]}")
+N_EXECS_SQRT_10=$(  bm_exes N "${SQRT_10_VALS[@]}")
+D_EXECS=$(          bm_exes D "${D_VALS[@]}")
+
+declare -p rake_args
+# Ensure everything is working. But CI also adds the debug args.
+rake ci -- "${rake_args[@]}"
+# Clobber and recompile to benchmark *without* "debug/ci" enabled
+rake clobber compile -- "${rake_args[@]}"
+
+declare -p OUTPUT_DIR
+mkdir -p "$OUTPUT_DIR"
+
+# TODO: DxN and NxD should be merged. It could just be some re-arranging of the
+# recorded YAML results files.
+
+# compare NxD
+run_bm "n_push_pop"     -e "$D_EXECS"
+run_bm "n_push_n_pop_n" -e "$D_EXECS"
+
+# compare with other implementations
+run_bm "push_n"         -e "$N_EXECS_DIVISIBLE"
+run_bm "push_n_pop_n"   -e "$N_EXECS_DIVISIBLE"
+run_bm "push_pop"       -e "$N_EXECS_SQRT_10"
+
+# compare DxN
+run_bm "d_push_n_pop_n" -e "$N_EXECS_DIVISIBLE"
+run_bm "d_push_pop"     -e "$N_EXECS_SQRT_10"
