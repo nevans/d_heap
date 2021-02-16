@@ -9,7 +9,7 @@ prelude: |
   random_len  = 1_000_000
   random_vals = Array.new(random_len) { rand(0..100_000_000) }
 
-  D = ENV.fetch("BENCH_D", 10).to_i
+  D = ENV.fetch("BENCH_D", DHeap::DEFAULT_D).to_i
   N = ENV.fetch("BENCH_N", 10_000).to_i
 
 benchmark:

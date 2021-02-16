@@ -131,6 +131,7 @@ static const rb_data_type_t dheap_data_type;
 #define DHEAP_SCORE(heap, idx) (DHEAP_GET(heap, idx).score)
 #define DHEAP_VALUE(heap, idx) (DHEAP_GET(heap, idx).value)
 
+// idx must be size_t
 #define DHEAP_ENTRY_ARY(heap, idx)                                             \
     (((heap)->size <= (idx))                                                   \
        ? Qnil                                                                  \

@@ -9,6 +9,7 @@ prelude: |
   random_len  = 1_000_000
   random_vals = Array.new(random_len) { rand(0..100_000_000) }
 
+  D = ENV.fetch("BENCH_D", DHeap::DEFAULT_D).to_i
   N = ENV.fetch("BENCH_N", 100_000).to_i
 
 benchmark:
@@ -34,5 +35,5 @@ benchmark:
 
   - script: *script
     name:    "push N (c_dheap)"
-    prelude: "q = DHeap.new"
+    prelude: "q = DHeap.new(d: D)"
     loop_count: 30_000_000
