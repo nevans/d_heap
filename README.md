@@ -24,16 +24,22 @@ From [wikipedia](https://en.wikipedia.org/wiki/Heap_(data_structure)):
 ![tree representation of a min heap](images/wikipedia-min-heap.png)
 
 The _d_-ary heap data structure is a generalization of a [binary heap] in which
-each node has _d_ children instead of 2.  This speeds up "push" or "decrease
-priority" operations (`O(log n / log d)`) with the tradeoff of slower "pop" or
-"increase priority" (`O(d log n / log d)`).  Additionally, _d_-ary heaps can
-have better memory cache behavior than binary heaps, letting them run more
-quickly in practice.
+each node has _d_ children instead of 2.  This speeds up "sift up" operations
+like "push" or "decrease priority" (`O(log n / log d)`) with the tradeoff of
+slower "sift down" operations like "pop" or "increase priority" (`O(d log n /
+log d)`).
 
-Although the default _d_ value will usually perform best (see the time
-complexity analysis below), it's always advisable to benchmark your specific
-use-case.  In particular, if you push items more than you pop, higher values for
-_d_ can give a faster total runtime.
+However, several more factors complicate this simple analysis.  For larger
+heaps, higher `d` values can have better memory cache behavior than binary
+heaps.  Additionally, modern [CPU pipelining] and [AVX intrinsics] can
+significantly speed up the "sift down" operation.  A simple `O(d log n / log d)`
+analysis _will_ be misleading when choosing a `d` value.
+
+DHeap's default _d_ value has been chosen after _extensive_ benchmarking on _my_
+hardware (Intel(R) Core(TM) i7-1065G7) compiled with `gcc` v10.2.0 (and may
+change in future versions).  But if squeezing out that last few percentage
+points is important, you should benchmark your _specific_ use-case with the
+exact hardware and CPU that will be used in production.
 
 [d-ary heap]: https://en.wikipedia.org/wiki/D-ary_heap
 [priority queue]: https://en.wikipedia.org/wiki/Priority_queue
@@ -43,6 +49,8 @@ _d_ can give a faster total runtime.
 [Dijkstra's algorithm]: https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm#Using_a_priority_queue
 [A* search]: https://en.wikipedia.org/wiki/A*_search_algorithm#Description
 [Prim's algorithm]: https://en.wikipedia.org/wiki/Prim%27s_algorithm
+[CPU pipelining]: https://en.wikipedia.org/wiki/Instruction_pipelining
+[AVX intrinsics]: https://en.wikipedia.org/wiki/Advanced_Vector_Extensions
 
 ## Installation
 
@@ -166,47 +174,11 @@ take precautions such as locking access behind a mutex.
 
 ## Benchmarks
 
-_See full benchmark output in subdirs of `benchmarks`.  See also or updated
-results. These benchmarks were measured with an Intel Core i7-1065G7 8x3.9GHz
-with d_heap v0.5.0 and ruby 2.7.2 without MJIT enabled._
-
-### Implementations
-
- * **findmin** -
-    A very fast `O(1)` push using `Array#push` onto an unsorted Array, but a
-    very slow `O(n)` pop using `Array#min`, `Array#rindex(min)` and
-    `Array#delete_at(min_index)`.  Push + pop is still fast for `n < 100`, but
-    unusably slow for `n > 1000`.
-
- * **bsearch** -
-    A simple implementation with a slow `O(n)` push using `Array#bsearch` +
-    `Array#insert` to maintain a sorted Array, but a very fast `O(1)` pop with
-    `Array#pop`.  It is still relatively fast for `n < 10000`, but its linear
-    time complexity really destroys it after that.
-
- * **rb_heap** -
-    A pure ruby binary min-heap that has been tuned for performance by making
-    few method calls and allocating and assigning as few variables as possible.
-    It runs in `O(log n)` for both push and pop, although pop is slower than
-    push by a constant factor.  Its much higher constant factors makes it lose
-    to `bsearch` push + pop for `n < 10000` but it holds steady with very little
-    slowdown even with `n > 10000000`.
-
- * **c++ stl** -
-    A thin wrapper around the [priority_queue_cxx gem] which uses the [C++ STL
-    priority_queue].  The wrapper is simply to provide compatibility with the
-    other benchmarked implementations, but it should be possible to speed this
-    up a little bit by benchmarking the `priority_queue_cxx` API directly.  It
-    has the same time complexity as rb_heap but its much lower constant
-    factors allow it to easily outperform `bsearch`.
-
- * **c_dheap** -
-    A {DHeap} instance with the default `d` value of `4`.  It has the same time
-    complexity as `rb_heap` and `c++ stl`, but is faster than both in every
-    benchmarked scenario.
-
-[priority_queue_cxx gem]: https://rubygems.org/gems/priority_queue_cxx
-[C++ STL priority_queue]: http://www.cplusplus.com/reference/queue/priority_queue/
+_Extensive benchmarks have been written; only summaries are shown here.  See the
+`benchmarks` dir in the `dheap` git repo for much more detail or up-to-date
+results.  The following benchmarks were recorded between v0.6.1 and v0.7.0,
+using ruby 2.7.2 without MJIT enabled, on an Intel(R) Core(TM) i7-1065G7, and
+compiled with `gcc` v10.2.0 under Ubuntu 20.10._
 
 ### Scenarios
 
@@ -332,9 +304,15 @@ of timers.
 
 ## Time complexity analysis
 
-There are two fundamental heap operations: sift-up (used by push or decrease
-score) and sift-down (used by pop or delete or increase score).  Each sift
-bubbles an item to its correct location in the tree.
+_n.b. Due to CPU pipelining, compiler loop unrolling, vector comparison
+instructions, etc, a simple analysis can be misleading as to actual run-time. If
+getting the last few percentage points of speed matters, then you need to run
+benchmarks tailored to your use-case on your own hardware._
+
+There are two fundamental operations which all heap manipulations are built
+upon: sift-up (used by push or decrease score) and sift-down (used by pop or
+delete or increase score).  Each sift "bubbles" an item to its correct location
+in the tree.
 
 * A _d_-ary heap has `log n / log d` layers, so either sift performs as many as
   `log n / log d` writes, when a member sifts the entire length of the tree.
@@ -350,13 +328,12 @@ fewest comparisons for a combined push and pop:
 * `(1 +  4) log n / log d ≈ 3.606738 log n`
 * `(1 +  5) log n / log d ≈ 3.728010 log n`
 * `(1 +  6) log n / log d ≈ 3.906774 log n`
-* `(1 +  7) log n / log d ≈ 4.111187 log n`
-* `(1 +  8) log n / log d ≈ 4.328085 log n`
-* `(1 +  9) log n / log d ≈ 4.551196 log n`
-* `(1 + 10) log n / log d ≈ 4.777239 log n`
 * etc...
 
-See https://en.wikipedia.org/wiki/D-ary_heap#Analysis for deeper analysis.
+**HOWEVER**, after taking CPU and compiler optimizations into account, `4` is
+_not_ the fastest `d` value.  In my tests, `10` is usually fastest (in
+particular, very very large heaps with many millions of items do better with
+larger `d` values).
 
 However, what this simple count of comparisons misses is the extent to which
 modern compilers can optimize code (e.g. by unrolling the comparison loop to
