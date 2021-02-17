@@ -29,7 +29,7 @@ module SpecHelper
         instance_exec(dval, &block)
       end
 
-      [2, 3, 4, 5, 8, 16].each do |d|
+      [2, 3, 4, 5, 7, 8, 10, 11, 12, 14, 16, 17, 24, 32, 41].each do |d|
         context "heap with d=#{d}" do
           include_examples name, d
         end
