@@ -6,6 +6,10 @@
 #    error "DHeap assumes 8-bit bytes"
 #endif
 
+#if SIZE_MAX != ULONG_MAX
+#    error "DHeap assumes 'size_t' is 'unsigned long'"
+#endif
+
 #if LDBL_MANT_DIG < SIZEOF_UNSIGNED_LONG_LONG * 8
 #    error "DHeap assumes 'long double' mantissa can store 'unsigned long long'"
 #endif
@@ -36,8 +40,8 @@ typedef double SCORE;
 struct dheap_struct
 {
     int    d;
-    long   size;
-    long   capa;
+    size_t size;
+    size_t capa;
     ENTRY *entries;
 #ifdef DHEAP_MAP
     VALUE indexes; // Hash
@@ -61,10 +65,10 @@ struct dheap_entry
 #define DHEAP_DEFAULT_D 4
 #define DHEAP_MAX_D     INT_MAX
 
-// sizeof(ENTRY) => 32 bytes
+// sizeof(ENTRY) => 16 bytes, 128-bits
 // one kilobyte = 32 * 32 bytes
 #define DHEAP_DEFAULT_CAPA  32
-#define DHEAP_MAX_CAPA      (LONG_MAX / (int)sizeof(ENTRY))
+#define DHEAP_MAX_CAPA      (SIZE_MAX / (int)sizeof(ENTRY))
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 
 static ID id_cmp;    // <=>
@@ -124,12 +128,11 @@ static const rb_data_type_t dheap_data_type;
  *
  ********************************************************************/
 
-#define IDX_IN_RANGE(heap, idx) ((idx) < 0 || (heap)->size <= (idx))
-#define DHEAP_SCORE(heap, idx)  (DHEAP_GET(heap, idx).score)
-#define DHEAP_VALUE(heap, idx)  (DHEAP_GET(heap, idx).value)
+#define DHEAP_SCORE(heap, idx) (DHEAP_GET(heap, idx).score)
+#define DHEAP_VALUE(heap, idx) (DHEAP_GET(heap, idx).value)
 
 #define DHEAP_ENTRY_ARY(heap, idx)                                             \
-    (IDX_IN_RANGE(heap, idx)                                                   \
+    (((heap)->size <= (idx))                                                   \
        ? Qnil                                                                  \
        : rb_ary_new_from_args(                                                 \
            2, DHEAP_VALUE(heap, idx), SCORE2NUM(DHEAP_SCORE(heap, idx))))
@@ -145,7 +148,7 @@ static const rb_data_type_t dheap_data_type;
 
 #ifdef DHEAP_MAP
 #    define DHEAP_SET_dheapmap(heap, index, entry)                             \
-        rb_hash_aset((heap)->indexes, (entry).value, LONG2NUM(index))
+        rb_hash_aset((heap)->indexes, (entry).value, ULONG2NUM(index))
 #endif
 
 /********************************************************************
@@ -159,12 +162,10 @@ static const rb_data_type_t dheap_data_type;
 #define DHEAP_IDX_CHILD_0(heap, idx) (((idx) * (heap)->d) + 1)
 #define DHEAP_IDX_CHILD_D(heap, idx) (((idx) * (heap)->d) + (heap)->d)
 
-#ifdef __D_HEAP_DEBUG
+#ifdef DEBUG
 #    define ASSERT_DHEAP_IDX_OK(heap, index)                                   \
         do {                                                                   \
-            if (index < 0) {                                                   \
-                rb_raise(rb_eIndexError, "DHeap index %ld too small", index);  \
-            } else if (DHEAP_IDX_LAST(heap) < index) {                         \
+            if (DHEAP_IDX_LAST(heap) < index) {                                \
                 rb_raise(rb_eIndexError, "DHeap index %ld too large", index);  \
             }                                                                  \
         } while (0)
@@ -183,7 +184,7 @@ static void
 dheap_compact(void *ptr)
 {
     dheap_t *heap = ptr;
-    for (long i = 0; i < heap->size; ++i) {
+    for (size_t i = 0; i < heap->size; ++i) {
         if (DHEAP_VALUE(heap, i))
             DHEAP_VALUE(heap, i) = rb_gc_location(DHEAP_VALUE(heap, i));
     }
@@ -199,7 +200,7 @@ static void
 dheap_mark(void *ptr)
 {
     dheap_t *heap = ptr;
-    for (long i = 0; i < heap->size; ++i) {
+    for (size_t i = 0; i < heap->size; ++i) {
         if (DHEAP_VALUE(heap, i)) rb_gc_mark_movable(DHEAP_VALUE(heap, i));
     }
 #ifdef DHEAP_MAP
@@ -268,9 +269,9 @@ dheap_s_alloc(VALUE klass)
     VALUE    obj;
     dheap_t *heap;
 
-// TypedData_Make_Struct uses a non-std "statement expression"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+    // TypedData_Make_Struct uses a non-std "statement expression"
     obj = TypedData_Make_Struct(klass, dheap_t, &dheap_data_type, heap);
 #pragma GCC diagnostic pop
     heap->d       = DHEAP_DEFAULT_D;
@@ -300,7 +301,7 @@ get_dheap_struct_unfrozen(VALUE self)
 }
 
 void
-dheap_set_capa(dheap_t *heap, long new_capa)
+dheap_set_capa(dheap_t *heap, size_t new_capa)
 {
     // Do nothing if we already have the capacity or are resizing too small
     if (new_capa <= heap->capa || new_capa <= heap->size) return;
@@ -315,27 +316,36 @@ dheap_set_capa(dheap_t *heap, long new_capa)
 }
 
 static void
-dheap_ensure_room_for_push(dheap_t *heap, long incr_by)
+dheap_incr_capa(dheap_t *heap, size_t new_size)
 {
-    long new_size = heap->size + incr_by;
+    size_t new_capa = heap->capa;
+    while (new_capa < new_size) {
+        if (new_capa <= DHEAP_CAPA_INCR_MAX) {
+            // double it... up to DHEAP_CAPA_INCR_MAX
+            new_capa *= 2;
+        } else if (DHEAP_MAX_CAPA - DHEAP_CAPA_INCR_MAX < heap->capa) {
+            // avoid overflow
+            new_capa = DHEAP_MAX_CAPA;
+        } else {
+            new_capa += DHEAP_CAPA_INCR_MAX;
+        }
+    }
+    dheap_set_capa(heap, new_capa);
+}
 
+static void
+dheap_ensure_room_for_push(dheap_t *heap, size_t incr_by)
+{
     // check for overflow of new_size
-    if (DHEAP_MAX_CAPA - incr_by < heap->size)
-        rb_raise(rb_eIndexError, "index %ld too big", new_size);
-
-    // if it existing capacity is too small
-    if (heap->capa < new_size) {
-        // double it...
-        long new_capa = new_size * 2;
-        if (DHEAP_CAPA_INCR_MAX < new_size)
-            new_size = new_size + DHEAP_CAPA_INCR_MAX;
-        // check for overflow of new_capa
-        if (DHEAP_MAX_CAPA / 2 < new_size) new_capa = DHEAP_MAX_CAPA;
-        // cap max incr_by
-        if (heap->capa + DHEAP_CAPA_INCR_MAX < new_capa)
-            new_capa = heap->capa + DHEAP_CAPA_INCR_MAX;
-
-        dheap_set_capa(heap, new_capa);
+    if (DHEAP_MAX_CAPA - incr_by < heap->size) {
+        rb_raise(rb_eIndexError,
+                 "size increase overflow: %zu + %zu",
+                 heap->size,
+                 incr_by);
+    } else {
+        size_t new_size = heap->size + incr_by;
+        // if existing capacity is too small
+        if (heap->capa < new_size) dheap_incr_capa(heap, new_size);
     }
 }
 
@@ -348,12 +358,12 @@ dheap_value_to_int_d(VALUE num)
     return d;
 }
 
-static inline long
-dheap_value_to_long_capa(VALUE num)
+static inline size_t
+dheap_value_to_capa(VALUE num)
 {
-    long capa = NUM2LONG(num);
+    size_t capa = NUM2ULONG(num);
     if (capa < 1) {
-        rb_raise(rb_eArgError, "DHeap capa=%lu must be positive", capa);
+        rb_raise(rb_eArgError, "DHeap capa=%zu must be positive", capa);
     }
     return capa;
 }
@@ -367,7 +377,7 @@ dheap_init(VALUE self, VALUE d, VALUE capa, VALUE map)
         rb_raise(rb_eScriptError, "DHeap already initialized.");
 
     heap->d = dheap_value_to_int_d(d);
-    dheap_set_capa(heap, dheap_value_to_long_capa(capa));
+    dheap_set_capa(heap, dheap_value_to_capa(capa));
 #ifdef DHEAP_MAP
     if (RTEST(map)) heap->indexes = rb_hash_new();
 #endif
@@ -404,10 +414,10 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
 
 #define DHEAP_SIFT_UP(T, heap, i)                                              \
     do {                                                                       \
-        long  sift_idx = i;                                                    \
-        ENTRY entry    = DHEAP_GET(heap, sift_idx);                            \
+        size_t sift_idx = i;                                                   \
+        ENTRY  entry    = DHEAP_GET(heap, sift_idx);                           \
         ASSERT_DHEAP_IDX_OK(heap, sift_idx);                                   \
-        for (long parent_idx; 0 < sift_idx; sift_idx = parent_idx) {           \
+        for (size_t parent_idx; 0 < sift_idx; sift_idx = parent_idx) {         \
             parent_idx = DHEAP_IDX_PARENT(heap, sift_idx);                     \
             if (CMP_LTE(DHEAP_SCORE((heap), parent_idx), entry.score)) break;  \
             DHEAP_SET(T, heap, sift_idx, DHEAP_GET(heap, parent_idx));         \
@@ -415,14 +425,14 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
         DHEAP_SET(T, heap, sift_idx, entry);                                   \
     } while (0)
 
-static inline long
-dheap_min_child(dheap_t *heap, long parent, long last_index)
+static inline size_t
+dheap_min_child(dheap_t *heap, size_t parent, size_t last_index)
 {
-    long min_child = DHEAP_IDX_CHILD_0(heap, parent);
-    long last_sib  = DHEAP_IDX_CHILD_D(heap, parent);
+    size_t min_child = DHEAP_IDX_CHILD_0(heap, parent);
+    size_t last_sib  = DHEAP_IDX_CHILD_D(heap, parent);
     if (UNLIKELY(last_index < last_sib)) last_sib = last_index;
 
-    for (long sibidx = min_child + 1; sibidx <= last_sib; ++sibidx) {
+    for (size_t sibidx = min_child + 1; sibidx <= last_sib; ++sibidx) {
         if (CMP_LT(DHEAP_SCORE(heap, sibidx), DHEAP_SCORE(heap, min_child))) {
             min_child = sibidx;
         }
@@ -435,14 +445,14 @@ dheap_min_child(dheap_t *heap, long parent, long last_index)
 
 #define DHEAP_SIFT_DOWN(T, heap, i)                                            \
     do {                                                                       \
-        long sift_idx = i;                                                     \
-        long last_idx = DHEAP_IDX_LAST(heap);                                  \
+        size_t sift_idx = i;                                                   \
+        size_t last_idx = DHEAP_IDX_LAST(heap);                                \
         ASSERT_DHEAP_IDX_OK(heap, sift_idx);                                   \
         if (DHEAP_CAN_SIFT_DOWN(heap, sift_idx, last_idx)) {                   \
-            ENTRY entry       = heap->entries[sift_idx];                       \
-            long  last_parent = DHEAP_IDX_PARENT(heap, last_idx);              \
+            ENTRY  entry       = heap->entries[sift_idx];                      \
+            size_t last_parent = DHEAP_IDX_PARENT(heap, last_idx);             \
             while (sift_idx <= last_parent) {                                  \
-                long min_child = dheap_min_child(heap, sift_idx, last_idx);    \
+                size_t min_child = dheap_min_child(heap, sift_idx, last_idx);  \
                 if (CMP_LTE(entry.score, DHEAP_SCORE(heap, min_child))) break; \
                 DHEAP_SET(T, heap, sift_idx, (heap)->entries[min_child]);      \
                 sift_idx = min_child;                                          \
@@ -464,7 +474,7 @@ static VALUE
 dheap_size(VALUE self)
 {
     dheap_t *heap = get_dheap_struct(self);
-    return LONG2NUM(heap->size);
+    return ULONG2NUM(heap->size);
 }
 
 #define DHEAP_EMPTY_P(heap) UNLIKELY((heap)->size <= 0)
@@ -511,11 +521,8 @@ dheap_push_entry(VALUE self, ENTRY *entry)
 }
 
 #ifdef DHEAP_MAP
-static inline long
-dheapmap_index_of(dheap_t *heap, VALUE value);
-
 static inline void
-dheapmap_update_entry(dheap_t *heap, long index, ENTRY *entry)
+dheapmap_update_entry(dheap_t *heap, size_t index, ENTRY *entry)
 {
     SCORE prev = DHEAP_SCORE(heap, index);
     DHEAP_SET(dheapmap, heap, index, *entry);
@@ -529,9 +536,10 @@ dheapmap_update_entry(dheap_t *heap, long index, ENTRY *entry)
 static inline void
 dheapmap_push_entry(VALUE self, ENTRY *entry)
 {
-    dheap_t *heap  = get_dheap_struct_unfrozen(self);
-    long     index = dheapmap_index_of(heap, entry->value);
-    if (0 <= index) {
+    dheap_t *heap   = get_dheap_struct_unfrozen(self);
+    VALUE    idxval = rb_hash_lookup2(heap->indexes, entry->value, Qfalse);
+    if (idxval) {
+        size_t index = NUM2ULONG(idxval);
         dheapmap_update_entry(heap, index, entry);
         return;
     }
@@ -946,7 +954,7 @@ dheap_to_a(VALUE self)
 {
     dheap_t *heap  = get_dheap_struct(self);
     VALUE    array = rb_ary_new_capa(heap->size);
-    for (long i = 0; i < heap->size; i++) {
+    for (size_t i = 0; i < heap->size; i++) {
         rb_ary_push(array, DHEAP_ENTRY_ARY(heap, i));
     }
     return array;
@@ -978,14 +986,6 @@ dheap_clear(VALUE self)
 
 #ifdef DHEAP_MAP
 
-// returns -1 if it isn't found
-static inline long
-dheapmap_index_of(dheap_t *heap, VALUE value)
-{
-    VALUE index = rb_hash_aref(heap->indexes, value);
-    return RTEST(index) ? NUM2LONG(index) : -1;
-}
-
 /*
  * Retrieves the score that has been assigned to a heap member.
  *
@@ -998,9 +998,13 @@ dheapmap_index_of(dheap_t *heap, VALUE value)
 static VALUE
 dheapmap_aref(VALUE self, VALUE object)
 {
-    dheap_t *heap  = get_dheap_struct(self);
-    long     index = dheapmap_index_of(heap, object);
-    return (0 <= index) ? SCORE2NUM(DHEAP_SCORE(heap, index)) : Qnil;
+    dheap_t *heap   = get_dheap_struct(self);
+    VALUE    idxval = rb_hash_lookup2(heap->indexes, object, Qfalse);
+    if (idxval) {
+        size_t index = NUM2ULONG(idxval);
+        return SCORE2NUM(DHEAP_SCORE(heap, index));
+    }
+    return Qnil;
 }
 
 /*
