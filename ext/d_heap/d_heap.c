@@ -62,7 +62,7 @@ struct dheap_entry
  *
  ********************************************************************/
 
-#define DHEAP_DEFAULT_D 4
+#define DHEAP_DEFAULT_D 6
 #define DHEAP_MAX_D     INT_MAX
 
 // sizeof(ENTRY) => 16 bytes, 128-bits

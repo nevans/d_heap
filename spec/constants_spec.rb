@@ -3,7 +3,7 @@
 RSpec.describe DHeap, "d" do
 
   describe "DHeap::DEFAULT_D" do
-    it { expect(DHeap::DEFAULT_D).to eq(4) }
+    it { expect(DHeap::DEFAULT_D).to eq(6) }
 
     it "is used for new DHeaps" do
       expect(DHeap.new.d).to eq(DHeap::DEFAULT_D)

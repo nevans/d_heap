@@ -21,7 +21,7 @@ RSpec.describe DHeap do
     it "can't pop_lte" do expect { heap.pop_lte 5 }.to raise_error(FrozenError) end
 
     it "can peek" do expect(heap.peek).to eq(1) end
-    it "can return d" do expect(heap.d).to eq(4) end
+    it "can return d" do expect(heap.d).to eq(DHeap::DEFAULT_D) end
     it "can return size" do expect(heap.size).to eq(3) end
     it "can return empty?" do expect(heap).not_to be_empty end
 

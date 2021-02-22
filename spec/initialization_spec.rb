@@ -2,8 +2,8 @@
 
 RSpec.describe DHeap do
 
-  it "defaults to d=4" do
-    expect(DHeap.new.d).to eq(4)
+  it "defaults to d=#{DHeap::DEFAULT_D}" do
+    expect(DHeap.new.d).to eq(DHeap::DEFAULT_D)
   end
 
   describe_any_size_heap "initialization" do |dval|
