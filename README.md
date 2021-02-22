@@ -166,9 +166,9 @@ take precautions such as locking access behind a mutex.
 
 ## Benchmarks
 
-_See `bin/benchmarks` and `docs/benchmarks.txt`, as well as `bin/profile` and
-`docs/profile.txt` for much more detail or updated results. These benchmarks
-were measured with v0.5.0 and ruby 2.7.2 without MJIT enabled._
+_See full benchmark output in subdirs of `benchmarks`.  See also or updated
+results. These benchmarks were measured with an Intel Core i7-1065G7 8x3.9GHz
+with d_heap v0.5.0 and ruby 2.7.2 without MJIT enabled._
 
 ### Implementations
 
