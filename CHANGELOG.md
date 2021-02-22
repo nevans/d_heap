@@ -1,9 +1,21 @@
 ## Current/Unreleased
 
+## Release v0.7.0 (2021-01-24)
+
+* 💥⚡️ **BREAKING**: Uses `double`) for  _all_ scores.
+    * 💥 Integers larger than a double mantissa (53-bits) will lose some
+        precision.
+    * ⚡️ big speed up
+    * ⚡️ Much better memory usage
+    * ⚡️ Simplifies score conversion between ruby and C
 * ✨ Added `DHeap::Map` for ensuring values can only be added once, by `#hash`.
     * Adding again will update the score.
     * Adds `DHeap::Map#[]` for quick lookup of existing scores
     * Adds `DHeap::Map#[]=` for adjustments of existing scores
+    * TODO: `DHeap::Map#delete`
+* 📝📈 SO MANY BENCHMARKS
+* ⚡️ Set DEFAULT_D to 6, based on benchmarks.
+* 🐛♻️  convert all `long` indexes to `size_t`
 
 ## Release v0.6.1 (2021-01-24)
 
