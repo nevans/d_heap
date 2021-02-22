@@ -2,11 +2,20 @@
 
 This was an experiment to see if searching for the min index via `<immintrin.h>`
 vector extensions would be faster than a simple `for` loop (after compiler
-optimizations and CPU pipelines' branch prediction).  The results were mixed: It
-is a speedup for larger `d` values especially on larger heaps.  Unfortunately
-it was a significant slowdown for the ideal `d` values on "normal" sized heaps.
-And in any case, it was an enormous jump in code complexity for speedups that
-were only apparent on very _very_ large heaps (e.g. ~10 million entries).
+optimizations and CPU pipelines' branch prediction).
+
+The results were mixed: It is a speedup in some cases, especially larger `d`
+values or larger heaps.  The `push_n_pop_n` benchmark runs as fast or faster
+across the board.  But the `push_pop` benchmark _seemed_ to indicate it was a
+significant slowdown for most `d` values and on "normal" sized heaps.
+
+My current hypothesis is that `sift-down` and the `push_pop` benchmark both
+suffer from non-random biases based on the `n % d`.  Because that benchmark
+always maintains the exact same two sizes--pushing onto a size `n` heap and
+popping from a size `n + 1` heap--it leads to biases for specific `d` values.
+The benchmark should be fixed by introducing some "jitter" that will occasional
+add an extra `push` or `pop` to test the heap sizes between and `n - d/2` up to
+`n + d/2` thus hitting every single value of `n % d`.
 
 One of the issues may be that, at the volumes were talking about, there are big
 slowdowns just to add a single new `if` statement to the `sift-down` operation,
@@ -15,6 +24,14 @@ new branches just to deal with large range of possible child counts.  With
 macros or code generation, we could create a special `sift-down` for every
 useful `d` value and use a branch-free "happy path" when `d` children are
 present.  But that's another hypothesis to experiment with on another day.
+
+In any case, it's an enormous jump in code complexity for speedups that are not
+always present.  So it's kept as an experiment until it is _always_ faster.
+
+Experiments TODO:
+ * can inline methods attain the same speedup as macros?
+ * does "jitter" make `push_pop` match `push_n_pop_n` more closely?
+ * generate an unrolled version for every `d` up to 16 (and one for >16)
 
 ```
 screenfetch -N -d '-de,wm,wmtheme,gtk'
