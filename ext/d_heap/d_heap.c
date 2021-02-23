@@ -75,6 +75,12 @@ struct dheap_entry
 #define DHEAP_MAX_CAPA      (SIZE_MAX / (int)sizeof(ENTRY))
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 
+static __m512i idx64x8;
+static __m256i idx64x4;
+static __m512i incrby8;
+static __m256i incrby4;
+static __m128i incrby2;
+
 static ID id_cmp;    // <=>
 static ID id_abs;    // abs
 static ID id_lshift; // <<
@@ -507,14 +513,12 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 static inline __m512i
 _mm512_setr_indexes(size_t idx)
 {
-    const __m512i idx64x8 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L);
     return _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
 }
 
 static inline __m256i
 _mm256_setr_indexes(size_t idx)
 {
-    const __m256i idx64x4 = _mm256_setr_epi64x(0L, 1L, 2L, 3L);
     return _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
 }
 
@@ -598,8 +602,7 @@ min_index_avx512(const ENTRY entries[], size_t idx, const size_t last)
 
     // compare with eight at a time, using AVX2
     // bias idx ahead by six, to simplify comparison with last
-    const __m512i incrby8 = _mm512_set1_epi64(8L);
-    __m512i       cmpidx8 = minidx8;
+    __m512i cmpidx8 = minidx8;
     for (idx += 14; idx < last; idx += 8) {
         const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx - 6);
         cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);
@@ -625,8 +628,7 @@ min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
 
     // compare with four at a time, using AVX2
     // bias idx ahead by two, to simplify comparison with last
-    const __m256i incrby4 = _mm256_set1_epi64x(4L);
-    __m256i       cmpidx4 = minidx4;
+    __m256i cmpidx4 = minidx4;
     for (idx += 6; idx < last; idx += 4) {
         const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx - 2);
         cmpidx4               = _mm256_add_epi64(cmpidx4, incrby4);
@@ -651,8 +653,7 @@ min_index_sse(const ENTRY entries[], size_t idx, const size_t last)
     __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);
 
     // compare with two at a time
-    const __m128i incrby2 = _mm_set1_epi64x(2L);
-    __m128i       cmpidx2 = minidx2;
+    __m128i cmpidx2 = minidx2;
     for (idx += 2; idx < last; idx += 2) {
         const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);
         cmpidx2               = _mm_add_epi32(cmpidx2, incrby2);
@@ -1342,6 +1343,12 @@ dheapmap_aset(VALUE self, VALUE object, VALUE score)
 void
 Init_d_heap(void)
 {
+    idx64x8 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L);
+    idx64x4 = _mm256_setr_epi64x(0L, 1L, 2L, 3L);
+    incrby8 = _mm512_set1_epi64(8L);
+    incrby4 = _mm256_set1_epi64x(4L);
+    incrby2 = _mm_set1_epi64x(2L);
+
     VALUE rb_cDHeap = rb_define_class("DHeap", rb_cObject);
 #ifdef DHEAP_MAP
     VALUE rb_cDHeapMap = rb_define_class_under(rb_cDHeap, "Map", rb_cDHeap);
