@@ -75,8 +75,8 @@ struct dheap_entry
 #define DHEAP_MAX_CAPA      (SIZE_MAX / (int)sizeof(ENTRY))
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 
-static __m512i idx64x8;
-static __m256i idx64x4;
+static __m512i idx64x8, idx64x8_overflow1, idx64x8_overflow2, idx64x8_overflow3;
+static __m256i idx64x4, idx64x4_overflow1;
 static __m512i incrby8;
 static __m256i incrby4;
 static __m128i incrby2;
@@ -507,19 +507,24 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
                       entries[idx + 1].score,                                  \
                       entries[idx].score)
 
+#    define _MM256_LOAD_SCORES_OVERFLOW(entries, idx)                          \
+        _mm256_set_pd(entries[idx].score,                                      \
+                      entries[idx + 2].score,                                  \
+                      entries[idx + 1].score,                                  \
+                      entries[idx].score)
+
+#    define _MM256_SETR_INDEXES(idx)                                           \
+        _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
+#    define _MM256_SETR_INDEXES_OVERFLOW(idx)                                  \
+        _mm256_add_epi64(idx64x4_overflow1, _mm256_set1_epi64x(idx));
+
 #    define _MM128_LOAD_SCORES(entries, idx)                                   \
         _mm_set_pd((entries)[idx + 1].score, (entries)[idx].score)
 
 static inline __m512i
-_mm512_setr_indexes(size_t idx)
+_MM512_SETR_INDEXES(size_t idx)
 {
     return _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
-}
-
-static inline __m256i
-_mm256_setr_indexes(size_t idx)
-{
-    return _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
 }
 
 #    define _MM512_REDUCE_MIN(val0, idx0, val1, idx1)                          \
@@ -552,7 +557,7 @@ _mm256_setr_indexes(size_t idx)
             _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
             if (idx < last - 2) {                                              \
                 cmpval4 = _MM256_LOAD_SCORES(entries, idx);                    \
-                cmpidx4 = _mm256_setr_indexes(idx);                            \
+                cmpidx4 = _MM256_SETR_INDEXES(idx);                            \
                 _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
                 idx += 4;                                                      \
             }                                                                  \
@@ -597,7 +602,7 @@ min_index_avx512(const ENTRY entries[], size_t idx, const size_t last)
 #    endif
 
     // setup initial vars
-    __m512i minidx8 = _mm512_setr_indexes(idx);
+    __m512i minidx8 = _MM512_SETR_INDEXES(idx);
     __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);
 
     // compare with eight at a time, using AVX2
@@ -623,7 +628,7 @@ min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
 #    endif
 
     // setup initial vars
-    __m256i minidx4 = _mm256_setr_indexes(idx);
+    __m256i minidx4 = _MM256_SETR_INDEXES(idx);
     __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);
 
     // compare with four at a time, using AVX2
@@ -640,77 +645,309 @@ min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
     REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN();
 }
 
-static inline size_t
-min_index_sse(const ENTRY entries[], size_t idx, const size_t last)
-{
-#    ifdef DEBUG
-    if (UNLIKELY(last - idx < 3))
-        rb_raise(rb_eException, "too small for min_index_sse");
-#    endif
-
-    // setup initial vars
-    __m128i minidx2 = _mm_set_epi64x(idx + 1, idx);
-    __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);
-
-    // compare with two at a time
-    __m128i cmpidx2 = minidx2;
-    for (idx += 2; idx < last; idx += 2) {
-        const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);
-        cmpidx2               = _mm_add_epi32(cmpidx2, incrby2);
-        _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);
-    }
-
-    // reduce the resulting __m128 mins to size_t
-    REDUCE_MIN_64X2_WITH_REMAINDER_AND_RETURN();
-}
-
 #    define SCORE_AT(i)   DHEAP_SCORE(heap, i)
 #    define MINIDX2(i, j) (SCORE_AT(i) < SCORE_AT(j) ? i : j)
 #    define MINIDX3(i, j, k)                                                   \
-        (SCORE_AT(i) < SCORE_AT(j) ? MINIDX2(SCORE_AT, i, k)                   \
-                                   : MINIDX2(SCORE_AT, j, k))
+        (SCORE_AT(i) < SCORE_AT(j) ? MINIDX2(i, k) : MINIDX2(j, k))
+
+/* clang-format off */
+#define MIN_IDX_REDUCE_SIZE32()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX24_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE31()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX23_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE30()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX22_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE29()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX21_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE28()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX20_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE27()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX19_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE26()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX18_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE25()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX17_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE24()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX16_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE23()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX15_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE22()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX14_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE21()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX13_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE20()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX12_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE19()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX11_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE18()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX10_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE17()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX09_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE16()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX08_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE15()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX07_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE14()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX06_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_SIZE13()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX05_VEC8(); } while (0)
+
+#define MIN_IDX_REDUCE_SIZE12()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX08_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_SIZE11()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX07_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_SIZE10()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX06_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_SIZE09()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX05_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_SIZE08()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX04_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_SIZE07()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX03_VEC4(); } while (0)
+
+#define MIN_IDX_REDUCE_SIZE06()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX04_VEC2(); } while (0)
+#define MIN_IDX_REDUCE_SIZE05()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX03_VEC2(); } while (0)
+#define MIN_IDX_REDUCE_SIZE04()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX02_VEC2(); } while (0)
+
+#define MIN_IDX_REDUCE_SIZE03()     do { minidx = MINIDX3(idx, idx + 1, idx + 2); } while (0)
+#define MIN_IDX_REDUCE_SIZE02()     do { minidx = MINIDX2(idx, idx + 1); } while (0)
+#define MIN_IDX_REDUCE_SIZE01()     do { minidx = idx; } while (0)
+
+#define MIN_IDX_REDUCE_IDX24_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX16_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX23_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX15_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX22_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX14_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX21_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX13_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX20_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX12_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX19_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX11_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX18_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX10_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX17_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX09_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX16_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX08_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX15_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX07_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX14_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX06_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX13_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX05_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX12_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX04_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX11_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX03_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX10_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX02_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX09_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX01_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX08_VEC8() do { MIN_IDX_FOLD_NEXT_8(0); MIN_IDX_REDUCE_IDX00_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX07_VEC8() do { MIN_IDX_FOLD_NEXT_8(1); MIN_IDX_REDUCE_IDX00_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX06_VEC8() do { MIN_IDX_FOLD_NEXT_8(2); MIN_IDX_REDUCE_IDX00_VEC8(); } while (0)
+#define MIN_IDX_REDUCE_IDX05_VEC8() do { MIN_IDX_FOLD_NEXT_8(3); MIN_IDX_REDUCE_IDX00_VEC8(); } while (0)
+
+#define MIN_IDX_REDUCE_IDX04_VEC8() do { MIN_IDX_REDUCE_8TO4(1); MIN_IDX_REDUCE_IDX04_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX03_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX03_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX02_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX02_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX01_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX01_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX00_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX00_VEC4(); } while (0)
+
+#define MIN_IDX_REDUCE_IDX08_VEC4() do { MIN_IDX_FOLD_NEXT_4(0); MIN_IDX_REDUCE_IDX04_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX07_VEC4() do { MIN_IDX_FOLD_NEXT_4(0); MIN_IDX_REDUCE_IDX03_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX06_VEC4() do { MIN_IDX_FOLD_NEXT_4(0); MIN_IDX_REDUCE_IDX02_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX05_VEC4() do { MIN_IDX_FOLD_NEXT_4(0); MIN_IDX_REDUCE_IDX01_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX04_VEC4() do { MIN_IDX_FOLD_NEXT_4(0); MIN_IDX_REDUCE_IDX00_VEC4(); } while (0)
+#define MIN_IDX_REDUCE_IDX03_VEC4() do { MIN_IDX_FOLD_NEXT_4(1); MIN_IDX_REDUCE_IDX00_VEC4(); } while (0)
+
+#define MIN_IDX_REDUCE_IDX02_VEC4() do { MIN_IDX_REDUCE_4TO2(1); MIN_IDX_REDUCE_IDX02_VEC2(); } while (0)
+#define MIN_IDX_REDUCE_IDX01_VEC4() do { MIN_IDX_REDUCE_4TO2(0); MIN_IDX_REDUCE_IDX01_VEC2(); } while (0)
+#define MIN_IDX_REDUCE_IDX00_VEC4() do { MIN_IDX_REDUCE_4TO2(0); MIN_IDX_REDUCE_IDX00_VEC2(); } while (0)
+
+#define MIN_IDX_REDUCE_IDX04_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX02_VEC2(); } while (0)
+#define MIN_IDX_REDUCE_IDX03_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX01_VEC2(); } while (0)
+#define MIN_IDX_REDUCE_IDX02_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX00_VEC2(); } while (0)
+
+#define MIN_IDX_REDUCE_IDX01_VEC2() do { MIN_IDX_REDUCE_2TO1();  MIN_IDX_REDUCE_IDX01_VEC1(); } while (0)
+#define MIN_IDX_REDUCE_IDX00_VEC2() do { MIN_IDX_REDUCE_2TO1();  MIN_IDX_REDUCE_IDX00_VEC1(); } while (0)
+
+#define MIN_IDX_REDUCE_IDX04_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX03_VEC1(); } while (0)
+#define MIN_IDX_REDUCE_IDX03_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX02_VEC1(); } while (0)
+#define MIN_IDX_REDUCE_IDX02_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX01_VEC1(); } while (0)
+#define MIN_IDX_REDUCE_IDX01_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX00_VEC1(); } while (0)
+#define MIN_IDX_REDUCE_IDX00_VEC1() /* done; result is in minidx */
+/* clang-format on */
+
+// TODO:
+#    define MIN_IDX_INIT_WITH_8()                                              \
+        __m128d minval2;                                                       \
+        __m128i minidx2, cmpidx2;                                              \
+        __m256d minval4;                                                       \
+        __m256i minidx4, cmpidx4;                                              \
+        __m512i minidx8 = _MM512_SETR_INDEXES(idx);                            \
+        __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);                    \
+        __m512i cmpidx8 = minidx8;                                             \
+        idx += 8;
+
+#    define MIN_IDX_INIT_WITH_4()                                              \
+        __m128d minval2;                                                       \
+        __m128i minidx2, cmpidx2;                                              \
+        __m256i minidx4 = _MM256_SETR_INDEXES(idx);                            \
+        __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);                    \
+        __m256i cmpidx4 = minidx4;                                             \
+        idx += 4;
+
+#    define MIN_IDX_INIT_WITH_2()                                              \
+        __m128i minidx2 = _mm_set_epi64x(idx + 1, idx);                        \
+        __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);                    \
+        __m128i cmpidx2 = minidx2;                                             \
+        idx += 2;
+
+#    define MIN_IDX_FOLD_NEXT_8(overflow)                                      \
+        MIN_IDX_FOLD_NEXT_8_WITH_OVERFLOW_##overflow()
+
+#    define MIN_IDX_FOLD_NEXT_8_WITH_OVERFLOW_0()                              \
+        do {                                                                   \
+            const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx);          \
+            cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);        \
+            _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);             \
+            idx += 8;                                                          \
+        } while (0)
+
+// TODO: cleanup this overflow code
+#    define MIN_IDX_FOLD_NEXT_8_WITH_OVERFLOW_1()                              \
+        do {                                                                   \
+            const __m512d cmpval8 = _mm512_set_pd(entries[idx].score,          \
+                                                  entries[idx + 6].score,      \
+                                                  entries[idx + 5].score,      \
+                                                  entries[idx + 4].score,      \
+                                                  entries[idx + 3].score,      \
+                                                  entries[idx + 2].score,      \
+                                                  entries[idx + 1].score,      \
+                                                  entries[idx].score);         \
+            cmpidx8 =                                                          \
+              _mm512_add_epi64(idx64x8_overflow1, _mm512_set1_epi64(idx));     \
+            _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);             \
+            idx += 8;                                                          \
+        } while (0)
+
+#    define MIN_IDX_FOLD_NEXT_8_WITH_OVERFLOW_2()                              \
+        do {                                                                   \
+            const __m512d cmpval8 = _mm512_set_pd(entries[idx].score,          \
+                                                  entries[idx].score,          \
+                                                  entries[idx + 5].score,      \
+                                                  entries[idx + 4].score,      \
+                                                  entries[idx + 3].score,      \
+                                                  entries[idx + 2].score,      \
+                                                  entries[idx + 1].score,      \
+                                                  entries[idx].score);         \
+            cmpidx8 =                                                          \
+              _mm512_add_epi64(idx64x8_overflow2, _mm512_set1_epi64(idx));     \
+            _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);             \
+            idx += 8;                                                          \
+        } while (0)
+
+#    define MIN_IDX_FOLD_NEXT_8_WITH_OVERFLOW_3()                              \
+        do {                                                                   \
+            const __m512d cmpval8 = _mm512_set_pd(entries[idx].score,          \
+                                                  entries[idx].score,          \
+                                                  entries[idx].score,          \
+                                                  entries[idx + 4].score,      \
+                                                  entries[idx + 3].score,      \
+                                                  entries[idx + 2].score,      \
+                                                  entries[idx + 1].score,      \
+                                                  entries[idx].score);         \
+            cmpidx8 =                                                          \
+              _mm512_add_epi64(idx64x8_overflow3, _mm512_set1_epi64(idx));     \
+            _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);             \
+            idx += 8;                                                          \
+        } while (0)
+
+#    define MIN_IDX_FOLD_NEXT_4(overflow)                                      \
+        MIN_IDX_FOLD_NEXT_4_WITH_OVERFLOW_##overflow()
+
+// TODO: use cmpidx4 = _mm256_add_epi64(cmpidx4, incrby4)
+#    define MIN_IDX_FOLD_NEXT_4_WITH_OVERFLOW_0()                              \
+        do {                                                                   \
+            const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx);          \
+            cmpidx4               = _MM256_SETR_INDEXES(idx);                  \
+            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
+            idx += 4;                                                          \
+        } while (0)
+
+#    define MIN_IDX_FOLD_NEXT_4_WITH_OVERFLOW_1()                              \
+        do {                                                                   \
+            const __m256d cmpval4 = _MM256_LOAD_SCORES_OVERFLOW(entries, idx); \
+            cmpidx4               = _MM256_SETR_INDEXES_OVERFLOW(idx);         \
+            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
+            idx += 4;                                                          \
+        } while (0)
+
+#    define MIN_IDX_FOLD_NEXT_2()                                              \
+        do {                                                                   \
+            const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);          \
+            cmpidx2               = _mm_set_epi64x(idx + 1, idx);              \
+            _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);             \
+            idx += 2;                                                          \
+        } while (0)
+
+#    define MIN_IDX_FOLD_NEXT_1()                                              \
+        do {                                                                   \
+            if (entries[idx].score < entries[minidx].score) minidx = idx;      \
+            idx++;                                                             \
+        } while (0)
+
+#    define MIN_IDX_REDUCE_8TO4(reset_cmpidx4)                                 \
+        do {                                                                   \
+            minval4               = _mm512_extractf64x4_pd(minval8, 0);        \
+            const __m256d cmpval4 = _mm512_extractf64x4_pd(minval8, 1);        \
+            minidx4               = _mm512_extracti64x4_epi64(minidx8, 0);     \
+            cmpidx4               = _mm512_extracti64x4_epi64(minidx8, 1);     \
+            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
+            cmpidx4 = _MM256_SETR_INDEXES(idx - 4);                            \
+        } while (0)
+
+#    define MIN_IDX_REDUCE_4TO2(reset_cmpidx2)                                 \
+        do {                                                                   \
+            minval2               = _mm256_extractf128_pd(minval4, 0);         \
+            const __m128d cmpval2 = _mm256_extractf128_pd(minval4, 1);         \
+            minidx2               = _mm256_extracti128_si256(minidx4, 0);      \
+            cmpidx2               = _mm256_extracti128_si256(minidx4, 1);      \
+            _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);             \
+        } while (0)
+
+#    define MIN_IDX_REDUCE_2TO1()                                              \
+        do {                                                                   \
+            double minvals[2];                                                 \
+            _mm_storeu_pd(minvals, minval2);                                   \
+            minidx =                                                           \
+              ((minvals[0] < minvals[1]) ? _mm_extract_epi64(minidx2, 0)       \
+                                         : _mm_extract_epi64(minidx2, 1));     \
+        } while (0)
 
 static inline size_t
-min_index_simd(dheap_t *heap, size_t idx0, const size_t last)
+min_index_simd(dheap_t *heap, size_t idx, const size_t last)
 {
     const ENTRY *entries = heap->entries;
+    size_t       minidx;
 
-    switch (last - idx0) {
-    case 14:
-    case 13:
-    case 12:
-    case 11:
-    case 10:
-    case 9:
-    case 8:
-    case 7:
-        return min_index_avx2(entries, idx0, last);
-    case 6:
-    case 5:
-    case 4:
-    case 3:
-        return min_index_sse(entries, idx0, last);
-    case 2:
-        return (
-          entries[idx0].score < entries[idx0 + 1].score
-            ? (entries[idx0].score < entries[idx0 + 2].score ? idx0 : idx0 + 2)
-            : (entries[idx0 + 1].score < entries[idx0 + 2].score ? idx0 + 1
-                                                                 : idx0 + 2));
-    case 1:
-        return entries[idx0].score < entries[idx0 + 1].score ? idx0 : idx0 + 1;
-    case 0:
-        return idx0;
+    switch (last - idx) {
+        /* clang-format off */
+    // uses 512-bit vectors
+    case 31: MIN_IDX_REDUCE_SIZE32(); return minidx;
+    case 30: MIN_IDX_REDUCE_SIZE31(); return minidx;
+    case 29: MIN_IDX_REDUCE_SIZE30(); return minidx;
+    case 28: MIN_IDX_REDUCE_SIZE29(); return minidx;
+    case 27: MIN_IDX_REDUCE_SIZE28(); return minidx;
+    case 26: MIN_IDX_REDUCE_SIZE27(); return minidx;
+    case 25: MIN_IDX_REDUCE_SIZE26(); return minidx;
+    case 24: MIN_IDX_REDUCE_SIZE25(); return minidx;
+    case 23: MIN_IDX_REDUCE_SIZE24(); return minidx;
+    case 22: MIN_IDX_REDUCE_SIZE23(); return minidx;
+    case 21: MIN_IDX_REDUCE_SIZE22(); return minidx;
+    case 20: MIN_IDX_REDUCE_SIZE21(); return minidx;
+
+    case 19: MIN_IDX_REDUCE_SIZE20(); return minidx;
+    case 18: MIN_IDX_REDUCE_SIZE19(); return minidx;
+    case 17: MIN_IDX_REDUCE_SIZE18(); return minidx;
+    case 16: MIN_IDX_REDUCE_SIZE17(); return minidx;
+    case 15: MIN_IDX_REDUCE_SIZE16(); return minidx;
+    case 14: MIN_IDX_REDUCE_SIZE15(); return minidx;
+    case 13: MIN_IDX_REDUCE_SIZE14(); return minidx;
+    case 12: MIN_IDX_REDUCE_SIZE13(); return minidx;
+
+    // uses 256-bit vectors
+    case 11: MIN_IDX_REDUCE_SIZE12(); return minidx;
+    case 10: MIN_IDX_REDUCE_SIZE11(); return minidx;
+    case 9: MIN_IDX_REDUCE_SIZE10(); return minidx;
+    case 8: MIN_IDX_REDUCE_SIZE09(); return minidx;
+    case 7: MIN_IDX_REDUCE_SIZE08(); return minidx;
+    case 6: MIN_IDX_REDUCE_SIZE07(); return minidx;
+
+    // uses 128-bit vectors
+    case 5: MIN_IDX_REDUCE_SIZE06(); return minidx;
+    case 4: MIN_IDX_REDUCE_SIZE05(); return minidx;
+    case 3: MIN_IDX_REDUCE_SIZE04(); return minidx;
+
+    // handled without vectors
+    case 2: MIN_IDX_REDUCE_SIZE03(); return minidx;
+    case 1: MIN_IDX_REDUCE_SIZE02(); return minidx;
+    case 0: MIN_IDX_REDUCE_SIZE01(); return minidx;
+        /* clang-format on */
+
     default:
-        return min_index_avx512(entries, idx0, last);
+        // above 32 uses the (old) generic AVX512 code
+        return min_index_avx512(entries, idx, last);
     }
 
     // // 16 or more, use AVX512 to process 8 at a time
-    // if (16 <= size) return min_index_avx512(entries, idx0, last);
-    // if (8 <= size) return min_index_avx2(entries, idx0, last);
-    // if (4 <= size) return min_index_sse(entries, idx0, last);
+    // if (16 <= size) return min_index_avx512(entries, idx, last);
+    // if (8 <= size) return min_index_avx2(entries, idx, last);
+    // if (4 <= size) return min_index_sse(entries, idx, last);
     // if (size <= 0)
     //     rb_raise(rb_eException, "invalid dheap_min_child size: %zd", size);
-    // return min_index_loop(entries, idx0, last);
+    // return min_index_loop(entries, idx, last);
 }
 
 #    undef MINIDX2
@@ -1348,6 +1585,11 @@ Init_d_heap(void)
     incrby8 = _mm512_set1_epi64(8L);
     incrby4 = _mm256_set1_epi64x(4L);
     incrby2 = _mm_set1_epi64x(2L);
+
+    idx64x4_overflow1 = _mm256_setr_epi64x(0L, 1L, 2L, 0L);
+    idx64x8_overflow1 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 0L);
+    idx64x8_overflow2 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 0L, 0L);
+    idx64x8_overflow3 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 0L, 0L, 0L);
 
     VALUE rb_cDHeap = rb_define_class("DHeap", rb_cObject);
 #ifdef DHEAP_MAP
