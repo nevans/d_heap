@@ -8,6 +8,11 @@ require "mkmf"
 # $CFLAGS << " -g -ginline-points "
 # $CFLAGS << " -fno-omit-frame-pointer "
 
+# Allow this to compile on older rubys with C99
+if RUBY_VERSION.split(".").first(2).join(".").to_f < 2.7
+  $CFLAGS << " -std=c99 -Wno-declaration-after-statement "
+end
+
 # Use `rake compile -- --enable-debug`
 debug_mode = enable_config("debug", ENV["EXTCONF_DEBUG"] == "1")
 
