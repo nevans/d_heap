@@ -24,6 +24,17 @@
 #    error "DHeap assumes 64-bit 'unsigned long long'"
 #endif
 
+// TODO: easy workarounds for these:
+#if DHEAP_ENABLE_MIN_IDX_AVX512 && !DHEAP_ENABLE_MIN_IDX_AVX2
+#    error "Must enable AVX2 when AVX512F is enabled."
+#endif
+#if DHEAP_ENABLE_MIN_IDX_AVX512 && !DHEAP_ENABLE_MIN_IDX_SSE2
+#    error "Must enable SSE2 when AVX512F is enabled."
+#endif
+#if DHEAP_ENABLE_MIN_IDX_AVX2 && !DHEAP_ENABLE_MIN_IDX_SSE2
+#    error "Must enable SSE2 when AVX2 is enabled."
+#endif
+
 /********************************************************************
  *
  * Type definitions
@@ -75,11 +86,15 @@ struct dheap_entry
 #define DHEAP_MAX_CAPA      (SIZE_MAX / (int)sizeof(ENTRY))
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 
-static __m512i idx64x8, idx64x8_overflow1, idx64x8_overflow2, idx64x8_overflow3;
-static __m256i idx64x4, idx64x4_overflow1;
-static __m512i incrby8;
-static __m256i incrby4;
+#ifdef DHEAP_ENABLE_MIN_IDX_AVX512
+static __m512i idx64x8, incrby8;
+#endif
+#ifdef DHEAP_ENABLE_MIN_IDX_AVX2
+static __m256i idx64x4, incrby4;
+#endif
+#ifdef DHEAP_ENABLE_MIN_IDX_SSE2
 static __m128i incrby2;
+#endif
 
 static ID id_cmp;    // <=>
 static ID id_abs;    // abs
@@ -515,17 +530,12 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 
 #    define _MM256_SETR_INDEXES(idx)                                           \
         _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
-#    define _MM256_SETR_INDEXES_OVERFLOW(idx)                                  \
-        _mm256_add_epi64(idx64x4_overflow1, _mm256_set1_epi64x(idx));
 
 #    define _MM128_LOAD_SCORES(entries, idx)                                   \
         _mm_set_pd((entries)[idx + 1].score, (entries)[idx].score)
 
-static inline __m512i
-_MM512_SETR_INDEXES(size_t idx)
-{
-    return _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
-}
+#    define _MM512_SETR_INDEXES(idx)                                           \
+        _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
 
 #    define _MM512_REDUCE_MIN(val0, idx0, val1, idx1)                          \
         do {                                                                   \
@@ -547,103 +557,6 @@ _MM512_SETR_INDEXES(size_t idx)
             idx0 = _mm_blendv_epi8(idx0, idx1, _mm_castpd_si128(ltmask2));     \
             val0 = _mm_min_pd(val1, val0);                                     \
         } while (0)
-
-#    define REDUCE_MIN_64X8_WITH_REMAINDER_AND_RETURN()                        \
-        do {                                                                   \
-            __m256d minval4 = _mm512_extractf64x4_pd(minval8, 0);              \
-            __m256d cmpval4 = _mm512_extractf64x4_pd(minval8, 1);              \
-            __m256i minidx4 = _mm512_extracti64x4_epi64(minidx8, 0);           \
-            __m256i cmpidx4 = _mm512_extracti64x4_epi64(minidx8, 1);           \
-            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
-            if (idx < last - 2) {                                              \
-                cmpval4 = _MM256_LOAD_SCORES(entries, idx);                    \
-                cmpidx4 = _MM256_SETR_INDEXES(idx);                            \
-                _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
-                idx += 4;                                                      \
-            }                                                                  \
-            REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN();                       \
-        } while (0)
-
-#    define REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN()                        \
-        do {                                                                   \
-            __m128d minval2 = _mm256_extractf128_pd(minval4, 0);               \
-            __m128d cmpval2 = _mm256_extractf128_pd(minval4, 1);               \
-            __m128i minidx2 = _mm256_extracti128_si256(minidx4, 0);            \
-            __m128i cmpidx2 = _mm256_extracti128_si256(minidx4, 1);            \
-            _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);             \
-            if (idx < last) {                                                  \
-                cmpval2 = _MM128_LOAD_SCORES(entries, idx);                    \
-                cmpidx2 = _mm_set_epi64x(idx + 1, idx);                        \
-                _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);         \
-                idx += 2;                                                      \
-            }                                                                  \
-            REDUCE_MIN_64X2_WITH_REMAINDER_AND_RETURN();                       \
-        } while (0);
-
-#    define REDUCE_MIN_64X2_WITH_REMAINDER_AND_RETURN()                        \
-        do {                                                                   \
-            double minvals[2];                                                 \
-            _mm_storeu_pd(minvals, minval2);                                   \
-            size_t minidx =                                                    \
-              ((minvals[0] < minvals[1]) ? _mm_extract_epi64(minidx2, 0)       \
-                                         : _mm_extract_epi64(minidx2, 1));     \
-            return (last < idx)                                                \
-                     ? minidx                                                  \
-                     : ((entries[minidx].score < entries[last].score) ? minidx \
-                                                                      : last); \
-        } while (0)
-
-static inline size_t
-min_index_avx512(const ENTRY entries[], size_t idx, const size_t last)
-{
-#    ifdef DHEAP_DEBUG
-    if (UNLIKELY(last - idx < 15))
-        rb_raise(rb_eException, "too small for min_index_avx512");
-#    endif
-
-    // setup initial vars
-    __m512i minidx8 = _MM512_SETR_INDEXES(idx);
-    __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);
-
-    // compare with eight at a time, using AVX2
-    // bias idx ahead by six, to simplify comparison with last
-    __m512i cmpidx8 = minidx8;
-    for (idx += 14; idx < last; idx += 8) {
-        const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx - 6);
-        cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);
-        _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);
-    }
-    idx -= 6; // undo bias, to point at next unprocessed value
-
-    // reduce the resulting __m512 mins to __m256
-    REDUCE_MIN_64X8_WITH_REMAINDER_AND_RETURN();
-}
-
-static inline size_t
-min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
-{
-#    ifdef DHEAP_DEBUG
-    if (UNLIKELY(last - idx < 7))
-        rb_raise(rb_eException, "too small for min_index_avx2");
-#    endif
-
-    // setup initial vars
-    __m256i minidx4 = _MM256_SETR_INDEXES(idx);
-    __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);
-
-    // compare with four at a time, using AVX2
-    // bias idx ahead by two, to simplify comparison with last
-    __m256i cmpidx4 = minidx4;
-    for (idx += 6; idx < last; idx += 4) {
-        const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx - 2);
-        cmpidx4               = _mm256_add_epi64(cmpidx4, incrby4);
-        _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);
-    }
-    idx -= 2; // undo bias, to point at next unprocessed value
-
-    // reduce the resulting __m256 mins to __m128
-    REDUCE_MIN_64X4_WITH_REMAINDER_AND_RETURN();
-}
 
 #    define SCORE_AT(i)   DHEAP_SCORE(heap, i)
 #    define MINIDX2(i, j) (SCORE_AT(i) < SCORE_AT(j) ? i : j)
@@ -759,87 +672,141 @@ min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
 #    define MIN_IDX_REDUCE_SIZE8(d)   MIN_IDX_REDUCE_SIZE08()
 #    define MIN_IDX_REDUCE_SIZE9(d)   MIN_IDX_REDUCE_SIZE09()
 
-// TODO:
-#    define MIN_IDX_INIT_WITH_8()                                              \
-        __m128d minval2;                                                       \
-        __m128i minidx2, cmpidx2;                                              \
-        __m256d minval4;                                                       \
-        __m256i minidx4, cmpidx4;                                              \
-        __m512i minidx8 = _MM512_SETR_INDEXES(idx);                            \
-        __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);                    \
-        __m512i cmpidx8 = minidx8;                                             \
-        idx += 8;
+#    ifdef DHEAP_ENABLE_MIN_IDX_AVX512
 
-#    define MIN_IDX_INIT_WITH_4()                                              \
-        __m128d minval2;                                                       \
-        __m128i minidx2, cmpidx2;                                              \
-        __m256i minidx4 = _MM256_SETR_INDEXES(idx);                            \
-        __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);                    \
-        __m256i cmpidx4 = minidx4;                                             \
-        idx += 4;
+#        define MIN_IDX_INIT_WITH_8()                                          \
+            __m128d minval2;                                                   \
+            __m128i minidx2, cmpidx2;                                          \
+            __m256d minval4;                                                   \
+            __m256i minidx4, cmpidx4;                                          \
+            __m512i minidx8 = _MM512_SETR_INDEXES(idx);                        \
+            __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);                \
+            __m512i cmpidx8 = minidx8;                                         \
+            idx += 8;
 
-#    define MIN_IDX_INIT_WITH_2()                                              \
-        __m128i minidx2 = _mm_set_epi64x(idx + 1, idx);                        \
-        __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);                    \
-        __m128i cmpidx2 = minidx2;                                             \
-        idx += 2;
+#        define MIN_IDX_FOLD_NEXT_8()                                          \
+            do {                                                               \
+                const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx);      \
+                cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);    \
+                _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);         \
+                idx += 8;                                                      \
+            } while (0)
 
-#    define MIN_IDX_FOLD_NEXT_8()                                              \
-        do {                                                                   \
-            const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx);          \
-            cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);        \
-            _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);             \
-            idx += 8;                                                          \
-        } while (0)
+// TODO: AVX512 enabled, AVX2 disabled, SSE2 enabled
+// TODO: AVX512 enabled, AVX2 disabled, SSE2 disabled
+#        define MIN_IDX_REDUCE_8TO4(reset_cmpidx4)                             \
+            do {                                                               \
+                minval4               = _mm512_extractf64x4_pd(minval8, 0);    \
+                const __m256d cmpval4 = _mm512_extractf64x4_pd(minval8, 1);    \
+                minidx4               = _mm512_extracti64x4_epi64(minidx8, 0); \
+                cmpidx4               = _mm512_extracti64x4_epi64(minidx8, 1); \
+                _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
+                cmpidx4 = _MM256_SETR_INDEXES(idx - 4);                        \
+            } while (0)
 
-#    define MIN_IDX_FOLD_NEXT_4()                                              \
-        do {                                                                   \
-            const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx);          \
-            cmpidx4               = _MM256_SETR_INDEXES(idx);                  \
-            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
-            idx += 4;                                                          \
-        } while (0)
+#    else
 
-#    define MIN_IDX_FOLD_NEXT_2()                                              \
-        do {                                                                   \
-            const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);          \
-            cmpidx2               = _mm_set_epi64x(idx + 1, idx);              \
-            _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);             \
-            idx += 2;                                                          \
-        } while (0)
+#        define MIN_IDX_INIT_WITH_8()                                          \
+            MIN_IDX_INIT_WITH_4();                                             \
+            MIN_IDX_FOLD_NEXT_4();
+
+#        define MIN_IDX_FOLD_NEXT_8()                                          \
+            do {                                                               \
+                MIN_IDX_FOLD_NEXT_4();                                         \
+                MIN_IDX_FOLD_NEXT_4();                                         \
+            } while (0)
+
+#        define MIN_IDX_REDUCE_8TO4(reset_cmpidx4) /* noop */
+
+#    endif
+
+#    ifdef DHEAP_ENABLE_MIN_IDX_AVX2
+
+#        define MIN_IDX_INIT_WITH_4()                                          \
+            __m128d minval2;                                                   \
+            __m128i minidx2, cmpidx2;                                          \
+            __m256i minidx4 = _MM256_SETR_INDEXES(idx);                        \
+            __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);                \
+            __m256i cmpidx4 = minidx4;                                         \
+            idx += 4;
+
+#        define MIN_IDX_FOLD_NEXT_4()                                          \
+            do {                                                               \
+                const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx);      \
+                cmpidx4               = _MM256_SETR_INDEXES(idx);              \
+                _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
+                idx += 4;                                                      \
+            } while (0)
+
+// TODO: AVX2 enabled, SSE2 disabled
+#        define MIN_IDX_REDUCE_4TO2(reset_cmpidx2)                             \
+            do {                                                               \
+                minval2               = _mm256_extractf128_pd(minval4, 0);     \
+                const __m128d cmpval2 = _mm256_extractf128_pd(minval4, 1);     \
+                minidx2               = _mm256_extracti128_si256(minidx4, 0);  \
+                cmpidx2               = _mm256_extracti128_si256(minidx4, 1);  \
+                _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);         \
+            } while (0)
+
+#    else
+
+#        define MIN_IDX_INIT_WITH_4()                                          \
+            MIN_IDX_INIT_WITH_2();                                             \
+            MIN_IDX_FOLD_NEXT_2();
+
+#        define MIN_IDX_FOLD_NEXT_4()                                          \
+            do {                                                               \
+                MIN_IDX_FOLD_NEXT_2();                                         \
+                MIN_IDX_FOLD_NEXT_2();                                         \
+            } while (0)
+
+#        define MIN_IDX_REDUCE_4TO2(reset_cmpidx2) /* noop */
+
+#    endif
+
+#    ifdef DHEAP_ENABLE_MIN_IDX_SSE2
+
+#        define MIN_IDX_INIT_WITH_2()                                          \
+            __m128i minidx2 = _mm_set_epi64x(idx + 1, idx);                    \
+            __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);                \
+            __m128i cmpidx2 = minidx2;                                         \
+            idx += 2;
+
+#        define MIN_IDX_FOLD_NEXT_2()                                          \
+            do {                                                               \
+                const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);      \
+                cmpidx2               = _mm_set_epi64x(idx + 1, idx);          \
+                _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);         \
+                idx += 2;                                                      \
+            } while (0)
+
+#        define MIN_IDX_REDUCE_2TO1()                                          \
+            do {                                                               \
+                double minvals[2];                                             \
+                _mm_storeu_pd(minvals, minval2);                               \
+                minidx =                                                       \
+                  ((minvals[0] < minvals[1]) ? _mm_extract_epi64(minidx2, 0)   \
+                                             : _mm_extract_epi64(minidx2, 1)); \
+            } while (0)
+
+#    else
+
+#        define MIN_IDX_INIT_WITH_2()                                          \
+            minidx = idx++;                                                    \
+            MIN_IDX_FOLD_NEXT_1();
+
+#        define MIN_IDX_FOLD_NEXT_2()                                          \
+            do {                                                               \
+                MIN_IDX_FOLD_NEXT_1();                                         \
+                MIN_IDX_FOLD_NEXT_1();                                         \
+            } while (0)
+
+#    endif
 
 #    define MIN_IDX_FOLD_NEXT_1()                                              \
         do {                                                                   \
             if (entries[idx].score < entries[minidx].score) minidx = idx;      \
             idx++;                                                             \
-        } while (0)
-
-#    define MIN_IDX_REDUCE_8TO4(reset_cmpidx4)                                 \
-        do {                                                                   \
-            minval4               = _mm512_extractf64x4_pd(minval8, 0);        \
-            const __m256d cmpval4 = _mm512_extractf64x4_pd(minval8, 1);        \
-            minidx4               = _mm512_extracti64x4_epi64(minidx8, 0);     \
-            cmpidx4               = _mm512_extracti64x4_epi64(minidx8, 1);     \
-            _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);             \
-            cmpidx4 = _MM256_SETR_INDEXES(idx - 4);                            \
-        } while (0)
-
-#    define MIN_IDX_REDUCE_4TO2(reset_cmpidx2)                                 \
-        do {                                                                   \
-            minval2               = _mm256_extractf128_pd(minval4, 0);         \
-            const __m128d cmpval2 = _mm256_extractf128_pd(minval4, 1);         \
-            minidx2               = _mm256_extracti128_si256(minidx4, 0);      \
-            cmpidx2               = _mm256_extracti128_si256(minidx4, 1);      \
-            _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);             \
-        } while (0)
-
-#    define MIN_IDX_REDUCE_2TO1()                                              \
-        do {                                                                   \
-            double minvals[2];                                                 \
-            _mm_storeu_pd(minvals, minval2);                                   \
-            minidx =                                                           \
-              ((minvals[0] < minvals[1]) ? _mm_extract_epi64(minidx2, 0)       \
-                                         : _mm_extract_epi64(minidx2, 1));     \
         } while (0)
 
 static inline size_t
@@ -856,6 +823,7 @@ min_index_simd(dheap_t *heap, size_t idx, const size_t last)
 
     switch (last - idx) {
         /* clang-format off */
+
     // handled without vectors
     case 0: MIN_IDX_REDUCE_SIZE01(); return minidx;
     case 1: MIN_IDX_REDUCE_SIZE02(); return minidx;
@@ -865,26 +833,24 @@ min_index_simd(dheap_t *heap, size_t idx, const size_t last)
     case 3: MIN_IDX_REDUCE_SIZE04(); return minidx;
     case 4: MIN_IDX_REDUCE_SIZE05(); return minidx;
     case 5: MIN_IDX_REDUCE_SIZE06(); return minidx;
+    case 6: MIN_IDX_REDUCE_SIZE07(); return minidx;
 
     // uses 256-bit vectors
-    case 6: MIN_IDX_REDUCE_SIZE07(); return minidx;
-    case 7: MIN_IDX_REDUCE_SIZE08(); return minidx;
-    case 8: MIN_IDX_REDUCE_SIZE09(); return minidx;
-    case 9: MIN_IDX_REDUCE_SIZE10(); return minidx;
+    case 7:  MIN_IDX_REDUCE_SIZE08(); return minidx;
+    case 8:  MIN_IDX_REDUCE_SIZE09(); return minidx;
+    case 9:  MIN_IDX_REDUCE_SIZE10(); return minidx;
     case 10: MIN_IDX_REDUCE_SIZE11(); return minidx;
     case 11: MIN_IDX_REDUCE_SIZE12(); return minidx;
-
     case 12: MIN_IDX_REDUCE_SIZE13(); return minidx;
     case 13: MIN_IDX_REDUCE_SIZE14(); return minidx;
     case 14: MIN_IDX_REDUCE_SIZE15(); return minidx;
+
+    // uses 512-bit vectors
     case 15: MIN_IDX_REDUCE_SIZE16(); return minidx;
     case 16: MIN_IDX_REDUCE_SIZE17(); return minidx;
     case 17: MIN_IDX_REDUCE_SIZE18(); return minidx;
     case 18: MIN_IDX_REDUCE_SIZE19(); return minidx;
     case 19: MIN_IDX_REDUCE_SIZE20(); return minidx;
-
-    // uses 512-bit vectors
-
     case 20: MIN_IDX_REDUCE_SIZE21(); return minidx;
     case 21: MIN_IDX_REDUCE_SIZE22(); return minidx;
     case 22: MIN_IDX_REDUCE_SIZE23(); return minidx;
@@ -899,19 +865,46 @@ min_index_simd(dheap_t *heap, size_t idx, const size_t last)
     case 31: MIN_IDX_REDUCE_SIZE32(); return minidx;
 
         /* clang-format on */
-
     default:
-        // above 32 uses the (old) generic AVX512 code
-        return min_index_avx512(entries, idx, last);
-    }
+        // above 32 loops on 8 at a time, until less than 24 remaining
+        do {
+            MIN_IDX_INIT_WITH_8();
+            while (23 < last - idx) {
+                MIN_IDX_FOLD_NEXT_8();
+            }
+            switch (last - idx) {
+                /* clang-format off */
+            case 0:  MIN_IDX_REDUCE_IDX01_VEC8(); return minidx;
+            case 1:  MIN_IDX_REDUCE_IDX02_VEC8(); return minidx;
+            case 2:  MIN_IDX_REDUCE_IDX03_VEC8(); return minidx;
+            case 3:  MIN_IDX_REDUCE_IDX04_VEC8(); return minidx;
+            case 4:  MIN_IDX_REDUCE_IDX05_VEC8(); return minidx;
+            case 5:  MIN_IDX_REDUCE_IDX06_VEC8(); return minidx;
+            case 6:  MIN_IDX_REDUCE_IDX07_VEC8(); return minidx;
+            case 7:  MIN_IDX_REDUCE_IDX08_VEC8(); return minidx;
+            case 8:  MIN_IDX_REDUCE_IDX09_VEC8(); return minidx;
+            case 9:  MIN_IDX_REDUCE_IDX10_VEC8(); return minidx;
+            case 10: MIN_IDX_REDUCE_IDX11_VEC8(); return minidx;
+            case 11: MIN_IDX_REDUCE_IDX12_VEC8(); return minidx;
+            case 12: MIN_IDX_REDUCE_IDX13_VEC8(); return minidx;
+            case 13: MIN_IDX_REDUCE_IDX14_VEC8(); return minidx;
+            case 14: MIN_IDX_REDUCE_IDX15_VEC8(); return minidx;
+            case 15: MIN_IDX_REDUCE_IDX16_VEC8(); return minidx;
+            case 16: MIN_IDX_REDUCE_IDX17_VEC8(); return minidx;
+            case 17: MIN_IDX_REDUCE_IDX18_VEC8(); return minidx;
+            case 18: MIN_IDX_REDUCE_IDX19_VEC8(); return minidx;
+            case 19: MIN_IDX_REDUCE_IDX20_VEC8(); return minidx;
+            case 20: MIN_IDX_REDUCE_IDX21_VEC8(); return minidx;
+            case 21: MIN_IDX_REDUCE_IDX22_VEC8(); return minidx;
+            case 22: MIN_IDX_REDUCE_IDX23_VEC8(); return minidx;
+            case 23: MIN_IDX_REDUCE_IDX24_VEC8(); return minidx;
+                /* clang-format on */
+            }
+        } while (0);
 
-    // // 16 or more, use AVX512 to process 8 at a time
-    // if (16 <= size) return min_index_avx512(entries, idx, last);
-    // if (8 <= size) return min_index_avx2(entries, idx, last);
-    // if (4 <= size) return min_index_sse(entries, idx, last);
-    // if (size <= 0)
-    //     rb_raise(rb_eException, "invalid dheap_min_child size: %zd", size);
-    // return min_index_loop(entries, idx, last);
+        rb_raise(
+          rb_eException, "invalid DHeap min_child size: %zd", last - idx + 1);
+    }
 }
 
 #    undef MINIDX2
@@ -1544,16 +1537,17 @@ dheapmap_aset(VALUE self, VALUE object, VALUE score)
 void
 Init_d_heap(void)
 {
+#ifdef DHEAP_ENABLE_MIN_IDX_AVX512
     idx64x8 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L);
-    idx64x4 = _mm256_setr_epi64x(0L, 1L, 2L, 3L);
     incrby8 = _mm512_set1_epi64(8L);
+#endif
+#ifdef DHEAP_ENABLE_MIN_IDX_AVX2
+    idx64x4 = _mm256_setr_epi64x(0L, 1L, 2L, 3L);
     incrby4 = _mm256_set1_epi64x(4L);
+#endif
+#ifdef DHEAP_ENABLE_MIN_IDX_SSE2
     incrby2 = _mm_set1_epi64x(2L);
-
-    idx64x4_overflow1 = _mm256_setr_epi64x(0L, 1L, 2L, 0L);
-    idx64x8_overflow1 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 0L);
-    idx64x8_overflow2 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 0L, 0L);
-    idx64x8_overflow3 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 0L, 0L, 0L);
+#endif
 
     VALUE rb_cDHeap = rb_define_class("DHeap", rb_cObject);
 #ifdef DHEAP_MAP
