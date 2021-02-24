@@ -66,7 +66,7 @@ struct dheap_entry
  *
  ********************************************************************/
 
-#define DHEAP_DEFAULT_D 6
+#define DHEAP_DEFAULT_D 12
 #define DHEAP_MAX_D     INT_MAX
 
 // sizeof(ENTRY) => 16 bytes, 128-bits
@@ -739,6 +739,18 @@ min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
 #define MIN_IDX_REDUCE_IDX00_VEC1() /* done; result is in minidx */
 /* clang-format on */
 
+#    define MIN_IDX_REDUCE_SIZE_D(d)  _MIN_IDX_REDUCE_SIZE_D(d)
+#    define _MIN_IDX_REDUCE_SIZE_D(d) MIN_IDX_REDUCE_SIZE##d()
+#    define MIN_IDX_REDUCE_SIZE1(d)   MIN_IDX_REDUCE_SIZE01()
+#    define MIN_IDX_REDUCE_SIZE2(d)   MIN_IDX_REDUCE_SIZE02()
+#    define MIN_IDX_REDUCE_SIZE3(d)   MIN_IDX_REDUCE_SIZE03()
+#    define MIN_IDX_REDUCE_SIZE4(d)   MIN_IDX_REDUCE_SIZE04()
+#    define MIN_IDX_REDUCE_SIZE5(d)   MIN_IDX_REDUCE_SIZE05()
+#    define MIN_IDX_REDUCE_SIZE6(d)   MIN_IDX_REDUCE_SIZE06()
+#    define MIN_IDX_REDUCE_SIZE7(d)   MIN_IDX_REDUCE_SIZE07()
+#    define MIN_IDX_REDUCE_SIZE8(d)   MIN_IDX_REDUCE_SIZE08()
+#    define MIN_IDX_REDUCE_SIZE9(d)   MIN_IDX_REDUCE_SIZE09()
+
 // TODO:
 #    define MIN_IDX_INIT_WITH_8()                                              \
         __m128d minval2;                                                       \
@@ -892,48 +904,56 @@ min_index_simd(dheap_t *heap, size_t idx, const size_t last)
     const ENTRY *entries = heap->entries;
     size_t       minidx;
 
+    // short-circuit for the default
+    if (last - idx == DHEAP_DEFAULT_D - 1) {
+        MIN_IDX_REDUCE_SIZE_D(DHEAP_DEFAULT_D);
+        return minidx;
+    }
+
     switch (last - idx) {
         /* clang-format off */
-    // uses 512-bit vectors
-    case 31: MIN_IDX_REDUCE_SIZE32(); return minidx;
-    case 30: MIN_IDX_REDUCE_SIZE31(); return minidx;
-    case 29: MIN_IDX_REDUCE_SIZE30(); return minidx;
-    case 28: MIN_IDX_REDUCE_SIZE29(); return minidx;
-    case 27: MIN_IDX_REDUCE_SIZE28(); return minidx;
-    case 26: MIN_IDX_REDUCE_SIZE27(); return minidx;
-    case 25: MIN_IDX_REDUCE_SIZE26(); return minidx;
-    case 24: MIN_IDX_REDUCE_SIZE25(); return minidx;
-    case 23: MIN_IDX_REDUCE_SIZE24(); return minidx;
-    case 22: MIN_IDX_REDUCE_SIZE23(); return minidx;
-    case 21: MIN_IDX_REDUCE_SIZE22(); return minidx;
-    case 20: MIN_IDX_REDUCE_SIZE21(); return minidx;
-
-    case 19: MIN_IDX_REDUCE_SIZE20(); return minidx;
-    case 18: MIN_IDX_REDUCE_SIZE19(); return minidx;
-    case 17: MIN_IDX_REDUCE_SIZE18(); return minidx;
-    case 16: MIN_IDX_REDUCE_SIZE17(); return minidx;
-    case 15: MIN_IDX_REDUCE_SIZE16(); return minidx;
-    case 14: MIN_IDX_REDUCE_SIZE15(); return minidx;
-    case 13: MIN_IDX_REDUCE_SIZE14(); return minidx;
-    case 12: MIN_IDX_REDUCE_SIZE13(); return minidx;
-
-    // uses 256-bit vectors
-    case 11: MIN_IDX_REDUCE_SIZE12(); return minidx;
-    case 10: MIN_IDX_REDUCE_SIZE11(); return minidx;
-    case 9: MIN_IDX_REDUCE_SIZE10(); return minidx;
-    case 8: MIN_IDX_REDUCE_SIZE09(); return minidx;
-    case 7: MIN_IDX_REDUCE_SIZE08(); return minidx;
-    case 6: MIN_IDX_REDUCE_SIZE07(); return minidx;
+    // handled without vectors
+    case 0: MIN_IDX_REDUCE_SIZE01(); return minidx;
+    case 1: MIN_IDX_REDUCE_SIZE02(); return minidx;
+    case 2: MIN_IDX_REDUCE_SIZE03(); return minidx;
 
     // uses 128-bit vectors
-    case 5: MIN_IDX_REDUCE_SIZE06(); return minidx;
-    case 4: MIN_IDX_REDUCE_SIZE05(); return minidx;
     case 3: MIN_IDX_REDUCE_SIZE04(); return minidx;
+    case 4: MIN_IDX_REDUCE_SIZE05(); return minidx;
+    case 5: MIN_IDX_REDUCE_SIZE06(); return minidx;
 
-    // handled without vectors
-    case 2: MIN_IDX_REDUCE_SIZE03(); return minidx;
-    case 1: MIN_IDX_REDUCE_SIZE02(); return minidx;
-    case 0: MIN_IDX_REDUCE_SIZE01(); return minidx;
+    // uses 256-bit vectors
+    case 6: MIN_IDX_REDUCE_SIZE07(); return minidx;
+    case 7: MIN_IDX_REDUCE_SIZE08(); return minidx;
+    case 8: MIN_IDX_REDUCE_SIZE09(); return minidx;
+    case 9: MIN_IDX_REDUCE_SIZE10(); return minidx;
+    case 10: MIN_IDX_REDUCE_SIZE11(); return minidx;
+    case 11: MIN_IDX_REDUCE_SIZE12(); return minidx;
+
+    case 12: MIN_IDX_REDUCE_SIZE13(); return minidx;
+    case 13: MIN_IDX_REDUCE_SIZE14(); return minidx;
+    case 14: MIN_IDX_REDUCE_SIZE15(); return minidx;
+    case 15: MIN_IDX_REDUCE_SIZE16(); return minidx;
+    case 16: MIN_IDX_REDUCE_SIZE17(); return minidx;
+    case 17: MIN_IDX_REDUCE_SIZE18(); return minidx;
+    case 18: MIN_IDX_REDUCE_SIZE19(); return minidx;
+    case 19: MIN_IDX_REDUCE_SIZE20(); return minidx;
+
+    // uses 512-bit vectors
+
+    case 20: MIN_IDX_REDUCE_SIZE21(); return minidx;
+    case 21: MIN_IDX_REDUCE_SIZE22(); return minidx;
+    case 22: MIN_IDX_REDUCE_SIZE23(); return minidx;
+    case 23: MIN_IDX_REDUCE_SIZE24(); return minidx;
+    case 24: MIN_IDX_REDUCE_SIZE25(); return minidx;
+    case 25: MIN_IDX_REDUCE_SIZE26(); return minidx;
+    case 26: MIN_IDX_REDUCE_SIZE27(); return minidx;
+    case 27: MIN_IDX_REDUCE_SIZE28(); return minidx;
+    case 28: MIN_IDX_REDUCE_SIZE29(); return minidx;
+    case 29: MIN_IDX_REDUCE_SIZE30(); return minidx;
+    case 30: MIN_IDX_REDUCE_SIZE31(); return minidx;
+    case 31: MIN_IDX_REDUCE_SIZE32(); return minidx;
+
         /* clang-format on */
 
     default:
