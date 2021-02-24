@@ -537,6 +537,9 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 #    define _MM512_SETR_INDEXES(idx)                                           \
         _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
 
+#    define _mm512_cmplt_pd_mask(A, B) _mm512_cmp_pd_mask((A), (B), _CMP_LT_OS)
+#    define _mm256_cmplt_pd_mask(A, B) _mm256_cmp_pd((A), (B), _CMP_LT_OS)
+
 #    define _MM512_REDUCE_MIN(val0, idx0, val1, idx1)                          \
         do {                                                                   \
             const __mmask8 ltmask8 = _mm512_cmplt_pd_mask(cmpval8, minval8);   \
@@ -546,7 +549,7 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 
 #    define _MM256_REDUCE_MIN(val0, idx0, val1, idx1)                          \
         do {                                                                   \
-            const __m256d ltmask4 = _mm256_cmp_pd(val1, val0, _CMP_LT_OS);     \
+            const __m256d ltmask4 = _mm256_cmplt_pd_mask(val1, val0);          \
             idx0 = _mm256_blendv_epi8(idx0, idx1, (__m256i)ltmask4);           \
             val0 = _mm256_min_pd(val1, val0);                                  \
         } while (0)
