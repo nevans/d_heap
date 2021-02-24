@@ -1,0 +1,2111 @@
+---
+type: recorded
+job_warmup_context_result:
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (amindel)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: &1 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 10_000_000
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '10_000_000'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &2 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          ? &3 !ruby/struct:BenchmarkDriver::Metric
+            name: Iteration per second
+            unit: i/s
+            larger_better: true
+            worse_word: slower
+          : 22.915506017504942
+        all_values: 
+        duration: 0.785494328
+        loop_count: 18
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 23.706586098356105
+        all_values:
+          *3:
+          - 23.224907463537438
+          - 23.125093179714426
+          - 23.43254451592699
+          - 23.44208687197114
+          - 23.00404872578919
+          - 23.43151012492864
+          - 23.706586098356105
+          - 22.818125077167082
+        duration: 1.8982066761236638
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: &4 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 3_162_278
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '3_162_278'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &5 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 72.97416185356856
+        all_values:
+          *3:
+          - 72.81905121568514
+          - 71.57550241071016
+          - 71.90876181652261
+          - 72.97416185356856
+          - 69.53996069512127
+          - 70.64306217641297
+          - 66.61441540225604
+          - 69.90855243533768
+        duration: 0.6166566200554371
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: &6 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 1_000_000
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '1_000_000'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &7 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 217.14267792224538
+        all_values:
+          *3:
+          - 201.79332208686986
+          - 199.69544589928813
+          - 192.60047210300206
+          - 200.3733543801516
+          - 196.8579934711604
+          - 201.65228333351996
+          - 217.14267792224538
+          - 178.1666460256658
+        duration: 0.20723701315000653
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: &8 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 316_228
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '316_228'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &9 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 636.5028267757779
+        all_values:
+          *3:
+          - 569.2416227472045
+          - 516.843278045991
+          - 589.2409557127851
+          - 610.1013422110765
+          - 565.8144425400849
+          - 595.6317641566861
+          - 597.2871935282631
+          - 636.5028267757779
+        duration: 0.07069882191717625
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: &10 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 100_000
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '100_000'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &11 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2194.328464640269
+        all_values:
+          *3:
+          - 1816.9649280747158
+          - 1854.7711109611266
+          - 2136.7655370985563
+          - 1817.505404222204
+          - 1866.6781179665527
+          - 2005.1507615631474
+          - 2194.328464640269
+          - 1875.1868125245019
+        duration: 0.02050741296261549
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: &12 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 31_623
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '31_623'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &13 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 7005.255760382945
+        all_values:
+          *3:
+          - 5924.3630274999205
+          - 6616.656707913404
+          - 5887.460815302939
+          - 7005.255760382945
+          - 6213.063400635844
+          - 6107.426052103196
+          - 6426.336904212687
+          - 6134.986095354043
+        duration: 0.006423748331144452
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: &14 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 10_000
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '10_000'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &15 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 21249.058154093374
+        all_values:
+          *3:
+          - 18195.624988114265
+          - 19164.99466321114
+          - 17115.087437044956
+          - 17561.90221905445
+          - 19002.53490190773
+          - 19723.37251164966
+          - 17465.303474327367
+          - 21249.058154093374
+        duration: 0.002117740921676159
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: &16 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 3162
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '3162'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &17 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 65523.824484653866
+        all_values:
+          *3:
+          - 56946.16784066089
+          - 61845.64895467178
+          - 61901.6856091057
+          - 61000.22134782558
+          - 59677.96297668628
+          - 65523.824484653866
+          - 58303.23351848327
+          - 57958.69534590607
+        duration: 0.0006867730990052223
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: &18 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 1000
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '1000'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &19 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 209469.72766289505
+        all_values:
+          *3:
+          - 198133.1398408772
+          - 209469.72766289505
+          - 178655.73724303744
+          - 180016.4005200979
+          - 201506.2684226769
+          - 173068.1660679043
+          - 173789.4695233308
+          - 194303.92201846393
+        duration: 0.00021482817828655243
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: &20 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 316
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '316'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &21 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 654348.2310879987
+        all_values:
+          *3:
+          - 605816.1562235527
+          - 591638.5653019056
+          - 616472.9863642888
+          - 577618.7024661988
+          - 605742.1069423856
+          - 613163.8203466294
+          - 654348.2310879987
+          - 572025.0278800507
+        duration: 6.877072155475616e-05
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: &22 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 100
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '100'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &23 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1539145.0985888573
+        all_values:
+          *3:
+          - 1439364.3611340737
+          - 1398516.113141195
+          - 1444862.8823467847
+          - 1447644.1911781228
+          - 1517703.958663798
+          - 1403013.5044571562
+          - 1511638.223327624
+          - 1539145.0985888573
+        duration: 2.9237009584903717e-05
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: &24 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 32
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '32'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &25 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2568180.0805240707
+        all_values:
+          *3:
+          - 2568180.0805240707
+          - 1389197.7654787747
+          - 1926608.6676369146
+          - 2458481.566113337
+          - 1873041.4521209067
+          - 2317206.1231536544
+          - 2301067.092733918
+          - 2369913.1646904466
+        duration: 1.7522135749459267e-05
+        loop_count: 45
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: &26 !ruby/struct:BenchmarkDriver::Config::Executable
+          name: N 10
+          command:
+          - "/home/nick/src/d_heap/N"
+          - '10'
+          - "-rbundler/setup"
+          cache: {}
+        gems: &27 {}
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3301789.126691267
+        all_values:
+          *3:
+          - 3120838.500242209
+          - 2989860.1290162895
+          - 3115254.8849954065
+          - 2978387.602786168
+          - 3301789.126691267
+          - 3220957.0589117575
+          - 2766306.38670617
+          - 3285176.915964101
+        duration: 1.3628974556922913e-05
+        loop_count: 45
+        environment: {}
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (hmindel)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 317.9736600101444
+        all_values: 
+        duration: 0.6918812080000001
+        loop_count: 220
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 302.5838137901146
+        all_values:
+          *3:
+          - 298.72957111704
+          - 300.94888994247873
+          - 302.5838137901146
+          - 299.50102086806544
+          - 299.89418778530023
+          - 298.5830792630343
+          - 299.6427208877255
+          - 292.2380535197623
+        duration: 2.0985920960083604
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: *4
+        gems: *5
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 300.4725602677849
+        all_values:
+          *3:
+          - 299.954486402463
+          - 300.0536611975093
+          - 300.4725602677849
+          - 300.3507243872593
+          - 296.8528244928419
+          - 298.35801945957405
+          - 300.2338558153312
+          - 300.14856346516075
+        duration: 2.1133377351798117
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: *6
+        gems: *7
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 301.3865013635288
+        all_values:
+          *3:
+          - 300.90189205861714
+          - 300.4459330482347
+          - 297.8642791426886
+          - 299.0797216717086
+          - 298.9566444713613
+          - 301.07642962091995
+          - 301.3153405056736
+          - 301.3865013635288
+        duration: 2.1069291329476982
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: *8
+        gems: *9
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 941.0657360414083
+        all_values:
+          *3:
+          - 919.2743698985043
+          - 941.0657360414083
+          - 902.0116657421263
+          - 935.4852068014062
+          - 940.3899192463193
+          - 913.1225418121345
+          - 937.2827559705147
+          - 932.8374917478274
+        duration: 0.6747668900061399
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: *10
+        gems: *11
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2791.0683068508524
+        all_values:
+          *3:
+          - 2791.0683068508524
+          - 2789.14247248779
+          - 2777.9867454353216
+          - 2778.600612386201
+          - 2782.5591545850557
+          - 2740.467369148526
+          - 2724.1091471341992
+          - 2785.542082168261
+        duration: 0.22751145088113844
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: *12
+        gems: *13
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 7765.505615975447
+        all_values:
+          *3:
+          - 7656.8212294875075
+          - 7745.120487127877
+          - 7317.229603351395
+          - 7719.813064817216
+          - 7724.966755432127
+          - 7746.429209170704
+          - 7765.505615975447
+          - 7726.225971614043
+        duration: 0.08177188085392118
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: *14
+        gems: *15
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 21729.143770764575
+        all_values:
+          *3:
+          - 21664.1934718379
+          - 21459.878775518042
+          - 21121.60851165194
+          - 21729.143770764575
+          - 21586.20908100718
+          - 21515.396050982312
+          - 21662.04516187475
+          - 21534.591410325706
+        duration: 0.02922342484816909
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: *16
+        gems: *17
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 55824.66144308194
+        all_values:
+          *3:
+          - 53956.01199988707
+          - 51443.450911795226
+          - 55273.46130053046
+          - 55824.66144308194
+          - 55639.17523420164
+          - 54942.09408727852
+          - 53855.70408014036
+          - 54983.99257155781
+        duration: 0.011374901048839092
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: *18
+        gems: *19
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 183400.38656784728
+        all_values:
+          *3:
+          - 183400.38656784728
+          - 182685.74984771188
+          - 177187.9973207122
+          - 177399.17542717242
+          - 178918.5923937969
+          - 178858.82130167022
+          - 116850.50536212011
+          - 179022.41252100753
+        duration: 0.0034623700194060802
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: *20
+        gems: *21
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 455982.33804066834
+        all_values:
+          *3:
+          - 443538.8915106498
+          - 445853.3695054947
+          - 358346.8732644715
+          - 455982.33804066834
+          - 448666.1498275781
+          - 439773.86389267555
+          - 440986.0481499166
+          - 443072.54206404585
+        duration: 0.0013925977982580662
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: *22
+        gems: *23
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1151704.024796669
+        all_values:
+          *3:
+          - 1107542.809636781
+          - 1087159.2524431448
+          - 1146925.6120501647
+          - 1081335.0095235677
+          - 1148261.267855639
+          - 1076820.0880390755
+          - 1151704.024796669
+          - 1134106.660235096
+        duration: 0.0005513569340109825
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: *24
+        gems: *25
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1821139.7132842897
+        all_values:
+          *3:
+          - 1748424.3709451593
+          - 1757780.862602244
+          - 1753940.7707217815
+          - 1728851.1825873964
+          - 1806599.6347194088
+          - 1654878.4543084234
+          - 1821139.7132842897
+          - 1804074.5131030523
+        duration: 0.00034868274815380573
+        loop_count: 635
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: *26
+        gems: *27
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2266795.6329447436
+        all_values:
+          *3:
+          - 2147803.281716728
+          - 2258708.1274276124
+          - 2155363.4531282475
+          - 2159069.5210598605
+          - 2250663.2674961914
+          - 2236560.3889721255
+          - 2242485.578372583
+          - 2266795.6329447436
+        duration: 0.00028013112023472786
+        loop_count: 635
+        environment: {}
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (bsearch)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 288.73133727255265
+        all_values: 
+        duration: 0.7273197360000001
+        loop_count: 210
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 304.751756285903
+        all_values:
+          *3:
+          - 304.751756285903
+          - 289.63150067039913
+          - 282.41500965409506
+          - 287.6769618340834
+          - 292.14420621269437
+          - 299.0100783878828
+          - 293.3347501146913
+          - 290.90578648294564
+        duration: 1.8933442977722734
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: *4
+        gems: *5
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1067.2798256946633
+        all_values:
+          *3:
+          - 935.8781692516017
+          - 1016.1792292699387
+          - 977.8885683582026
+          - 1067.2798256946633
+          - 901.927208252171
+          - 897.9928914362961
+          - 1027.8302738091038
+          - 995.1229642010379
+        duration: 0.5406267279759049
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: *6
+        gems: *7
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 6094.315410077502
+        all_values:
+          *3:
+          - 6094.315410077502
+          - 5948.521811725169
+          - 5661.460895803377
+          - 5420.057104185381
+          - 5925.041012759455
+          - 5752.264950415164
+          - 5707.380057412897
+          - 5362.880879082763
+        duration: 0.09467839472927153
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: *8
+        gems: *9
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 30077.306271563863
+        all_values:
+          *3:
+          - 28885.5738874657
+          - 27743.142540272987
+          - 28034.40630651369
+          - 30077.306271563863
+          - 26050.418705705706
+          - 27910.02665716915
+          - 29775.515306239166
+          - 28918.205375893674
+        duration: 0.01918389881029725
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: *10
+        gems: *11
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 94328.47286265095
+        all_values:
+          *3:
+          - 89974.64534322574
+          - 94328.47286265095
+          - 91992.5361200634
+          - 91813.22170223134
+          - 92749.29095417919
+          - 84248.96276391967
+          - 80357.55209904196
+          - 90271.93706904753
+        duration: 0.006116922944784164
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: *12
+        gems: *13
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 360373.89392176754
+        all_values:
+          *3:
+          - 354881.05119419907
+          - 354457.0634987178
+          - 360373.89392176754
+          - 352982.03192909923
+          - 351338.87082442414
+          - 338254.7178283527
+          - 356377.25742264435
+          - 345185.6925296334
+        duration: 0.0016011148691177368
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: *14
+        gems: *15
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 789264.8505856436
+        all_values:
+          *3:
+          - 771198.462017125
+          - 769852.5404185641
+          - 701572.7035056609
+          - 778291.9977601536
+          - 783506.3560138048
+          - 787464.8972855901
+          - 789264.8505856436
+          - 760392.31966106
+        duration: 0.0007310600485652685
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: *16
+        gems: *17
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1499480.6264598055
+        all_values:
+          *3:
+          - 1403824.9956194835
+          - 1499480.6264598055
+          - 1455097.888274002
+          - 1403408.4211387096
+          - 1489758.946137273
+          - 1409824.2579762829
+          - 1296970.1708913427
+          - 1487185.9662235067
+        duration: 0.0003847999032586813
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: *18
+        gems: *19
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1856271.0703739214
+        all_values:
+          *3:
+          - 1823525.092303685
+          - 1856271.0703739214
+          - 1791419.5983663083
+          - 925484.6383919502
+          - 1739905.506169927
+          - 1646041.4970167028
+          - 1822949.6417223818
+          - 1850497.9669221665
+        duration: 0.0003108382225036621
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: *20
+        gems: *21
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2156655.976886098
+        all_values:
+          *3:
+          - 2002665.2652287085
+          - 2068145.0172265016
+          - 1955719.735337406
+          - 2052533.5185756974
+          - 2150426.0420384565
+          - 2110531.0655226302
+          - 2121505.319002749
+          - 2156655.976886098
+        duration: 0.00026754382997751236
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: *22
+        gems: *23
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2678873.2000834513
+        all_values:
+          *3:
+          - 2510638.601804518
+          - 2643916.8371441984
+          - 2505556.8101589354
+          - 2595730.82138428
+          - 2426074.348489061
+          - 2678873.2000834513
+          - 2430314.081753297
+          - 2370399.827248067
+        duration: 0.0002153890673071146
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: *24
+        gems: *25
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3168797.5247384477
+        all_values:
+          *3:
+          - 3131312.835840207
+          - 3157424.430761939
+          - 3019667.874753407
+          - 3168797.5247384477
+          - 2139485.605623346
+          - 3125811.0380983255
+          - 3129323.952576437
+          - 2921074.9008905157
+        duration: 0.0001820879988372326
+        loop_count: 577
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: *26
+        gems: *27
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3977747.1325602112
+        all_values:
+          *3:
+          - 3856436.346279954
+          - 3895456.8072231584
+          - 3845002.0942462967
+          - 3977747.1325602112
+          - 3826638.4758151807
+          - 3773245.7695822506
+          - 3805969.4775453284
+          - 3925967.2034877827
+        duration: 0.0001450569834560156
+        loop_count: 577
+        environment: {}
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (rb_heap)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 451751.8396499913
+        all_values: 
+        duration: 0.72621287
+        loop_count: 328068
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 446658.8379988234
+        all_values:
+          *3:
+          - 446658.8379988234
+          - 442471.15991538565
+          - 442136.2952076446
+          - 444713.2434106007
+          - 440756.7910303245
+          - 446325.92017808283
+          - 436745.2508324067
+          - 442233.5410336446
+        duration: 2.022803363855928
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: *4
+        gems: *5
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 461765.8057566046
+        all_values:
+          *3:
+          - 458192.7710148219
+          - 451567.8762788506
+          - 455723.45759105566
+          - 461765.8057566046
+          - 458696.8683169393
+          - 460709.8432811708
+          - 460731.15552044974
+          - 460417.32689041225
+        duration: 1.9566260401625186
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: *6
+        gems: *7
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 469047.34339343355
+        all_values:
+          *3:
+          - 454027.25797450525
+          - 468627.86590371176
+          - 465063.2340252783
+          - 465225.1519420719
+          - 457285.65169133095
+          - 462227.7002002552
+          - 465261.79314449517
+          - 469047.34339343355
+        duration: 1.9262511827982962
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: *8
+        gems: *9
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 453385.46796026116
+        all_values:
+          *3:
+          - 451055.29484191275
+          - 450824.15447574796
+          - 452649.94019580714
+          - 453385.46796026116
+          - 452867.4205843356
+          - 438142.5450383447
+          - 452754.1768239838
+          - 445082.4979934317
+        duration: 1.9927921467460692
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: *10
+        gems: *11
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 475255.91200931347
+        all_values:
+          *3:
+          - 475255.91200931347
+          - 471179.4514896473
+          - 470964.8528185502
+          - 472709.3458655409
+          - 456925.57718249963
+          - 466485.9961861208
+          - 464623.6620865899
+          - 457667.0310643229
+        duration: 1.9010873450897634
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: *12
+        gems: *13
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 498622.35898830957
+        all_values:
+          *3:
+          - 488560.05368807615
+          - 497026.7048644437
+          - 492994.5363167353
+          - 497356.7385600152
+          - 479639.9942671862
+          - 485903.87174051354
+          - 498622.35898830957
+          - 488770.88143605355
+        duration: 1.8119985670782626
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: *14
+        gems: *15
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 524615.9033427961
+        all_values:
+          *3:
+          - 523291.52471971867
+          - 523281.39715591
+          - 522854.3704463234
+          - 524615.9033427961
+          - 509469.44703463104
+          - 508717.24325345707
+          - 523516.8637236995
+          - 516013.19381588453
+        duration: 1.7222180918324739
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: *16
+        gems: *17
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 592154.4406100183
+        all_values:
+          *3:
+          - 581325.4936955426
+          - 592154.4406100183
+          - 585818.0098084372
+          - 585649.4056572525
+          - 583870.2302255528
+          - 591574.0709423863
+          - 588670.1804418345
+          - 579444.7327587039
+        duration: 1.5257894529495388
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: *18
+        gems: *19
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 694394.1017294986
+        all_values:
+          *3:
+          - 694394.1017294986
+          - 678617.9175280394
+          - 679365.1636691551
+          - 685891.3538325428
+          - 688812.5306860271
+          - 676470.8340308876
+          - 679201.1082548632
+          - 690204.1987473222
+        duration: 1.3011386441066861
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: *20
+        gems: *21
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 780366.5803148209
+        all_values:
+          *3:
+          - 769592.2584787605
+          - 775551.9797835583
+          - 772827.8529087468
+          - 768605.8169904186
+          - 772837.1064393809
+          - 776065.1586451548
+          - 780366.5803148209
+          - 762739.6804605022
+        duration: 1.1577930459752679
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: *22
+        gems: *23
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1001145.8941529703
+        all_values:
+          *3:
+          - 1001145.8941529703
+          - 1000901.5151475392
+          - 973705.1687040846
+          - 984052.8484463607
+          - 981947.3423322524
+          - 995173.1858174863
+          - 989005.307865939
+          - 953896.284826639
+        duration: 0.9024688662029803
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: *24
+        gems: *25
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1191696.7235239476
+        all_values:
+          *3:
+          - 1174736.8459929128
+          - 1191696.7235239476
+          - 1174678.3205777162
+          - 1173453.4947180452
+          - 1186822.4258594713
+          - 1169645.1618197095
+          - 1177892.2156091682
+          - 1174763.0429475491
+        duration: 0.7581652128137648
+        loop_count: 903503
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: *26
+        gems: *27
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1698310.206420042
+        all_values:
+          *3:
+          - 1668738.962157265
+          - 1698310.206420042
+          - 1633926.7504561269
+          - 1694530.574496222
+          - 1690505.8921495683
+          - 1669765.209201907
+          - 1639384.418322113
+          - 1609596.901790962
+        duration: 0.5320011600852013
+        loop_count: 903503
+        environment: {}
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (c++ stl)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1691074.6935022185
+        all_values: 
+        duration: 0.6652290430000005
+        loop_count: 1124952
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1838159.4954281333
+        all_values:
+          *3:
+          - 1811873.267692983
+          - 1833269.4816828885
+          - 1832345.009438303
+          - 1817154.0718145573
+          - 1819725.4302981414
+          - 1838159.4954281333
+          - 1832140.6126944732
+          - 1826045.8340141089
+        duration: 1.8399649260099977
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: *4
+        gems: *5
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2408077.8529964634
+        all_values:
+          *3:
+          - 2344899.371854578
+          - 2382134.5854105726
+          - 2347871.7772884937
+          - 2404714.312254752
+          - 2408077.8529964634
+          - 2393941.1996861002
+          - 2349897.870954049
+          - 2371346.5265168985
+        duration: 1.40450151800178
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: *6
+        gems: *7
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3374825.204234573
+        all_values:
+          *3:
+          - 3142308.1648105728
+          - 3314250.96447721
+          - 3285296.973434157
+          - 3146827.113224366
+          - 3374825.204234573
+          - 3269825.605557095
+          - 3351749.9981740215
+          - 3297525.5617653425
+        duration: 1.0021701259538531
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: *8
+        gems: *9
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 4496276.490726544
+        all_values:
+          *3:
+          - 4392380.061369042
+          - 4351934.4337473605
+          - 4496276.490726544
+          - 4396047.379861155
+          - 4138213.9633844984
+          - 4328080.026069601
+          - 4217102.803520678
+          - 4350146.277583723
+        duration: 0.7522110810969025
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: *10
+        gems: *11
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 5082979.066174983
+        all_values:
+          *3:
+          - 4785210.517504459
+          - 5082979.066174983
+          - 4752494.743629642
+          - 4849321.806947125
+          - 4999270.142084134
+          - 4895096.260935936
+          - 4951843.176254874
+          - 4922513.272917808
+        duration: 0.6653871589805931
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: *12
+        gems: *13
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 6058139.37981983
+        all_values:
+          *3:
+          - 5438110.1278372435
+          - 5824005.177219098
+          - 5705779.14319732
+          - 5746430.002656603
+          - 5536241.620876233
+          - 5883928.497640796
+          - 6058139.37981983
+          - 5622141.352147378
+        duration: 0.5582818069960922
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: *14
+        gems: *15
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 6319123.698073315
+        all_values:
+          *3:
+          - 6197871.899930458
+          - 5620617.633565928
+          - 5662221.887211054
+          - 5705698.3945171535
+          - 5860552.44030086
+          - 5687043.981162103
+          - 6266622.203914568
+          - 6319123.698073315
+        duration: 0.5352243699599057
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: *16
+        gems: *17
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 6643924.75343268
+        all_values:
+          *3:
+          - 6125926.219626695
+          - 5981645.292291037
+          - 6393738.671493292
+          - 6466777.251547035
+          - 6451432.728143264
+          - 6643924.75343268
+          - 6198524.001127988
+          - 6424789.177846171
+        duration: 0.5090588959865272
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: *18
+        gems: *19
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 7236234.597607773
+        all_values:
+          *3:
+          - 7236234.597607773
+          - 6708366.11322323
+          - 6848135.461099851
+          - 6866661.313089623
+          - 6796757.249359076
+          - 6631734.416025181
+          - 6423549.302486332
+          - 6514691.902606816
+        duration: 0.4673907340038568
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: *20
+        gems: *21
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 7416561.265856668
+        all_values:
+          *3:
+          - 6513377.1793904025
+          - 7166278.434666543
+          - 7416561.265856668
+          - 7164008.888122846
+          - 7187360.776464096
+          - 7269204.140639646
+          - 6858076.100961615
+          - 7384267.124048585
+        duration: 0.4560265706386417
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: *22
+        gems: *23
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 7764035.507438989
+        all_values:
+          *3:
+          - 7764035.507438989
+          - 7713749.3592843665
+          - 6627191.353085489
+          - 7755313.191802314
+          - 7068563.662472201
+          - 7671956.4605558785
+          - 7428769.258438885
+          - 7408881.702022407
+        duration: 0.4356174049898982
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: *24
+        gems: *25
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 8053498.055939321
+        all_values:
+          *3:
+          - 7723014.974944003
+          - 7931595.342822918
+          - 8053498.055939321
+          - 7302635.574687232
+          - 7716569.729674505
+          - 7671557.481742857
+          - 8024409.645359756
+          - 8004866.608331896
+        duration: 0.4199602429289371
+        loop_count: 3382149
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: *26
+        gems: *27
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 8571000.985091526
+        all_values:
+          *3:
+          - 8000989.808289779
+          - 7596902.36491054
+          - 7616021.469503059
+          - 8274828.284211499
+          - 8571000.985091526
+          - 8542538.684592277
+          - 7065793.114474332
+          - 8286433.31681166
+        duration: 0.3946037348359823
+        loop_count: 3382149
+        environment: {}
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (c_dheap)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1576043.8337116255
+        all_values: 
+        duration: 0.6666312049999996
+        loop_count: 1050640
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1695856.5275160891
+        all_values:
+          *3:
+          - 1658242.848631935
+          - 1686094.0860928334
+          - 1691444.835798242
+          - 1674822.4123026733
+          - 1676898.6117035297
+          - 1695856.5275160891
+          - 1672557.9443545633
+          - 1662271.7403321895
+        duration: 1.8586990991607308
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: *4
+        gems: *5
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2430369.128691332
+        all_values:
+          *3:
+          - 2329114.215154525
+          - 2412112.6975963316
+          - 2387612.760812684
+          - 2430369.128691332
+          - 2400405.5627335566
+          - 2403506.6044676513
+          - 2372162.126063781
+          - 2396408.6760495235
+        duration: 1.2969581298530102
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: *6
+        gems: *7
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3766843.075763604
+        all_values:
+          *3:
+          - 3660181.321772995
+          - 3691572.3635641015
+          - 3750296.417025974
+          - 3729942.8282506685
+          - 3752754.80746958
+          - 3673839.8671141868
+          - 3727721.57168304
+          - 3766843.075763604
+        duration: 0.8367980658076704
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: *8
+        gems: *9
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 5540550.976989833
+        all_values:
+          *3:
+          - 5471059.231687902
+          - 5505096.993460749
+          - 5490432.756603739
+          - 5330864.709964443
+          - 5302211.080782102
+          - 5464558.605265173
+          - 5540550.976989833
+          - 5250166.106463272
+        duration: 0.5689121917821467
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: *10
+        gems: *11
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 5926155.781528502
+        all_values:
+          *3:
+          - 5838787.0435128575
+          - 5909619.729608301
+          - 5818858.387995431
+          - 5664010.973914787
+          - 5926155.781528502
+          - 5696987.120893317
+          - 5843093.416127915
+          - 5629476.652038276
+        duration: 0.5318940500728786
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: *12
+        gems: *13
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 6722070.93781888
+        all_values:
+          *3:
+          - 6017805.206255716
+          - 6678106.19469831
+          - 6721929.622302761
+          - 6722070.93781888
+          - 6344164.440030244
+          - 6708882.530509101
+          - 6045269.831697795
+          - 6671905.039786166
+        duration: 0.4689160571433604
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: *14
+        gems: *15
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 6764766.917793097
+        all_values:
+          *3:
+          - 6752819.408212787
+          - 6667965.616843123
+          - 6561861.857008019
+          - 6740452.150540522
+          - 6635472.020534565
+          - 6764766.917793097
+          - 6737119.456953966
+          - 6570204.4290601285
+        duration: 0.46595648280344903
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: *16
+        gems: *17
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 7066500.543326748
+        all_values:
+          *3:
+          - 6959436.546590075
+          - 7066500.543326748
+          - 6951282.946088388
+          - 6756995.326608998
+          - 6879385.763995848
+          - 7011558.172908225
+          - 6987761.10511727
+          - 6730256.150306826
+        duration: 0.446060533169657
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: *18
+        gems: *19
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 8567724.99800067
+        all_values:
+          *3:
+          - 8532253.596707841
+          - 8188209.782925172
+          - 8496429.960927468
+          - 8537461.648249436
+          - 8567724.99800067
+          - 8289268.251716405
+          - 8535283.45651419
+          - 7931359.440048413
+        duration: 0.3679024479351938
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: *20
+        gems: *21
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 8689914.810682038
+        all_values:
+          *3:
+          - 8597247.42920413
+          - 8610414.865503497
+          - 8630194.521023763
+          - 8689914.810682038
+          - 8614251.40594834
+          - 8304206.937013654
+          - 8504416.427516198
+          - 8445641.731147494
+        duration: 0.36272933264262974
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: *22
+        gems: *23
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 9939353.486213563
+        all_values:
+          *3:
+          - 9331031.715435103
+          - 9939353.486213563
+          - 9737588.202609021
+          - 9685972.898672264
+          - 9877768.92632759
+          - 9557319.605311079
+          - 9515503.752299277
+          - 9852910.851594243
+        duration: 0.31713199499063194
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: *24
+        gems: *25
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 11617490.56529119
+        all_values:
+          *3:
+          - 11617490.56529119
+          - 9791713.581581622
+          - 10922961.406966979
+          - 11496704.010834675
+          - 11152288.653519634
+          - 11341194.728581652
+          - 11492221.675063001
+          - 11429123.332073828
+        duration: 0.27132253581658006
+        loop_count: 3152087
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: *26
+        gems: *27
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 11468032.704568706
+        all_values:
+          *3:
+          - 11468032.704568706
+          - 11349065.86972929
+          - 11189895.379165282
+          - 10232145.709803069
+          - 11309569.074583951
+          - 10966167.457919855
+          - 10909527.39582184
+          - 11025922.848783977
+        duration: 0.27485856390558183
+        loop_count: 3152087
+        environment: {}
+  ? !ruby/struct:BenchmarkDriver::Job
+    name: push + pop (heapmap)
+  : true:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 392621.92095435003
+        all_values: 
+        duration: 0.6762383499999998
+        loop_count: 265506
+        environment: {}
+    false:
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000_000
+        executable: *1
+        gems: *2
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 400532.29562912544
+        all_values:
+          *3:
+          - 398502.9299764114
+          - 397802.16347156145
+          - 400140.41533777217
+          - 400532.29562912544
+          - 394866.10709147924
+          - 394616.51436888456
+          - 397629.92684646643
+          - 398415.70887575665
+        duration: 1.9604985879268497
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3_162_278
+        executable: *4
+        gems: *5
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 475867.52693135996
+        all_values:
+          *3:
+          - 475867.52693135996
+          - 469527.966378126
+          - 471155.9545796447
+          - 475654.5296633532
+          - 473401.50958893175
+          - 473358.3740778264
+          - 474655.82136405417
+          - 475310.043807351
+        duration: 1.65012940694578
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1_000_000
+        executable: *6
+        gems: *7
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 641761.403445454
+        all_values:
+          *3:
+          - 636332.7655437951
+          - 641149.9749293183
+          - 636361.1669360121
+          - 631940.7592067238
+          - 632330.3076073978
+          - 631861.9344278558
+          - 637109.8026607134
+          - 641761.403445454
+        duration: 1.2235746739897877
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316_228
+        executable: *8
+        gems: *9
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1012030.0690585917
+        all_values:
+          *3:
+          - 989216.4394765671
+          - 985096.5907986022
+          - 993353.1097663773
+          - 1004613.277804913
+          - 986879.1919520025
+          - 1009638.4035402816
+          - 993565.5234629299
+          - 1012030.0690585917
+        duration: 0.7759087639860809
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100_000
+        executable: *10
+        gems: *11
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1521025.7474415347
+        all_values:
+          *3:
+          - 1466608.7868621151
+          - 1465161.632109984
+          - 1457590.8834286153
+          - 1521025.7474415347
+          - 1492266.6355258985
+          - 1516637.3685498526
+          - 1486393.3858282361
+          - 1480451.8811239693
+        duration: 0.516258847899735
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 31_623
+        executable: *12
+        gems: *13
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1730020.4065029717
+        all_values:
+          *3:
+          - 1709377.7115034484
+          - 1719033.39776519
+          - 1728732.057982419
+          - 1726130.1823003555
+          - 1725939.0411533127
+          - 1730020.4065029717
+          - 1687610.6370152598
+          - 1678470.0372830634
+        duration: 0.4538923338986933
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10_000
+        executable: *14
+        gems: *15
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 1811470.8556030025
+        all_values:
+          *3:
+          - 1801274.387990029
+          - 1686416.2959448383
+          - 1793927.8107073617
+          - 1792860.0461046395
+          - 1790448.7349575518
+          - 1803239.4870594642
+          - 1811470.8556030025
+          - 1800855.66345792
+        duration: 0.4334836509078741
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 3162
+        executable: *16
+        gems: *17
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2035295.567400652
+        all_values:
+          *3:
+          - 2027288.383985326
+          - 2031972.389968062
+          - 2026381.154685465
+          - 2018724.9623208137
+          - 2001174.9450286932
+          - 2035295.567400652
+          - 2030062.2263835936
+          - 2018981.267575011
+        duration: 0.38581275986507535
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 1000
+        executable: *18
+        gems: *19
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2242193.9584388137
+        all_values:
+          *3:
+          - 2233003.828906971
+          - 2214036.9107495896
+          - 2242193.9584388137
+          - 2224733.4950049324
+          - 2223034.7366600404
+          - 2019595.3555556396
+          - 2191548.922633964
+          - 2231947.076691841
+        duration: 0.35021189716644585
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 316
+        executable: *20
+        gems: *21
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2255308.2982498477
+        all_values:
+          *3:
+          - 2246739.2692533974
+          - 2254898.1347841406
+          - 2254145.7070569014
+          - 2255308.2982498477
+          - 2221762.9556007027
+          - 2233648.0902181645
+          - 2226412.8328431807
+          - 2242179.905951353
+        duration: 0.34817545814439654
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 100
+        executable: *22
+        gems: *23
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 2704791.6779283104
+        all_values:
+          *3:
+          - 2688408.2103029327
+          - 2693879.4599536457
+          - 2662569.1041678125
+          - 2665585.4547298634
+          - 2677716.3218593556
+          - 2678600.6915000235
+          - 2669930.4953037933
+          - 2704791.6779283104
+        duration: 0.2903155190870166
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 32
+        executable: *24
+        gems: *25
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3256995.388609862
+        all_values:
+          *3:
+          - 3255651.270706203
+          - 3206977.575739436
+          - 3213756.8973460635
+          - 3026155.8583460557
+          - 3255788.137563472
+          - 3254946.6646050303
+          - 3256995.388609862
+          - 3221538.461456759
+        duration: 0.24109429283998907
+        loop_count: 785243
+        environment: {}
+      ? !ruby/struct:BenchmarkDriver::Context
+        name: N 10
+        executable: *26
+        gems: *27
+        prelude: ''
+      : !ruby/struct:BenchmarkDriver::Result
+        values:
+          *3: 3313736.754982809
+        all_values:
+          *3:
+          - 3254391.1392745534
+          - 3288342.1020423947
+          - 3301111.382258228
+          - 3308577.9597884594
+          - 3281225.54338895
+          - 3284377.0732336603
+          - 3309654.9185576276
+          - 3313736.754982809
+        duration: 0.2369660169351846
+        loop_count: 785243
+        environment: {}
+metrics:
+- *3
