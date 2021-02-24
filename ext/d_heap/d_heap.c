@@ -173,7 +173,7 @@ static const rb_data_type_t dheap_data_type;
 #define DHEAP_IDX_CHILD_0(heap, idx) (((idx) * (heap)->d) + 1)
 #define DHEAP_IDX_CHILD_D(heap, idx) (((idx) * (heap)->d) + (heap)->d)
 
-#ifdef DEBUG
+#ifdef DHEAP_DEBUG
 #    define ASSERT_DHEAP_IDX_OK(heap, index)                                   \
         do {                                                                   \
             if (DHEAP_IDX_LAST(heap) < index) {                                \
@@ -438,7 +438,7 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
 
 #ifdef DHEAP_SIMD_ENABLED
 
-#    ifdef DEBUG
+#    ifdef DHEAP_DEBUG
 
 void
 debug_print_m128i64(const char *const label, const __m128i vector)
@@ -596,7 +596,7 @@ _MM512_SETR_INDEXES(size_t idx)
 static inline size_t
 min_index_avx512(const ENTRY entries[], size_t idx, const size_t last)
 {
-#    ifdef DEBUG
+#    ifdef DHEAP_DEBUG
     if (UNLIKELY(last - idx < 15))
         rb_raise(rb_eException, "too small for min_index_avx512");
 #    endif
@@ -622,7 +622,7 @@ min_index_avx512(const ENTRY entries[], size_t idx, const size_t last)
 static inline size_t
 min_index_avx2(const ENTRY entries[], size_t idx, const size_t last)
 {
-#    ifdef DEBUG
+#    ifdef DHEAP_DEBUG
     if (UNLIKELY(last - idx < 7))
         rb_raise(rb_eException, "too small for min_index_avx2");
 #    endif
