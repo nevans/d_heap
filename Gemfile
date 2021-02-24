@@ -11,6 +11,8 @@ gem "rake-compiler"
 gem "rspec", "~> 3.10"
 gem "rubocop", "~> 1.0"
 
+gem "fuubar"
+
 install_if -> { RUBY_PLATFORM !~ /darwin/ } do
   gem "benchmark_driver-output-gruff"
 end
