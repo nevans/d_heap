@@ -27,6 +27,7 @@ if debug_mode
   $CFLAGS << " -DDHEAP_DEBUG "
   $CFLAGS << " -save-temps "
   # $CFLAGS << " -DVERBOSE_DEBUG "
+  $CFLAGS << " -ftree-vectorizer-verbose=2 "
 end
 
 if devel_mode
@@ -45,7 +46,7 @@ if enable_config("heapmap", true)
   $defs.push "-DDHEAP_MAP"
 end
 
-if enable_config("native-arch", true)
+if (native_arch = enable_config("native-arch", true))
   $stderr.puts "Building with auto-detected architecture support."
   $CFLAGS << " -march=native "
 end
@@ -58,24 +59,24 @@ min_idx_sse2   = enable_config("min-idx-sse2",   min_idx_sse2)
 min_idx_avx2   = enable_config("min-idx-avx2",   min_idx_avx2)
 min_idx_avx512 = enable_config("min-idx-avx512", min_idx_avx512)
 
-if min_idx_sse2 || min_idx_avx2 || min_idx_avx512
+if native_arch && (min_idx_sse2 || min_idx_avx2 || min_idx_avx512)
   $CFLAGS << " -DDHEAP_SIMD_ENABLED"
   unless have_header("immintrin.h")
     abort "Specify <immintrin> include path or disable SSE2/AVX2/AVX512F."
   end
 end
 
-if min_idx_sse2
+if min_idx_sse2 && native_arch
   $stderr.puts "Enabled SSE2 intrinsics for sift-down min idx."
   $CFLAGS << " -DDHEAP_ENABLE_MIN_IDX_SSE2"
 end
 
-if min_idx_avx2
+if min_idx_avx2 && native_arch
   $stderr.puts "Enabled AVX2 intrinsics for sift-down min idx."
   $CFLAGS << " -DDHEAP_ENABLE_MIN_IDX_AVX2"
 end
 
-if min_idx_avx512
+if min_idx_avx512 && native_arch
   $stderr.puts "Enabled AVX512F intrinsics for sift-down min idx."
   $CFLAGS << " -DDHEAP_ENABLE_MIN_IDX_AVX512"
 end

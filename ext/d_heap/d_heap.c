@@ -46,6 +46,15 @@ typedef struct dheap_entry  ENTRY;
 
 typedef double SCORE;
 
+#define MDBL_T(SZ) __m##SZ##d
+#define MINT_T(SZ) __m##SZ##i
+#define MASK(SZ)   mask##SZ##_t
+typedef const __mmask8 mask512_t;
+typedef const MDBL_T(256) mask256_t;
+typedef const MDBL_T(128) mask128_t;
+#define MM_CALL(SZ, name, ...)  _MM_CALL(SZ, name, __VA_ARGS__)
+#define _MM_CALL(SZ, name, ...) MM##SZ##_##name(__VA_ARGS__)
+
 /********************************************************************
  *
  * Struct definitions
@@ -87,13 +96,13 @@ struct dheap_entry
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
 
 #ifdef DHEAP_ENABLE_MIN_IDX_AVX512
-static __m512i idx64x8, incrby8;
+static MINT_T(512) idx64x8, incrby8;
 #endif
 #ifdef DHEAP_ENABLE_MIN_IDX_AVX2
-static __m256i idx64x4, incrby4;
+static MINT_T(256) idx64x4, incrby4;
 #endif
 #ifdef DHEAP_ENABLE_MIN_IDX_SSE2
-static __m128i incrby2;
+static MINT_T(128) incrby2;
 #endif
 
 static ID id_cmp;    // <=>
@@ -456,7 +465,7 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
 #    ifdef DHEAP_DEBUG
 
 void
-debug_print_m128i64(const char *const label, const __m128i vector)
+debug_print_m128i64(const char *const label, const MINT_T(128) vector)
 {
     uint64_t val[2];
     memcpy(val, &vector, sizeof(val));
@@ -464,7 +473,7 @@ debug_print_m128i64(const char *const label, const __m128i vector)
 }
 
 void
-debug_print_m256i64(const char *const label, const __m256i vector)
+debug_print_m256i64(const char *const label, const MINT_T(256) vector)
 {
     uint64_t val[4];
     memcpy(val, &vector, sizeof(val));
@@ -472,7 +481,7 @@ debug_print_m256i64(const char *const label, const __m256i vector)
 }
 
 void
-debug_print_m128_pd(const char *const label, const __m128d vector)
+debug_print_m128_pd(const char *const label, const MDBL_T(128) vector)
 {
     double val[2];
     memcpy(val, &vector, sizeof(val));
@@ -480,7 +489,7 @@ debug_print_m128_pd(const char *const label, const __m128d vector)
 }
 
 void
-debug_print_m256_pd(const char *const label, const __m256d vector)
+debug_print_m256_pd(const char *const label, const MDBL_T(256) vector)
 {
     double val[4];
     memcpy(val, &vector, sizeof(val));
@@ -506,7 +515,13 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 
 #    endif
 
-#    define _MM512_LOAD_SCORES(entries, idx)                                   \
+#    define MM_CMP_LT(SZ, A, B)    MM_CALL(SZ, CMP_LT, (A), (B))
+#    define MM_MBLEND(SZ, M, A, B) MM_CALL(SZ, MBLEND, (M), (A), (B))
+#    define MM_MIN_PD(SZ, A, B)    MM_CALL(SZ, MIN_PD, (A), (B))
+#    define MM_LOAD_SCORES(SZ, entries, idx)                                   \
+        MM_CALL(SZ, LOAD_SCORES, (entries), (idx))
+
+#    define MM512_LOAD_SCORES(entries, idx)                                    \
         _mm512_set_pd(entries[idx + 7].score,                                  \
                       entries[idx + 6].score,                                  \
                       entries[idx + 5].score,                                  \
@@ -515,51 +530,49 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
                       entries[idx + 2].score,                                  \
                       entries[idx + 1].score,                                  \
                       entries[idx].score)
-
-#    define _MM256_LOAD_SCORES(entries, idx)                                   \
+#    define MM256_LOAD_SCORES(entries, idx)                                    \
         _mm256_set_pd(entries[idx + 3].score,                                  \
                       entries[idx + 2].score,                                  \
                       entries[idx + 1].score,                                  \
                       entries[idx].score)
-
-#    define _MM256_LOAD_SCORES_OVERFLOW(entries, idx)                          \
-        _mm256_set_pd(entries[idx].score,                                      \
-                      entries[idx + 2].score,                                  \
-                      entries[idx + 1].score,                                  \
-                      entries[idx].score)
-
-#    define _MM256_SETR_INDEXES(idx)                                           \
-        _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
-
-#    define _MM128_LOAD_SCORES(entries, idx)                                   \
+#    define MM128_LOAD_SCORES(entries, idx)                                    \
         _mm_set_pd((entries)[idx + 1].score, (entries)[idx].score)
 
 #    define _MM512_SETR_INDEXES(idx)                                           \
         _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
+#    define _MM256_SETR_INDEXES(idx)                                           \
+        _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
+#    define _MM128_SETR_INDEXES(idx) _mm_set_epi64x((idx) + 1, (idx));
 
-#    define _mm512_cmplt_pd_mask(A, B) _mm512_cmp_pd_mask((A), (B), _CMP_LT_OS)
-#    define _mm256_cmplt_pd_mask(A, B) _mm256_cmp_pd((A), (B), _CMP_LT_OS)
+#    define _MM512_INCR_INDEXES(indexes) _mm512_add_epi64(indexes, incrby8)
+#    define _MM256_INCR_INDEXES(indexes) _mm256_add_epi64(indexes, incrby8)
+#    define _MM128_INCR_INDEXES(indexes) _mm_add_epi64(indexes, incrby8)
 
-#    define _MM512_REDUCE_MIN(val0, idx0, val1, idx1)                          \
+#    define MM512_CMP_LT(A, B) _mm512_cmp_pd_mask((A), (B), _CMP_LT_OS)
+#    define MM256_CMP_LT(A, B) _mm256_cmp_pd((A), (B), _CMP_LT_OS)
+#    define MM128_CMP_LT(A, B) _mm_cmplt_pd((A), (B))
+
+#    define MM512_MBLEND          _mm512_mask_blend_epi64
+#    define MM256_MBLEND(M, A, B) _mm256_blendv_epi8((A), (B), (MINT_T(256))(M))
+#    define MM128_MBLEND(M, A, B)                                              \
+        _mm_blendv_epi8((A), (B), _mm_castpd_si128((M)));
+
+#    define MM512_MIN_PD(A, B) _mm512_min_pd((A), (B))
+#    define MM256_MIN_PD(A, B) _mm256_min_pd((A), (B))
+#    define MM128_MIN_PD(A, B) _mm_min_pd((A), (B))
+
+#    define MM_SZ_REDUCE_MIN(SZ, minvals, minidxs, cmpvals, cmpidxs)           \
         do {                                                                   \
-            const __mmask8 ltmask8 = _mm512_cmplt_pd_mask(cmpval8, minval8);   \
-            idx0 = _mm512_mask_blend_epi64(ltmask8, idx0, idx1);               \
-            val0 = _mm512_min_pd(val1, val0);                                  \
+            MASK(SZ) mask = MM_CMP_LT(SZ, cmpvals, minvals);                   \
+            minidxs       = MM_MBLEND(SZ, mask, minidxs, cmpidxs);             \
+            minvals       = MM_MIN_PD(SZ, cmpvals, minvals);                   \
         } while (0)
-
-#    define _MM256_REDUCE_MIN(val0, idx0, val1, idx1)                          \
-        do {                                                                   \
-            const __m256d ltmask4 = _mm256_cmplt_pd_mask(val1, val0);          \
-            idx0 = _mm256_blendv_epi8(idx0, idx1, (__m256i)ltmask4);           \
-            val0 = _mm256_min_pd(val1, val0);                                  \
-        } while (0)
-
-#    define _MM128_REDUCE_MIN(val0, idx0, val1, idx1)                          \
-        do {                                                                   \
-            const __m128d ltmask2 = _mm_cmplt_pd(val1, val0);                  \
-            idx0 = _mm_blendv_epi8(idx0, idx1, _mm_castpd_si128(ltmask2));     \
-            val0 = _mm_min_pd(val1, val0);                                     \
-        } while (0)
+#    define MM512_REDUCE_MIN(minvals, minidxs, cmpvals, cmpidxs)               \
+        MM_SZ_REDUCE_MIN(512, minvals, minidxs, cmpvals, cmpidxs)
+#    define MM256_REDUCE_MIN(minvals, minidxs, cmpvals, cmpidxs)               \
+        MM_SZ_REDUCE_MIN(256, minvals, minidxs, cmpvals, cmpidxs)
+#    define MM128_REDUCE_MIN(minvals, minidxs, cmpvals, cmpidxs)               \
+        MM_SZ_REDUCE_MIN(128, minvals, minidxs, cmpvals, cmpidxs)
 
 #    define SCORE_AT(i)   DHEAP_SCORE(heap, i)
 #    define MINIDX2(i, j) (SCORE_AT(i) < SCORE_AT(j) ? i : j)
@@ -572,6 +585,9 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
  * Seriously though, although this might be more than a little bit crazy, in its
  * own way it's a lot _simpler_ and easier to reason about than a bunch of loops
  * and conditionals. No loops. No conditions. Just connect the dots.
+ *
+ * The generated code size would be dramatically reduced by e.g. using gotos.
+ * But all of that jumping slows things down.
  */
 
 /* clang-format off */
@@ -678,32 +694,31 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 #    ifdef DHEAP_ENABLE_MIN_IDX_AVX512
 
 #        define MIN_IDX_INIT_WITH_8()                                          \
-            __m128d minval2;                                                   \
-            __m128i minidx2, cmpidx2;                                          \
-            __m256d minval4;                                                   \
-            __m256i minidx4, cmpidx4;                                          \
-            __m512i minidx8 = _MM512_SETR_INDEXES(idx);                        \
-            __m512d minval8 = _MM512_LOAD_SCORES(entries, idx);                \
-            __m512i cmpidx8 = minidx8;                                         \
+            MINT_T(512) minidx8 = _MM512_SETR_INDEXES(idx);                    \
+            MDBL_T(512) minval8 = MM_LOAD_SCORES(512, entries, idx);           \
+            MINT_T(512) cmpidx8 = minidx8;                                     \
             idx += 8;
 
-#        define MIN_IDX_FOLD_NEXT_8()                                          \
-            do {                                                               \
-                const __m512d cmpval8 = _MM512_LOAD_SCORES(entries, idx);      \
-                cmpidx8               = _mm512_add_epi32(cmpidx8, incrby8);    \
-                _MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);         \
-                idx += 8;                                                      \
+#        define MIN_IDX_FOLD_NEXT_8()                                           \
+            do {                                                                \
+                const MDBL_T(512) cmpval8 = MM_LOAD_SCORES(512, entries, idx);  \
+                cmpidx8                   = _mm512_add_epi32(cmpidx8, incrby8); \
+                MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);           \
+                idx += 8;                                                       \
             } while (0)
 
 // TODO: AVX512 enabled, AVX2 disabled, SSE2 enabled
 // TODO: AVX512 enabled, AVX2 disabled, SSE2 disabled
 #        define MIN_IDX_REDUCE_8TO4(reset_cmpidx4)                             \
+            MDBL_T(256) minval4;                                               \
+            MINT_T(256) minidx4, cmpidx4;                                      \
             do {                                                               \
-                minval4               = _mm512_extractf64x4_pd(minval8, 0);    \
-                const __m256d cmpval4 = _mm512_extractf64x4_pd(minval8, 1);    \
-                minidx4               = _mm512_extracti64x4_epi64(minidx8, 0); \
-                cmpidx4               = _mm512_extracti64x4_epi64(minidx8, 1); \
-                _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
+                minval4 = _mm512_extractf64x4_pd(minval8, 0);                  \
+                const MDBL_T(256) cmpval4 =                                    \
+                  _mm512_extractf64x4_pd(minval8, 1);                          \
+                minidx4 = _mm512_extracti64x4_epi64(minidx8, 0);               \
+                cmpidx4 = _mm512_extracti64x4_epi64(minidx8, 1);               \
+                MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);          \
                 cmpidx4 = _MM256_SETR_INDEXES(idx - 4);                        \
             } while (0)
 
@@ -726,29 +741,29 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 #    ifdef DHEAP_ENABLE_MIN_IDX_AVX2
 
 #        define MIN_IDX_INIT_WITH_4()                                          \
-            __m128d minval2;                                                   \
-            __m128i minidx2, cmpidx2;                                          \
-            __m256i minidx4 = _MM256_SETR_INDEXES(idx);                        \
-            __m256d minval4 = _MM256_LOAD_SCORES(entries, idx);                \
-            __m256i cmpidx4 = minidx4;                                         \
+            MINT_T(256) minidx4 = _MM256_SETR_INDEXES(idx);                    \
+            MDBL_T(256) minval4 = MM_LOAD_SCORES(256, entries, idx);           \
+            MINT_T(256) cmpidx4 = minidx4;                                     \
             idx += 4;
 
 #        define MIN_IDX_FOLD_NEXT_4()                                          \
             do {                                                               \
-                const __m256d cmpval4 = _MM256_LOAD_SCORES(entries, idx);      \
-                cmpidx4               = _MM256_SETR_INDEXES(idx);              \
-                _MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);         \
+                const MDBL_T(256) cmpval4 = MM_LOAD_SCORES(256, entries, idx); \
+                cmpidx4                   = _MM256_SETR_INDEXES(idx);          \
+                MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);          \
                 idx += 4;                                                      \
             } while (0)
 
 // TODO: AVX2 enabled, SSE2 disabled
 #        define MIN_IDX_REDUCE_4TO2(reset_cmpidx2)                             \
+            MDBL_T(128) minval2;                                               \
+            MINT_T(128) minidx2, cmpidx2;                                      \
             do {                                                               \
-                minval2               = _mm256_extractf128_pd(minval4, 0);     \
-                const __m128d cmpval2 = _mm256_extractf128_pd(minval4, 1);     \
-                minidx2               = _mm256_extracti128_si256(minidx4, 0);  \
-                cmpidx2               = _mm256_extracti128_si256(minidx4, 1);  \
-                _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);         \
+                minval2                   = _mm256_extractf128_pd(minval4, 0); \
+                const MDBL_T(128) cmpval2 = _mm256_extractf128_pd(minval4, 1); \
+                minidx2 = _mm256_extracti128_si256(minidx4, 0);                \
+                cmpidx2 = _mm256_extracti128_si256(minidx4, 1);                \
+                MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);          \
             } while (0)
 
 #    else
@@ -770,16 +785,16 @@ debug_print_dheap(const dheap_t *const heap, int inspect)
 #    ifdef DHEAP_ENABLE_MIN_IDX_SSE2
 
 #        define MIN_IDX_INIT_WITH_2()                                          \
-            __m128i minidx2 = _mm_set_epi64x(idx + 1, idx);                    \
-            __m128d minval2 = _MM128_LOAD_SCORES(entries, idx);                \
-            __m128i cmpidx2 = minidx2;                                         \
+            MINT_T(128) minidx2 = _mm_set_epi64x(idx + 1, idx);                \
+            MDBL_T(128) minval2 = MM_LOAD_SCORES(128, entries, idx);           \
+            MINT_T(128) cmpidx2 = minidx2;                                     \
             idx += 2;
 
 #        define MIN_IDX_FOLD_NEXT_2()                                          \
             do {                                                               \
-                const __m128d cmpval2 = _MM128_LOAD_SCORES(entries, idx);      \
-                cmpidx2               = _mm_set_epi64x(idx + 1, idx);          \
-                _MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);         \
+                const MDBL_T(128) cmpval2 = MM_LOAD_SCORES(128, entries, idx); \
+                cmpidx2                   = _mm_set_epi64x(idx + 1, idx);      \
+                MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);          \
                 idx += 2;                                                      \
             } while (0)
 
@@ -919,9 +934,7 @@ static inline size_t
 min_index_loop(ENTRY entries[], size_t idx0, size_t last)
 {
     for (size_t idx = idx0 + 1; idx <= last; idx++) {
-        if (entries[idx].score < entries[idx0].score) {
-            idx0 = idx;
-        }
+        if (entries[idx].score < entries[idx0].score) idx0 = idx;
     }
     return idx0;
 }
