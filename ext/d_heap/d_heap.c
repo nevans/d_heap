@@ -1,10 +1,7 @@
+#include "min_idx.h"
 #include "ruby.h"
 #include <float.h>
 #include <math.h>
-
-#ifdef DHEAP_SIMD_ENABLED
-#    include <immintrin.h>
-#endif
 
 #if CHAR_BIT != 8
 #    error "DHeap assumes 8-bit bytes"
@@ -24,17 +21,6 @@
 #    error "DHeap assumes 64-bit 'unsigned long long'"
 #endif
 
-// TODO: easy workarounds for these:
-#if DHEAP_ENABLE_MIN_IDX_AVX512 && !DHEAP_ENABLE_MIN_IDX_AVX2
-#    error "Must enable AVX2 when AVX512F is enabled."
-#endif
-#if DHEAP_ENABLE_MIN_IDX_AVX512 && !DHEAP_ENABLE_MIN_IDX_SSE2
-#    error "Must enable SSE2 when AVX512F is enabled."
-#endif
-#if DHEAP_ENABLE_MIN_IDX_AVX2 && !DHEAP_ENABLE_MIN_IDX_SSE2
-#    error "Must enable SSE2 when AVX2 is enabled."
-#endif
-
 /********************************************************************
  *
  * Type definitions
@@ -45,15 +31,6 @@ typedef struct dheap_struct dheap_t;
 typedef struct dheap_entry  ENTRY;
 
 typedef double SCORE;
-
-#define MDBL_T(SZ) __m##SZ##d
-#define MINT_T(SZ) __m##SZ##i
-#define MASK(SZ)   mask##SZ##_t
-typedef const __mmask8 mask512_t;
-typedef const MDBL_T(256) mask256_t;
-typedef const MDBL_T(128) mask128_t;
-#define MM_CALL(SZ, name, ...)  _MM_CALL(SZ, name, __VA_ARGS__)
-#define _MM_CALL(SZ, name, ...) MM##SZ##_##name(__VA_ARGS__)
 
 /********************************************************************
  *
@@ -94,16 +71,6 @@ struct dheap_entry
 #define DHEAP_DEFAULT_CAPA  32
 #define DHEAP_MAX_CAPA      (SIZE_MAX / (int)sizeof(ENTRY))
 #define DHEAP_CAPA_INCR_MAX (10 * 1024 * 1024 / (int)sizeof(ENTRY))
-
-#ifdef DHEAP_ENABLE_MIN_IDX_AVX512
-static MINT_T(512) idx64x8, incrby8;
-#endif
-#ifdef DHEAP_ENABLE_MIN_IDX_AVX2
-static MINT_T(256) idx64x4, incrby4;
-#endif
-#ifdef DHEAP_ENABLE_MIN_IDX_SSE2
-static MINT_T(128) incrby2;
-#endif
 
 static ID id_cmp;    // <=>
 static ID id_abs;    // abs
@@ -197,7 +164,31 @@ static const rb_data_type_t dheap_data_type;
 #define DHEAP_IDX_CHILD_0(heap, idx) (((idx) * (heap)->d) + 1)
 #define DHEAP_IDX_CHILD_D(heap, idx) (((idx) * (heap)->d) + (heap)->d)
 
+/********************************************************************
+ *
+ * DHeap debug
+ *
+ ********************************************************************/
+
 #ifdef DHEAP_DEBUG
+
+void
+debug_print_dheap(const dheap_t *const heap, int inspect)
+{
+    printf("#<DHeap d=%d size=%zd", heap->d, heap->size);
+    if (inspect) {
+        for (size_t i = 0; i < (size_t)heap->size; i++) {
+            if (i % heap->d == 1)
+                printf("   (p=%zd)", DHEAP_IDX_PARENT(heap, i));
+            printf(" [%zd]=%g", i, DHEAP_SCORE(heap, i));
+            if (DHEAP_SCORE(heap, i) <
+                DHEAP_SCORE(heap, DHEAP_IDX_PARENT(heap, i)))
+                printf("<-!!!!!!!!!");
+        }
+    }
+    printf(">");
+}
+
 #    define ASSERT_DHEAP_IDX_OK(heap, index)                                   \
         do {                                                                   \
             if (DHEAP_IDX_LAST(heap) < index) {                                \
@@ -460,486 +451,13 @@ dheap_initialize_copy(VALUE copy, VALUE orig)
         DHEAP_SET(T, heap, sift_idx, entry);                                   \
     } while (0)
 
-#ifdef DHEAP_SIMD_ENABLED
-
-#    ifdef DHEAP_DEBUG
-
-void
-debug_print_m128i64(const char *const label, const MINT_T(128) vector)
-{
-    uint64_t val[2];
-    memcpy(val, &vector, sizeof(val));
-    printf("%s: %5ld %5ld\n", label, val[0], val[1]);
-}
-
-void
-debug_print_m256i64(const char *const label, const MINT_T(256) vector)
-{
-    uint64_t val[4];
-    memcpy(val, &vector, sizeof(val));
-    printf("%s: %5ld %5ld %5ld %5ld\n", label, val[0], val[1], val[2], val[3]);
-}
-
-void
-debug_print_m128_pd(const char *const label, const MDBL_T(128) vector)
-{
-    double val[2];
-    memcpy(val, &vector, sizeof(val));
-    printf("%s: %5g %5g\n", label, val[0], val[1]);
-}
-
-void
-debug_print_m256_pd(const char *const label, const MDBL_T(256) vector)
-{
-    double val[4];
-    memcpy(val, &vector, sizeof(val));
-    printf("%s: %5g %5g %5g %5g\n", label, val[0], val[1], val[2], val[3]);
-}
-
-void
-debug_print_dheap(const dheap_t *const heap, int inspect)
-{
-    printf("#<DHeap d=%d size=%zd", heap->d, heap->size);
-    if (inspect) {
-        for (size_t i = 0; i < (size_t)heap->size; i++) {
-            if (i % heap->d == 1)
-                printf("   (p=%zd)", DHEAP_IDX_PARENT(heap, i));
-            printf(" [%zd]=%g", i, DHEAP_SCORE(heap, i));
-            if (DHEAP_SCORE(heap, i) <
-                DHEAP_SCORE(heap, DHEAP_IDX_PARENT(heap, i)))
-                printf("<-!!!!!!!!!");
-        }
-    }
-    printf(">");
-}
-
-#    endif
-
-#    define MM_CMP_LT(SZ, A, B)    MM_CALL(SZ, CMP_LT, (A), (B))
-#    define MM_MBLEND(SZ, M, A, B) MM_CALL(SZ, MBLEND, (M), (A), (B))
-#    define MM_MIN_PD(SZ, A, B)    MM_CALL(SZ, MIN_PD, (A), (B))
-#    define MM_LOAD_SCORES(SZ, entries, idx)                                   \
-        MM_CALL(SZ, LOAD_SCORES, (entries), (idx))
-
-#    define MM512_LOAD_SCORES(entries, idx)                                    \
-        _mm512_set_pd(entries[idx + 7].score,                                  \
-                      entries[idx + 6].score,                                  \
-                      entries[idx + 5].score,                                  \
-                      entries[idx + 4].score,                                  \
-                      entries[idx + 3].score,                                  \
-                      entries[idx + 2].score,                                  \
-                      entries[idx + 1].score,                                  \
-                      entries[idx].score)
-#    define MM256_LOAD_SCORES(entries, idx)                                    \
-        _mm256_set_pd(entries[idx + 3].score,                                  \
-                      entries[idx + 2].score,                                  \
-                      entries[idx + 1].score,                                  \
-                      entries[idx].score)
-#    define MM128_LOAD_SCORES(entries, idx)                                    \
-        _mm_set_pd((entries)[idx + 1].score, (entries)[idx].score)
-
-#    define _MM512_SETR_INDEXES(idx)                                           \
-        _mm512_add_epi64(idx64x8, _mm512_set1_epi64(idx));
-#    define _MM256_SETR_INDEXES(idx)                                           \
-        _mm256_add_epi64(idx64x4, _mm256_set1_epi64x(idx));
-#    define _MM128_SETR_INDEXES(idx) _mm_set_epi64x((idx) + 1, (idx));
-
-#    define _MM512_INCR_INDEXES(indexes) _mm512_add_epi64(indexes, incrby8)
-#    define _MM256_INCR_INDEXES(indexes) _mm256_add_epi64(indexes, incrby8)
-#    define _MM128_INCR_INDEXES(indexes) _mm_add_epi64(indexes, incrby8)
-
-#    define MM512_CMP_LT(A, B) _mm512_cmp_pd_mask((A), (B), _CMP_LT_OS)
-#    define MM256_CMP_LT(A, B) _mm256_cmp_pd((A), (B), _CMP_LT_OS)
-#    define MM128_CMP_LT(A, B) _mm_cmplt_pd((A), (B))
-
-#    define MM512_MBLEND          _mm512_mask_blend_epi64
-#    define MM256_MBLEND(M, A, B) _mm256_blendv_epi8((A), (B), (MINT_T(256))(M))
-#    define MM128_MBLEND(M, A, B)                                              \
-        _mm_blendv_epi8((A), (B), _mm_castpd_si128((M)));
-
-#    define MM512_MIN_PD(A, B) _mm512_min_pd((A), (B))
-#    define MM256_MIN_PD(A, B) _mm256_min_pd((A), (B))
-#    define MM128_MIN_PD(A, B) _mm_min_pd((A), (B))
-
-#    define MM_SZ_REDUCE_MIN(SZ, minvals, minidxs, cmpvals, cmpidxs)           \
-        do {                                                                   \
-            MASK(SZ) mask = MM_CMP_LT(SZ, cmpvals, minvals);                   \
-            minidxs       = MM_MBLEND(SZ, mask, minidxs, cmpidxs);             \
-            minvals       = MM_MIN_PD(SZ, cmpvals, minvals);                   \
-        } while (0)
-#    define MM512_REDUCE_MIN(minvals, minidxs, cmpvals, cmpidxs)               \
-        MM_SZ_REDUCE_MIN(512, minvals, minidxs, cmpvals, cmpidxs)
-#    define MM256_REDUCE_MIN(minvals, minidxs, cmpvals, cmpidxs)               \
-        MM_SZ_REDUCE_MIN(256, minvals, minidxs, cmpvals, cmpidxs)
-#    define MM128_REDUCE_MIN(minvals, minidxs, cmpvals, cmpidxs)               \
-        MM_SZ_REDUCE_MIN(128, minvals, minidxs, cmpvals, cmpidxs)
-
-#    define SCORE_AT(i)   DHEAP_SCORE(heap, i)
-#    define MINIDX2(i, j) (SCORE_AT(i) < SCORE_AT(j) ? i : j)
-#    define MINIDX3(i, j, k)                                                   \
-        (SCORE_AT(i) < SCORE_AT(j) ? MINIDX2(i, k) : MINIDX2(j, k))
-
-/*
- * funrolling loops by hand is fun!
- *
- * Seriously though, although this might be more than a little bit crazy, in its
- * own way it's a lot _simpler_ and easier to reason about than a bunch of loops
- * and conditionals. No loops. No conditions. Just connect the dots.
- *
- * The generated code size would be dramatically reduced by e.g. using gotos.
- * But all of that jumping slows things down.
- */
-
-/* clang-format off */
-#define MIN_IDX_REDUCE_SIZE32()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX24_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE31()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX23_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE30()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX22_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE29()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX21_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE28()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX20_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE27()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX19_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE26()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX18_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE25()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX17_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE24()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX16_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE23()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX15_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE22()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX14_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE21()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX13_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE20()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX12_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE19()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX11_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE18()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX10_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE17()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX09_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE16()     do { MIN_IDX_INIT_WITH_8();  MIN_IDX_REDUCE_IDX08_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_SIZE15()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX11_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE14()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX10_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE13()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX09_VEC4(); } while (0)
-
-#define MIN_IDX_REDUCE_SIZE12()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX08_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE11()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX07_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE10()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX06_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE09()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX05_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE08()     do { MIN_IDX_INIT_WITH_4();  MIN_IDX_REDUCE_IDX04_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_SIZE07()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX05_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_SIZE06()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX04_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_SIZE05()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX03_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_SIZE04()     do { MIN_IDX_INIT_WITH_2();  MIN_IDX_REDUCE_IDX02_VEC2(); } while (0)
-
-#define MIN_IDX_REDUCE_SIZE03()     do { minidx = MINIDX3(idx, idx + 1, idx + 2); } while (0)
-#define MIN_IDX_REDUCE_SIZE02()     do { minidx = MINIDX2(idx, idx + 1); } while (0)
-#define MIN_IDX_REDUCE_SIZE01()     do { minidx = idx; } while (0)
-
-#define MIN_IDX_REDUCE_IDX24_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX16_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX23_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX15_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX22_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX14_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX21_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX13_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX20_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX12_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX19_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX11_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX18_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX10_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX17_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX09_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX16_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX08_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX15_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX07_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX14_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX06_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX13_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX05_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX12_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX04_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX11_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX03_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX10_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX02_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX09_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX01_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX08_VEC8() do { MIN_IDX_FOLD_NEXT_8();  MIN_IDX_REDUCE_IDX00_VEC8(); } while (0)
-#define MIN_IDX_REDUCE_IDX07_VEC8() do { MIN_IDX_REDUCE_8TO4(1); MIN_IDX_REDUCE_IDX07_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX06_VEC8() do { MIN_IDX_REDUCE_8TO4(1); MIN_IDX_REDUCE_IDX06_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX05_VEC8() do { MIN_IDX_REDUCE_8TO4(1); MIN_IDX_REDUCE_IDX05_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX04_VEC8() do { MIN_IDX_REDUCE_8TO4(1); MIN_IDX_REDUCE_IDX04_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX03_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX03_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX02_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX02_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX01_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX01_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX00_VEC8() do { MIN_IDX_REDUCE_8TO4(0); MIN_IDX_REDUCE_IDX00_VEC4(); } while (0)
-
-#define MIN_IDX_REDUCE_IDX11_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX07_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX10_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX06_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX09_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX05_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX08_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX04_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX07_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX03_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX06_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX02_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX05_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX01_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX04_VEC4() do { MIN_IDX_FOLD_NEXT_4();  MIN_IDX_REDUCE_IDX00_VEC4(); } while (0)
-#define MIN_IDX_REDUCE_IDX03_VEC4() do { MIN_IDX_REDUCE_4TO2(1); MIN_IDX_REDUCE_IDX03_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX02_VEC4() do { MIN_IDX_REDUCE_4TO2(1); MIN_IDX_REDUCE_IDX02_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX01_VEC4() do { MIN_IDX_REDUCE_4TO2(0); MIN_IDX_REDUCE_IDX01_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX00_VEC4() do { MIN_IDX_REDUCE_4TO2(0); MIN_IDX_REDUCE_IDX00_VEC2(); } while (0)
-
-#define MIN_IDX_REDUCE_IDX05_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX03_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX04_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX02_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX03_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX01_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX02_VEC2() do { MIN_IDX_FOLD_NEXT_2();  MIN_IDX_REDUCE_IDX00_VEC2(); } while (0)
-#define MIN_IDX_REDUCE_IDX01_VEC2() do { MIN_IDX_REDUCE_2TO1();  MIN_IDX_REDUCE_IDX01_VEC1(); } while (0)
-#define MIN_IDX_REDUCE_IDX00_VEC2() do { MIN_IDX_REDUCE_2TO1();  MIN_IDX_REDUCE_IDX00_VEC1(); } while (0)
-
-#define MIN_IDX_REDUCE_IDX04_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX03_VEC1(); } while (0)
-#define MIN_IDX_REDUCE_IDX03_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX02_VEC1(); } while (0)
-#define MIN_IDX_REDUCE_IDX02_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX01_VEC1(); } while (0)
-#define MIN_IDX_REDUCE_IDX01_VEC1() do { MIN_IDX_FOLD_NEXT_1();  MIN_IDX_REDUCE_IDX00_VEC1(); } while (0)
-#define MIN_IDX_REDUCE_IDX00_VEC1() /* done; result is in minidx */
-/* clang-format on */
-
-#    define MIN_IDX_REDUCE_SIZE_D(d)  _MIN_IDX_REDUCE_SIZE_D(d)
-#    define _MIN_IDX_REDUCE_SIZE_D(d) MIN_IDX_REDUCE_SIZE##d()
-#    define MIN_IDX_REDUCE_SIZE1(d)   MIN_IDX_REDUCE_SIZE01()
-#    define MIN_IDX_REDUCE_SIZE2(d)   MIN_IDX_REDUCE_SIZE02()
-#    define MIN_IDX_REDUCE_SIZE3(d)   MIN_IDX_REDUCE_SIZE03()
-#    define MIN_IDX_REDUCE_SIZE4(d)   MIN_IDX_REDUCE_SIZE04()
-#    define MIN_IDX_REDUCE_SIZE5(d)   MIN_IDX_REDUCE_SIZE05()
-#    define MIN_IDX_REDUCE_SIZE6(d)   MIN_IDX_REDUCE_SIZE06()
-#    define MIN_IDX_REDUCE_SIZE7(d)   MIN_IDX_REDUCE_SIZE07()
-#    define MIN_IDX_REDUCE_SIZE8(d)   MIN_IDX_REDUCE_SIZE08()
-#    define MIN_IDX_REDUCE_SIZE9(d)   MIN_IDX_REDUCE_SIZE09()
-
-#    ifdef DHEAP_ENABLE_MIN_IDX_AVX512
-
-#        define MIN_IDX_INIT_WITH_8()                                          \
-            MINT_T(512) minidx8 = _MM512_SETR_INDEXES(idx);                    \
-            MDBL_T(512) minval8 = MM_LOAD_SCORES(512, entries, idx);           \
-            MINT_T(512) cmpidx8 = minidx8;                                     \
-            idx += 8;
-
-#        define MIN_IDX_FOLD_NEXT_8()                                           \
-            do {                                                                \
-                const MDBL_T(512) cmpval8 = MM_LOAD_SCORES(512, entries, idx);  \
-                cmpidx8                   = _mm512_add_epi32(cmpidx8, incrby8); \
-                MM512_REDUCE_MIN(minval8, minidx8, cmpval8, cmpidx8);           \
-                idx += 8;                                                       \
-            } while (0)
-
-// TODO: AVX512 enabled, AVX2 disabled, SSE2 enabled
-// TODO: AVX512 enabled, AVX2 disabled, SSE2 disabled
-#        define MIN_IDX_REDUCE_8TO4(reset_cmpidx4)                             \
-            MDBL_T(256) minval4;                                               \
-            MINT_T(256) minidx4, cmpidx4;                                      \
-            do {                                                               \
-                minval4 = _mm512_extractf64x4_pd(minval8, 0);                  \
-                const MDBL_T(256) cmpval4 =                                    \
-                  _mm512_extractf64x4_pd(minval8, 1);                          \
-                minidx4 = _mm512_extracti64x4_epi64(minidx8, 0);               \
-                cmpidx4 = _mm512_extracti64x4_epi64(minidx8, 1);               \
-                MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);          \
-                cmpidx4 = _MM256_SETR_INDEXES(idx - 4);                        \
-            } while (0)
-
-#    else
-
-#        define MIN_IDX_INIT_WITH_8()                                          \
-            MIN_IDX_INIT_WITH_4();                                             \
-            MIN_IDX_FOLD_NEXT_4();
-
-#        define MIN_IDX_FOLD_NEXT_8()                                          \
-            do {                                                               \
-                MIN_IDX_FOLD_NEXT_4();                                         \
-                MIN_IDX_FOLD_NEXT_4();                                         \
-            } while (0)
-
-#        define MIN_IDX_REDUCE_8TO4(reset_cmpidx4) /* noop */
-
-#    endif
-
-#    ifdef DHEAP_ENABLE_MIN_IDX_AVX2
-
-#        define MIN_IDX_INIT_WITH_4()                                          \
-            MINT_T(256) minidx4 = _MM256_SETR_INDEXES(idx);                    \
-            MDBL_T(256) minval4 = MM_LOAD_SCORES(256, entries, idx);           \
-            MINT_T(256) cmpidx4 = minidx4;                                     \
-            idx += 4;
-
-#        define MIN_IDX_FOLD_NEXT_4()                                          \
-            do {                                                               \
-                const MDBL_T(256) cmpval4 = MM_LOAD_SCORES(256, entries, idx); \
-                cmpidx4                   = _MM256_SETR_INDEXES(idx);          \
-                MM256_REDUCE_MIN(minval4, minidx4, cmpval4, cmpidx4);          \
-                idx += 4;                                                      \
-            } while (0)
-
-// TODO: AVX2 enabled, SSE2 disabled
-#        define MIN_IDX_REDUCE_4TO2(reset_cmpidx2)                             \
-            MDBL_T(128) minval2;                                               \
-            MINT_T(128) minidx2, cmpidx2;                                      \
-            do {                                                               \
-                minval2                   = _mm256_extractf128_pd(minval4, 0); \
-                const MDBL_T(128) cmpval2 = _mm256_extractf128_pd(minval4, 1); \
-                minidx2 = _mm256_extracti128_si256(minidx4, 0);                \
-                cmpidx2 = _mm256_extracti128_si256(minidx4, 1);                \
-                MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);          \
-            } while (0)
-
-#    else
-
-#        define MIN_IDX_INIT_WITH_4()                                          \
-            MIN_IDX_INIT_WITH_2();                                             \
-            MIN_IDX_FOLD_NEXT_2();
-
-#        define MIN_IDX_FOLD_NEXT_4()                                          \
-            do {                                                               \
-                MIN_IDX_FOLD_NEXT_2();                                         \
-                MIN_IDX_FOLD_NEXT_2();                                         \
-            } while (0)
-
-#        define MIN_IDX_REDUCE_4TO2(reset_cmpidx2) /* noop */
-
-#    endif
-
-#    ifdef DHEAP_ENABLE_MIN_IDX_SSE2
-
-#        define MIN_IDX_INIT_WITH_2()                                          \
-            MINT_T(128) minidx2 = _mm_set_epi64x(idx + 1, idx);                \
-            MDBL_T(128) minval2 = MM_LOAD_SCORES(128, entries, idx);           \
-            MINT_T(128) cmpidx2 = minidx2;                                     \
-            idx += 2;
-
-#        define MIN_IDX_FOLD_NEXT_2()                                          \
-            do {                                                               \
-                const MDBL_T(128) cmpval2 = MM_LOAD_SCORES(128, entries, idx); \
-                cmpidx2                   = _mm_set_epi64x(idx + 1, idx);      \
-                MM128_REDUCE_MIN(minval2, minidx2, cmpval2, cmpidx2);          \
-                idx += 2;                                                      \
-            } while (0)
-
-#        define MIN_IDX_REDUCE_2TO1()                                          \
-            do {                                                               \
-                double minvals[2];                                             \
-                _mm_storeu_pd(minvals, minval2);                               \
-                minidx =                                                       \
-                  ((minvals[0] < minvals[1]) ? _mm_extract_epi64(minidx2, 0)   \
-                                             : _mm_extract_epi64(minidx2, 1)); \
-            } while (0)
-
-#    else
-
-#        define MIN_IDX_INIT_WITH_2()                                          \
-            minidx = idx++;                                                    \
-            MIN_IDX_FOLD_NEXT_1();
-
-#        define MIN_IDX_FOLD_NEXT_2()                                          \
-            do {                                                               \
-                MIN_IDX_FOLD_NEXT_1();                                         \
-                MIN_IDX_FOLD_NEXT_1();                                         \
-            } while (0)
-
-#    endif
-
-#    define MIN_IDX_FOLD_NEXT_1()                                              \
-        do {                                                                   \
-            if (entries[idx].score < entries[minidx].score) minidx = idx;      \
-            idx++;                                                             \
-        } while (0)
+#define ENTRIES_SCORE_AREF(IDX) (entries[(IDX)].score)
 
 static inline size_t
-min_index_simd(dheap_t *heap, size_t idx, const size_t last)
+min_index(const ENTRY *entries, size_t idx, const size_t last)
 {
-    const ENTRY *entries = heap->entries;
-    size_t       minidx;
-
-    // short-circuit for the default
-    if (last - idx == DHEAP_DEFAULT_D - 1) {
-        MIN_IDX_REDUCE_SIZE_D(DHEAP_DEFAULT_D);
-        return minidx;
-    }
-
-    switch (last - idx) {
-        /* clang-format off */
-
-    // handled without vectors
-    case 0: MIN_IDX_REDUCE_SIZE01(); return minidx;
-    case 1: MIN_IDX_REDUCE_SIZE02(); return minidx;
-    case 2: MIN_IDX_REDUCE_SIZE03(); return minidx;
-
-    // uses 128-bit vectors
-    case 3: MIN_IDX_REDUCE_SIZE04(); return minidx;
-    case 4: MIN_IDX_REDUCE_SIZE05(); return minidx;
-    case 5: MIN_IDX_REDUCE_SIZE06(); return minidx;
-    case 6: MIN_IDX_REDUCE_SIZE07(); return minidx;
-
-    // uses 256-bit vectors
-    case 7:  MIN_IDX_REDUCE_SIZE08(); return minidx;
-    case 8:  MIN_IDX_REDUCE_SIZE09(); return minidx;
-    case 9:  MIN_IDX_REDUCE_SIZE10(); return minidx;
-    case 10: MIN_IDX_REDUCE_SIZE11(); return minidx;
-    case 11: MIN_IDX_REDUCE_SIZE12(); return minidx;
-    case 12: MIN_IDX_REDUCE_SIZE13(); return minidx;
-    case 13: MIN_IDX_REDUCE_SIZE14(); return minidx;
-    case 14: MIN_IDX_REDUCE_SIZE15(); return minidx;
-
-    // uses 512-bit vectors
-    case 15: MIN_IDX_REDUCE_SIZE16(); return minidx;
-    case 16: MIN_IDX_REDUCE_SIZE17(); return minidx;
-    case 17: MIN_IDX_REDUCE_SIZE18(); return minidx;
-    case 18: MIN_IDX_REDUCE_SIZE19(); return minidx;
-    case 19: MIN_IDX_REDUCE_SIZE20(); return minidx;
-    case 20: MIN_IDX_REDUCE_SIZE21(); return minidx;
-    case 21: MIN_IDX_REDUCE_SIZE22(); return minidx;
-    case 22: MIN_IDX_REDUCE_SIZE23(); return minidx;
-    case 23: MIN_IDX_REDUCE_SIZE24(); return minidx;
-    case 24: MIN_IDX_REDUCE_SIZE25(); return minidx;
-    case 25: MIN_IDX_REDUCE_SIZE26(); return minidx;
-    case 26: MIN_IDX_REDUCE_SIZE27(); return minidx;
-    case 27: MIN_IDX_REDUCE_SIZE28(); return minidx;
-    case 28: MIN_IDX_REDUCE_SIZE29(); return minidx;
-    case 29: MIN_IDX_REDUCE_SIZE30(); return minidx;
-    case 30: MIN_IDX_REDUCE_SIZE31(); return minidx;
-    case 31: MIN_IDX_REDUCE_SIZE32(); return minidx;
-
-        /* clang-format on */
-    default:
-        // above 32 loops on 8 at a time, until less than 24 remaining
-        do {
-            MIN_IDX_INIT_WITH_8();
-            while (23 < last - idx) {
-                MIN_IDX_FOLD_NEXT_8();
-            }
-            switch (last - idx) {
-                /* clang-format off */
-            case 0:  MIN_IDX_REDUCE_IDX01_VEC8(); return minidx;
-            case 1:  MIN_IDX_REDUCE_IDX02_VEC8(); return minidx;
-            case 2:  MIN_IDX_REDUCE_IDX03_VEC8(); return minidx;
-            case 3:  MIN_IDX_REDUCE_IDX04_VEC8(); return minidx;
-            case 4:  MIN_IDX_REDUCE_IDX05_VEC8(); return minidx;
-            case 5:  MIN_IDX_REDUCE_IDX06_VEC8(); return minidx;
-            case 6:  MIN_IDX_REDUCE_IDX07_VEC8(); return minidx;
-            case 7:  MIN_IDX_REDUCE_IDX08_VEC8(); return minidx;
-            case 8:  MIN_IDX_REDUCE_IDX09_VEC8(); return minidx;
-            case 9:  MIN_IDX_REDUCE_IDX10_VEC8(); return minidx;
-            case 10: MIN_IDX_REDUCE_IDX11_VEC8(); return minidx;
-            case 11: MIN_IDX_REDUCE_IDX12_VEC8(); return minidx;
-            case 12: MIN_IDX_REDUCE_IDX13_VEC8(); return minidx;
-            case 13: MIN_IDX_REDUCE_IDX14_VEC8(); return minidx;
-            case 14: MIN_IDX_REDUCE_IDX15_VEC8(); return minidx;
-            case 15: MIN_IDX_REDUCE_IDX16_VEC8(); return minidx;
-            case 16: MIN_IDX_REDUCE_IDX17_VEC8(); return minidx;
-            case 17: MIN_IDX_REDUCE_IDX18_VEC8(); return minidx;
-            case 18: MIN_IDX_REDUCE_IDX19_VEC8(); return minidx;
-            case 19: MIN_IDX_REDUCE_IDX20_VEC8(); return minidx;
-            case 20: MIN_IDX_REDUCE_IDX21_VEC8(); return minidx;
-            case 21: MIN_IDX_REDUCE_IDX22_VEC8(); return minidx;
-            case 22: MIN_IDX_REDUCE_IDX23_VEC8(); return minidx;
-            case 23: MIN_IDX_REDUCE_IDX24_VEC8(); return minidx;
-                /* clang-format on */
-            }
-        } while (0);
-
-        rb_raise(
-          rb_eException, "invalid DHeap min_child size: %zd", last - idx + 1);
-    }
+    MIN_IDX(ENTRIES_SCORE_AREF, idx, last, DHEAP_DEFAULT_D);
 }
-
-#    undef MINIDX2
-#    undef MINIDX3
-
-#else
-
-static inline size_t
-min_index_loop(ENTRY entries[], size_t idx0, size_t last)
-{
-    for (size_t idx = idx0 + 1; idx <= last; idx++) {
-        if (entries[idx].score < entries[idx0].score) idx0 = idx;
-    }
-    return idx0;
-}
-
-#endif
 
 static inline size_t
 dheap_min_child(dheap_t *heap, const size_t parent, const size_t last_index)
@@ -947,12 +465,7 @@ dheap_min_child(dheap_t *heap, const size_t parent, const size_t last_index)
     const size_t idx0 = DHEAP_IDX_CHILD_0(heap, parent);
     const size_t idxd = DHEAP_IDX_CHILD_D(heap, parent);
     const size_t last = (LIKELY(idxd <= last_index)) ? idxd : last_index;
-
-#ifdef DHEAP_SIMD_ENABLED
-    return min_index_simd(heap, idx0, last);
-#else
-    return min_index_loop(heap->entries, idx0, last);
-#endif
+    return min_index(heap->entries, idx0, last);
 }
 
 #define DHEAP_CAN_SIFT_DOWN(heap, index, last_index)                           \
@@ -1553,19 +1066,8 @@ dheapmap_aset(VALUE self, VALUE object, VALUE score)
 void
 Init_d_heap(void)
 {
-#ifdef DHEAP_ENABLE_MIN_IDX_AVX512
-    idx64x8 = _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L);
-    incrby8 = _mm512_set1_epi64(8L);
-#endif
-#ifdef DHEAP_ENABLE_MIN_IDX_AVX2
-    idx64x4 = _mm256_setr_epi64x(0L, 1L, 2L, 3L);
-    incrby4 = _mm256_set1_epi64x(4L);
-#endif
-#ifdef DHEAP_ENABLE_MIN_IDX_SSE2
-    incrby2 = _mm_set1_epi64x(2L);
-#endif
-
     VALUE rb_cDHeap = rb_define_class("DHeap", rb_cObject);
+
 #ifdef DHEAP_MAP
     VALUE rb_cDHeapMap = rb_define_class_under(rb_cDHeap, "Map", rb_cDHeap);
 #endif
