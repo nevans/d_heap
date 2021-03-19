@@ -8,9 +8,17 @@ prelude: |
   random_len  = 1_000_000
   random_vals = Array.new(random_len) { rand(0..100_000_000) }
 
-  D = ENV.fetch("BENCH_D", 10).to_i
+  D = ENV.fetch("BENCH_D", DHeap::DEFAULT_D).to_i
+
+  i = 1
+  low_n = nil
+  high_n = nil
 
   prefill = -> (n) {
+    raise "D is too big for that N" if n - D/2 < 0
+    low_n = n - D/2
+    high_n = n + (D-1)/2
+    raise "bad N range: (#{low_n}...#{high_n})" unless high_n - low_n == D - 1
     q = DHeap.new(d: D)
     n.times do
       random_idx += 1
@@ -19,17 +27,35 @@ prelude: |
     q
   }
 
+  # in order to avoid any oddities that might come from pushing and popping to a
+  # heap that is always the exact same size, +/-1, we'll introduce some
+  # non-random "jitter", by growing or shrinking the heap every so often.
+
+  # how many reps between each "jitter" size adjustment
+  REPS_PER_SIZE_ADJUSTMENT = 100_000
+
+  # Because sift-up is simple and very fast, and sift-down is where most of the
+  # performance gains are made, we'll sift-down (i.e. pop) one at a time, but
+  # sift-up (i.e. push) all at once.  We'll go from (N+D/2) down to (N-D/2)
+
 # grows N exponentially by sqrt(10) per level
 benchmark:
-  - name: "N=10"
-    prelude: "q = prefill[10]"
+  - name: "N=32"
+    prelude: "q = prefill[32]"
     script: &script |
       random_idx += 1
       q << random_vals.fetch(random_idx % random_len)
       q.pop
-  - name: "N=32"
-    prelude: "q = prefill[32]"
-    script: *script
+      if i % REPS_PER_SIZE_ADJUSTMENT == 0
+        if q.size == low_n
+          D.times { q << random_vals.fetch(random_idx % random_len) }
+          $stderr.puts "#{q.size}: #{q.size % D}"
+        else
+          q.pop
+          $stderr.puts "#{q.size}: #{q.size % D}"
+        end
+      end
+      i += 1
   - name: "N=100"
     prelude: "q = prefill[100]"
     script: *script
