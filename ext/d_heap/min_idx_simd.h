@@ -272,6 +272,7 @@ typedef const MDBL_T(128) mask128_t;
 #define _MM256_INCRBY   _mm256_set1_epi64x(4L)
 #define _MM128_INCRBY   _mm_set1_epi64x(2L)
 
+// using static global variables isn't faster
 #define MM_OFFSETS(BITS) _MM##BITS##_OFFSETS
 #define _MM512_OFFSETS   _mm512_setr_epi64(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L)
 #define _MM256_OFFSETS   _mm256_setr_epi64x(0L, 1L, 2L, 3L)
@@ -337,11 +338,12 @@ typedef const MDBL_T(128) mask128_t;
  *
  ******************************************************************************/
 
-#define MIN_IDX_INIT(WORDS)      _MIN_IDX_INIT(MM_BITS(WORDS), WORDS)
-#define _MIN_IDX_INIT(SZ, WORDS) __MIN_IDX_INIT(SZ, WORDS)
-#define __MIN_IDX_INIT(SZ, WORDS)                                              \
+#define MIN_IDX_INIT(WORDS, ...)                                               \
+    _MIN_IDX_INIT(MM_BITS(WORDS), WORDS, __VA_ARGS__)
+#define _MIN_IDX_INIT(SZ, WORDS, ...) __MIN_IDX_INIT(SZ, WORDS, __VA_ARGS__)
+#define __MIN_IDX_INIT(SZ, WORDS, AREF, ...)                                   \
     MINT_T(SZ) minidx##WORDS = MM_SETR(SZ, idx);                               \
-    MDBL_T(SZ) minval##WORDS = MM_LOAD_DBL(SZ, VAL_AT, idx);                   \
+    MDBL_T(SZ) minval##WORDS = MM_LOAD_DBL(SZ, AREF, idx);                     \
     MINT_T(SZ) cmpidx##WORDS = minidx##WORDS;                                  \
     idx += WORDS;
 
@@ -396,7 +398,7 @@ typedef const MDBL_T(128) mask128_t;
  *
  ******************************************************************************/
 
-#define MIN_IDX_INIT_WITH_8(...)  MIN_IDX_INIT(8)
+#define MIN_IDX_INIT_WITH_8(...)  MIN_IDX_INIT(8, __VA_ARGS__)
 #define MIN_IDX_FOLD_NEXT_8(...)  MIN_IDX_FOLD_NEXT(512, 8, __VA_ARGS__)
 #define _MIN_IDX_REDUCE_8TO4(...) MIN_IDX_REDUCE_TO_HALF(512, 8, 256, 4)
 
@@ -408,7 +410,7 @@ typedef const MDBL_T(128) mask128_t;
         cmpidx4 = MM_SETR(256, IDX - 4);                                       \
     } while (0)
 
-#define MIN_IDX_INIT_WITH_4(...)  MIN_IDX_INIT(4)
+#define MIN_IDX_INIT_WITH_4(...)  MIN_IDX_INIT(4, __VA_ARGS__)
 #define MIN_IDX_FOLD_NEXT_4(...)  MIN_IDX_FOLD_NEXT(256, 4, __VA_ARGS__)
 #define _MIN_IDX_REDUCE_4TO2(...) MIN_IDX_REDUCE_TO_HALF(256, 4, 128, 2)
 
@@ -420,7 +422,7 @@ typedef const MDBL_T(128) mask128_t;
         cmpidx2 = MM_SETR(128, idx - 2);                                       \
     } while (0)
 
-#define MIN_IDX_INIT_WITH_2(...) MIN_IDX_INIT(2)
+#define MIN_IDX_INIT_WITH_2(...) MIN_IDX_INIT(2, __VA_ARGS__)
 #define MIN_IDX_FOLD_NEXT_2(...) MIN_IDX_FOLD_NEXT(128, 2, __VA_ARGS__)
 
 #define MIN_IDX_REDUCE_2TO1(AREF, MINIDX, ...)                                 \

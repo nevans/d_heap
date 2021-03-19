@@ -1,11 +1,5 @@
 #pragma once
 
-/*
- * This should be defined outside of this file... it should be sent in as a
- * "parameter" to MIN_IDX or SIFT_DOWN.
- */
-#define VAL_AT(IDX) entries[(IDX)].score
-
 #ifdef DHEAP_SIMD_ENABLED
 
 // TODO: easy workarounds for these. Need to fix MIN_IDX_REDUCE_HALF, etc
